@@ -1,0 +1,130 @@
+lib/
+├── core/
+│   ├── config/
+│   │   └── app_config.dart
+│   ├── constants/
+│   │   ├── app_constants.dart
+│   │   ├── navigation_constants.dart
+│   │   └── route_constants.dart
+│   ├── di/
+│   │   ├── dependency_injection.dart 
+│   │   └── modules/                  
+│   │       ├── bloc_module.dart
+│   │       ├── database_module.dart
+│   │       ├── network_module.dart
+│   │       ├── repository_module.dart
+│   │       └── service_module.dart
+│   ├── exceptions/
+│   │   └── app_exceptions.dart
+│   ├── navigation/
+│   │   ├── app_routes.dart
+│   │   └── navigation_service.dart
+│   ├── services/
+│   │   ├── analytics_service.dart
+│   │   ├── localization_service.dart
+│   │   ├── notification_service.dart
+│   │   └── rfid_service.dart
+│   ├── theme/
+│   │   └── app_theme.dart
+│   └── utils/
+│       ├── date_utils.dart
+│       ├── icon_utils.dart
+│       └── string_utils.dart
+├── data/
+│   ├── cache/
+│   │   └── asset_cache.dart
+│   ├── datasources/
+│   │   ├── local/
+│   │   │   ├── database_helper.dart
+│   │   │   └── mock_rfid_service.dart
+│   │   └── remote/
+│   │       └── api_client.dart
+│   ├── models/
+│   │   ├── asset_model.dart
+│   │   └── random_asset_info_model.dart
+│   └── repositories/
+│       ├── asset_repository_impl.dart
+│       └── random_asset_repository_impl.dart
+├── domain/
+│   ├── entities/
+│   │   ├── asset.dart
+│   │   └── random_asset_info.dart
+│   ├── repositories/
+│   │   ├── asset_repository.dart
+│   │   └── random_asset_repository.dart
+│   └── usecases/
+│       ├── assets/
+│       │   ├── create_asset_usecase.dart
+│       │   ├── get_assets_usecase.dart
+│       │   ├── search_asset_usecase.dart
+│       │   └── update_asset_usecase.dart
+│       ├── category/
+│       │   ├── add_category_usecase.dart
+│       │   ├── delete_category_usecase.dart
+│       │   ├── get_categories_usecase.dart
+│       │   └── update_category_usecase.dart
+│       └── rfid/
+│           ├── scan_rfid_usecase.dart
+│           ├── get_random_uid_usecase.dart
+│           └── generate_random_asset_info_usecase.dart
+├── presentation/
+│   ├── common_widgets/
+│   │   ├── buttons/
+│   │   │   ├── icon_button.dart
+│   │   │   └── primary_button.dart
+│   │   ├── inputs/
+│   │   │   ├── search_field.dart
+│   │   │   └── text_input.dart
+│   │   └── layouts/
+│   │       ├── app_bottom_navigation.dart
+│   │       └── screen_container.dart
+│   └── features/
+│       ├── assets/
+│       │   ├── blocs/
+│       │   │   └── asset_bloc.dart
+│       │   ├── screens/
+│       │   │   ├── search_assets_screen.dart
+│       │   │   └── view_assets_screen.dart
+│       │   └── widgets/
+│       │       ├── asset_table_row.dart
+│       │       └── asset_tile.dart
+│       ├── dashboard/
+│       │   ├── blocs/
+│       │   │   └── dashboard_bloc.dart
+│       │   ├── screens/
+│       │   │   └── home_screen.dart
+│       │   └── widgets/
+│       │       ├── dashboard_header.dart
+│       │       └── dashboard_stats.dart
+│       ├── export/
+│       │   ├── blocs/
+│       │   │   └── export_bloc.dart
+│       │   ├── screens/
+│       │   │   └── export_screen.dart
+│       │   └── widgets/
+│       │       └── export_history_item.dart
+│       ├── main/
+│       │   ├── blocs/
+│       │   │   └── navigation_bloc.dart
+│       │   └── screens/
+│       │       └── main_layout.dart
+│       ├── rfid/
+│       │   ├── blocs/
+│       │   │   └── rfid_scan_bloc.dart
+│       │   ├── screens/
+│       │   │   ├── found_screen.dart
+│       │   │   ├── not_found_screen.dart
+│       │   │   └── scan_rfid_screen.dart
+│       │   └── widgets/
+│       │       └── scan_result_display.dart
+│       └── settings/
+│           ├── blocs/
+│           │   ├── category_bloc.dart
+│           │   └── settings_bloc.dart
+│           ├── screens/
+│           │   ├── categories_screen.dart
+│           │   └── settings_screen.dart
+│           └── widgets/
+│               ├── category_form.dart
+│               └── settings_form.dart
+└── main.dart
