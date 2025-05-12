@@ -25,4 +25,6 @@ class RouteConstants {
   static const String profile = '/profile';
   // หน้าแสดงรายงานต่างๆ
   static const String reports = '/reports';
+
+  static const String databaseTest = '/databaseTest';
 }

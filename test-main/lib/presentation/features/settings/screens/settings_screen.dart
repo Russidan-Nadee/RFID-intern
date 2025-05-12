@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
-import '../../../common_widgets/inputs/text_input.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/settings_bloc.dart';
 import '../widgets/settings_form.dart';
@@ -25,6 +24,39 @@ class SettingsScreen extends StatelessWidget {
                   child: Text(
                     'Database Management',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+
+                // เพิ่มปุ่มนี้ในส่วนเนื้อหาของหน้า Settings
+                Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Database Connection',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Test connection to MySQL database',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 16),
+                        PrimaryButton(
+                          text: 'Test MySQL Connection',
+                          icon: Icons.database,
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/databaseTest');
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -78,55 +110,6 @@ class SettingsScreen extends StatelessWidget {
                   padding: EdgeInsets.only(bottom: 8),
                   child: Text(
                     'Delete Specific Asset',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 24),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextInput(
-                          controller: bloc.uidController,
-                          label: 'Enter UID to Delete',
-                          prefixIcon: Icons.qr_code,
-                        ),
-                        const SizedBox(height: 16),
-                        PrimaryButton(
-                          text: 'Delete Asset by UID',
-                          color: Colors.red,
-                          icon: Icons.delete,
-                          isLoading:
-                              bloc.status == SettingsActionStatus.loading,
-                          onPressed: () {
-                            _showDeleteConfirmationDialog(
-                              context,
-                              'Delete Asset',
-                              'Are you sure you want to delete this asset? This action cannot be undone.',
-                              () => bloc.deleteAssetByUid(
-                                context,
-                                bloc.uidController.text,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Section: Update Asset
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    'Update Asset Status',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),

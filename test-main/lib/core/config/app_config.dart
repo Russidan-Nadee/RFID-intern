@@ -11,7 +11,18 @@ class AppConfig {
   static const String apiBaseUrl =
       'https://api.example.com'; // ที่อยู่หลักของ API ที่จะติดต่อด้วย
 
+  // เพิ่มการตั้งค่า MySQL ตรงนี้
+  static const String mysqlHost = 'localhost';
+  static const int mysqlPort = 3306;
+  static const String mysqlUser = 'root';
+  static const String mysqlPassword = ''; // ใส่รหัสผ่านถ้ามี
+  static const String mysqlDatabase = 'rfid_assets_details';
+
   // สวิตช์เปิด-ปิดความสามารถต่างๆ
   static const bool enableAnalytics = false; // ปิดการเก็บสถิติการใช้งาน
   static const bool enableNotifications = true; // เปิดการแจ้งเตือน
+
+  // เพิ่มสวิตช์เพื่อเลือกใช้ MySQL แทนการใช้ SQLite
+  static const bool useRemoteDatabase =
+      true; // ตั้งค่าเป็น true เมื่อต้องการใช้ MySQL
 }

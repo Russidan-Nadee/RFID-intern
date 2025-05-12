@@ -2,6 +2,7 @@
 
 // นำเข้าไลบรารี Flutter สำหรับสร้าง UI
 import 'package:flutter/material.dart';
+import 'package:rfid_project/presentation/features/settings/screens/database_test_screen.dart';
 // นำเข้าหน้าจอค้นหาสินทรัพย์
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
 // นำเข้าหน้าจอดูรายละเอียดสินทรัพย์
@@ -36,6 +37,7 @@ class AppRoutes {
       RouteConstants.notFound; // เส้นทางไปหน้าไม่พบสินทรัพย์
   static const String settings =
       RouteConstants.settings; // เส้นทางไปหน้าตั้งค่า
+  static const String databaseTest = RouteConstants.databaseTest;
 
   // ฟังก์ชันสร้างเส้นทางตามชื่อที่ได้รับ
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
@@ -54,6 +56,8 @@ class AppRoutes {
 
     // ตรวจสอบชื่อเส้นทางและสร้างหน้าจอที่เหมาะสม
     switch (routeSettings.name) {
+      case databaseTest:
+        return _createRouteWithoutAnimation(DatabaseTestScreen());
       case home:
         // ถ้าเป็นหน้าหลัก สร้างหน้า HomeScreen ที่ไม่มีอนิเมชั่น
         return _createRouteWithoutAnimation(HomeScreen());
