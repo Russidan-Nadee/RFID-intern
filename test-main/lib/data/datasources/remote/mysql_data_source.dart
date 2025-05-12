@@ -119,7 +119,7 @@ class MySqlDataSource {
         [status, uid],
       );
 
-      return result.affectedRows > 0;
+      return result.affectedRows != null && result.affectedRows! > 0;
     } catch (e) {
       throw DatabaseException('Error updating status in MySQL: $e');
     }
@@ -142,7 +142,7 @@ class MySqlDataSource {
         [id, category, brand, department, status, date, uid],
       );
 
-      return result.affectedRows > 0;
+      return result.affectedRows != null && result.affectedRows! > 0;
     } catch (e) {
       throw DatabaseException('Error updating asset in MySQL: $e');
     }

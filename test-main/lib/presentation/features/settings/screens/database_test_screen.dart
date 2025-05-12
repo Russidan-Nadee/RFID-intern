@@ -28,7 +28,7 @@ class _DatabaseTestScreenState extends State<DatabaseTestScreen> {
           children: [
             PrimaryButton(
               text: 'Test MySQL Connection',
-              icon: Icons.database,
+              icon: Icons.storage,
               isLoading: _isLoading,
               onPressed: _testMySqlConnection,
             ),

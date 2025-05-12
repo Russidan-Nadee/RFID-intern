@@ -12,10 +12,11 @@ class AppConfig {
       'https://api.example.com'; // ที่อยู่หลักของ API ที่จะติดต่อด้วย
 
   // เพิ่มการตั้งค่า MySQL ตรงนี้
-  static const String mysqlHost = 'localhost';
+  static const String mysqlHost = '10.0.2.2';
   static const int mysqlPort = 3306;
   static const String mysqlUser = 'root';
-  static const String mysqlPassword = ''; // ใส่รหัสผ่านถ้ามี
+  static const String mysqlPassword =
+      'first27122546'; // ใส่รหัสผ่านถ้ามีstatic const String mysqlHo
   static const String mysqlDatabase = 'rfid_assets_details';
 
   // สวิตช์เปิด-ปิดความสามารถต่างๆ

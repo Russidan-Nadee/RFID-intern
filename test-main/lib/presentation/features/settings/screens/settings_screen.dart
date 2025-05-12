@@ -50,7 +50,7 @@ class SettingsScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         PrimaryButton(
                           text: 'Test MySQL Connection',
-                          icon: Icons.database,
+                          icon: Icons.storage,
                           onPressed: () {
                             Navigator.pushNamed(context, '/databaseTest');
                           },
