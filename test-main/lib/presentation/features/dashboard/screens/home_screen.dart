@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/navigation/navigation_service.dart';
+import '../../../../core/constants/route_constants.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/dashboard_bloc.dart';
@@ -36,7 +37,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return ScreenContainer(
-      appBar: AppBar(title: const Text('Asset Management Dashboard')),
+      appBar: AppBar(
+        title: const Text('Asset Management Dashboard'),
+        actions: [
+          // เพิ่มปุ่ม Settings ที่มุมขวาบน
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              // นำทางไปยังหน้า Settings
+              Navigator.pushNamed(context, RouteConstants.settings);
+            },
+            tooltip: 'การตั้งค่า',
+          ),
+        ],
+      ),
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

@@ -4,7 +4,7 @@ import '../../../../core/constants/route_constants.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/rfid_scan_bloc.dart';
-import '../models/asset_info.dart';  // สมมติว่ามีไฟล์นี้สำหรับข้อมูล AssetInfo
+import '../../../../domain/entities/random_asset_info.dart';
 
 class NotFoundScreen extends StatelessWidget {
   const NotFoundScreen({Key? key}) : super(key: key);
@@ -12,6 +12,7 @@ class NotFoundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScreenContainer(
+      appBar: AppBar(title: const Text('Asset Not Found')),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Consumer<RfidScanBloc>(
@@ -22,11 +23,17 @@ class NotFoundScreen extends StatelessWidget {
                 // ไอคอนและข้อความแสดงว่าไม่พบอุปกรณ์
                 const _HeaderSection(),
                 const SizedBox(height: 24),
-                
+
                 // แสดงข้อมูลอุปกรณ์ที่สุ่ม
-                AssetInfoCard(assetInfo: rfidScanBloc.randomAssetInfo),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: AssetInfoCard(
+                      assetInfo: rfidScanBloc.randomAssetInfo,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
-                
+
                 // ปุ่มการทำงาน
                 _ActionButtons(rfidScanBloc: rfidScanBloc),
               ],
@@ -47,13 +54,19 @@ class _HeaderSection extends StatelessWidget {
     return Column(
       children: [
         const Icon(Icons.search_off, size: 64, color: Colors.red),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         Text(
           'ไม่พบอุปกรณ์ในระบบ',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'คุณสามารถบันทึกข้อมูลอุปกรณ์นี้เข้าระบบได้',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey),
         ),
       ],
     );
@@ -68,88 +81,84 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // เลือกปุ่มที่แสดงตามสถานะปัจจุบัน
+    if (rfidScanBloc.status == RfidScanStatus.saving) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (rfidScanBloc.status == RfidScanStatus.saved) {
+      return Column(
+        children: [
+          const Icon(Icons.check_circle, color: Colors.green, size: 48),
+          const SizedBox(height: 8),
+          const Text(
+            'บันทึกข้อมูลสำเร็จ',
+            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          PrimaryButton(
+            onPressed: () => _navigateToScanScreen(context),
+            text: 'กลับไปหน้าสแกน',
+            isDarkWhenPressed: true, // ให้มืดเฉพาะตอนกด
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         PrimaryButton(
           onPressed: () async {
-            // แสดง loading indicator
-            _showSavingDialog(context);
-            
             try {
-              // บันทึกข้อมูลลงฐานข้อมูล
               final success = await rfidScanBloc.saveAssetToDatabase();
-              
-              // ปิด dialog
-              Navigator.pop(context);
-              
-              // แสดงผลการบันทึก
-              _showResultSnackbar(
-                context, 
-                success ? 'บันทึกข้อมูลสำเร็จ' : 'บันทึกข้อมูลไม่สำเร็จ',
-                success ? Colors.green : Colors.red,
-              );
-              
-              // ถ้าบันทึกสำเร็จให้กลับไปหน้าสแกน
-              if (success) {
-                await Future.delayed(const Duration(seconds: 1));
-                _navigateToScanScreen(context);
+              if (!success) {
+                // แสดง SnackBar กรณีไม่สำเร็จ
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'เกิดข้อผิดพลาด: ${rfidScanBloc.errorMessage}',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             } catch (e) {
-              // ปิด dialog และแสดงข้อผิดพลาด
-              Navigator.pop(context);
-              _showResultSnackbar(context, 'เกิดข้อผิดพลาด: $e', Colors.red);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('เกิดข้อผิดพลาด: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
           },
           text: 'บันทึกข้อมูล',
+          isLoading: rfidScanBloc.status == RfidScanStatus.saving,
         ),
         const SizedBox(height: 16),
         PrimaryButton(
           onPressed: () => _navigateToScanScreen(context),
           text: 'กลับไปหน้าสแกน',
+          isDarkWhenPressed:
+              true, // แก้จาก color: Colors.grey เป็น isDarkWhenPressed: true
         ),
       ],
-    );
-  }
-  
-  // แสดง dialog ตอนกำลังบันทึกข้อมูล
-  void _showSavingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('กำลังบันทึกข้อมูล...'),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  // แสดง snackbar แจ้งผลการบันทึก
-  void _showResultSnackbar(BuildContext context, String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        duration: const Duration(seconds: 2),
-      ),
     );
   }
 
   // แยกการนำทางออกมาเป็นเมธอดแยก
   void _navigateToScanScreen(BuildContext context) {
     rfidScanBloc.resetStatus();
-    Navigator.pushNamed(context, RouteConstants.scanRfid);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      RouteConstants.scanRfid,
+      (route) => false, // ลบทุก route ก่อนหน้า
+    );
   }
 }
 
 // สร้าง widget ที่ใช้ซ้ำได้สำหรับแสดงข้อมูลอุปกรณ์
 class AssetInfoCard extends StatelessWidget {
-  final AssetInfo? assetInfo;
+  final RandomAssetInfo? assetInfo;
 
   const AssetInfoCard({Key? key, this.assetInfo}) : super(key: key);
 
@@ -172,6 +181,11 @@ class AssetInfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              'ข้อมูลอุปกรณ์',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Divider(),
             _buildInfoRow('ID:', assetInfo!.id),
             _buildInfoRow('UID:', assetInfo!.uid),
             _buildInfoRow('หมวดหมู่:', assetInfo!.category),
@@ -198,12 +212,7 @@ class AssetInfoCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(height: 1.3),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(height: 1.3))),
         ],
       ),
     );

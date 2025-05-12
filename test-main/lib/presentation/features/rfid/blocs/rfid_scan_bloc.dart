@@ -3,13 +3,17 @@ import '../../../../domain/usecases/rfid/scan_rfid_usecase.dart';
 import '../../../../domain/usecases/rfid/get_random_uid_usecase.dart';
 import '../../../../domain/usecases/rfid/generate_random_asset_info_usecase.dart';
 import '../../../../domain/entities/random_asset_info.dart';
+import '../../../../data/models/asset_model.dart';
+import '../../../../domain/repositories/asset_repository.dart';
+import '../../../../core/di/dependency_injection.dart';
 
-enum RfidScanStatus { initial, scanning, found, notFound, error }
+enum RfidScanStatus { initial, scanning, found, notFound, error, saving, saved }
 
 class RfidScanBloc extends ChangeNotifier {
   final ScanRfidUseCase _scanRfidUseCase;
   final GetRandomUidUseCase _getRandomUidUseCase;
   final GenerateRandomAssetInfoUseCase _generateRandomAssetInfoUseCase;
+  late final AssetRepository _assetRepository;
 
   RfidScanStatus _status = RfidScanStatus.initial;
   String _errorMessage = '';
@@ -21,7 +25,10 @@ class RfidScanBloc extends ChangeNotifier {
     this._scanRfidUseCase,
     this._getRandomUidUseCase,
     this._generateRandomAssetInfoUseCase,
-  );
+  ) {
+    // ดึงเฉพาะ repository ที่จำเป็น
+    _assetRepository = DependencyInjection.get<AssetRepository>();
+  }
 
   RfidScanStatus get status => _status;
   String get errorMessage => _errorMessage;
@@ -76,6 +83,43 @@ class RfidScanBloc extends ChangeNotifier {
     _randomAssetInfo = await _generateRandomAssetInfoUseCase.execute();
     notifyListeners();
     return _randomAssetInfo!;
+  }
+
+  // เมธอดสำหรับบันทึกข้อมูลลงฐานข้อมูล (ใช้ Repository โดยตรง)
+  Future<bool> saveAssetToDatabase() async {
+    if (_randomAssetInfo == null) {
+      _errorMessage = 'No asset information to save';
+      notifyListeners();
+      return false;
+    }
+
+    _status = RfidScanStatus.saving;
+    notifyListeners();
+
+    try {
+      // สร้าง AssetModel จากข้อมูล RandomAssetInfo
+      final assetModel = AssetModel(
+        id: _randomAssetInfo!.id,
+        uid: _randomAssetInfo!.uid,
+        category: _randomAssetInfo!.category,
+        brand: _randomAssetInfo!.brand,
+        department: _randomAssetInfo!.department,
+        date: _randomAssetInfo!.date,
+        status: _randomAssetInfo!.status,
+      );
+
+      // บันทึกข้อมูลลงฐานข้อมูลโดยตรงผ่าน Repository
+      await _assetRepository.insertAsset(assetModel);
+
+      _status = RfidScanStatus.saved;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _status = RfidScanStatus.error;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 
   void resetStatus() {

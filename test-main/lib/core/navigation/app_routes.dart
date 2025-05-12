@@ -2,7 +2,6 @@
 
 // นำเข้าไลบรารี Flutter สำหรับสร้าง UI
 import 'package:flutter/material.dart';
-import 'package:rfid_project/domain/entities/random_asset_info.dart';
 // นำเข้าหน้าจอค้นหาสินทรัพย์
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
 // นำเข้าหน้าจอดูรายละเอียดสินทรัพย์

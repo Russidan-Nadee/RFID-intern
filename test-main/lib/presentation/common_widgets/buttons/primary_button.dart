@@ -6,6 +6,7 @@ class PrimaryButton extends StatelessWidget {
   final bool isLoading;
   final Color? color;
   final IconData? icon;
+  final bool isDarkWhenPressed; // เพิ่มตัวเลือกสำหรับการเปลี่ยนสีเมื่อกด
 
   const PrimaryButton({
     Key? key,
@@ -14,16 +15,29 @@ class PrimaryButton extends StatelessWidget {
     this.isLoading = false,
     this.color,
     this.icon,
+    this.isDarkWhenPressed = false, // ค่าเริ่มต้นเป็น false
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith<Color?>((
+          Set<WidgetState> states,
+        ) {
+          // ถ้ากำลังกด และต้องการให้มืดตอนกด
+          if (isDarkWhenPressed && states.contains(WidgetState.pressed)) {
+            return Colors.grey; // เปลี่ยนสีเป็นเทาเมื่อกด
+          }
+          return color; // ใช้สีที่กำหนด หรือค่าเริ่มต้น
+        }),
+        padding: WidgetStateProperty.all<EdgeInsets>(
+          const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        ),
+        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
       ),
       child:
           isLoading
