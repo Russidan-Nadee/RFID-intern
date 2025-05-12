@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="gcm_defaultSenderId" translatable="false">508694183197</string>
-    <string name="google_api_key" translatable="false">AIzaSyB8P7klL-NWn8sEyfp8TnT321yoa1ggkr0</string>
-    <string name="google_app_id" translatable="false">1:508694183197:android:970e09ae6b725b94e6b5f4</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyB8P7klL-NWn8sEyfp8TnT321yoa1ggkr0</string>
-    <string name="google_storage_bucket" translatable="false">rfid-prototype-project-fa470.firebasestorage.app</string>
-    <string name="project_id" translatable="false">rfid-prototype-project-fa470</string>
-</resources>

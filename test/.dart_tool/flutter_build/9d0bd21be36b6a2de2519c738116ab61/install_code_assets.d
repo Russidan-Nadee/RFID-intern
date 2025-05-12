@@ -1,1 +1,0 @@
- C:\\Users\\russidan\\Desktop\\intern_flutter\\RFID_prototype_project\\.dart_tool\\flutter_build\\9d0bd21be36b6a2de2519c738116ab61\\native_assets.json: 
