@@ -1,4 +1,4 @@
-// คลาสนี้เก็บรายชื่อทางเข้าหน้าต่างๆ ในแอป
+// lib/core/constants/route_constants.dart
 class RouteConstants {
   // หน้าจอหลักที่ใช้งานบ่อย
   // หน้าแรกที่เห็นเมื่อเปิดแอป
@@ -17,6 +17,8 @@ class RouteConstants {
   static const String found = '/found';
   // หน้าแสดงเมื่อหาไม่พบ
   static const String notFound = '/notFound';
+  // หน้าแสดงรายละเอียดสินทรัพย์เต็ม
+  static const String assetDetail = '/assetDetail';
 
   // หน้าจอเพิ่มเติมอื่นๆ
   // หน้าปรับแต่งแอป

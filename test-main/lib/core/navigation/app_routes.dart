@@ -1,8 +1,8 @@
-// ไฟล์นี้จัดการเส้นทางทั้งหมดในแอป - ทำหน้าที่เชื่อมโยงเส้นทางกับหน้าจอที่ต้องแสดง
-
-// นำเข้าไลบรารี Flutter สำหรับสร้าง UI
+// lib/core/navigation/app_routes.dart
 import 'package:flutter/material.dart';
 import 'package:rfid_project/presentation/features/settings/screens/database_test_screen.dart';
+// นำเข้าหน้าแสดงรายละเอียดสินทรัพย์เต็ม
+import '../../presentation/features/assets/screens/asset_detail_screen.dart';
 // นำเข้าหน้าจอค้นหาสินทรัพย์
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
 // นำเข้าหน้าจอดูรายละเอียดสินทรัพย์
@@ -38,6 +38,8 @@ class AppRoutes {
   static const String settings =
       RouteConstants.settings; // เส้นทางไปหน้าตั้งค่า
   static const String databaseTest = RouteConstants.databaseTest;
+  static const String assetDetail =
+      RouteConstants.assetDetail; // เส้นทางไปหน้ารายละเอียดสินทรัพย์เต็ม
 
   // ฟังก์ชันสร้างเส้นทางตามชื่อที่ได้รับ
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
@@ -73,6 +75,9 @@ class AppRoutes {
       case export:
         // ถ้าเป็นหน้าส่งออก สร้างหน้า ExportScreen ที่ไม่มีอนิเมชั่น
         return _createRouteWithoutAnimation(ExportScreen());
+      case assetDetail:
+        // ถ้าเป็นหน้ารายละเอียดสินทรัพย์เต็ม สร้างหน้า AssetDetailScreen ที่ไม่มีอนิเมชั่น
+        return _createRouteWithoutAnimation(AssetDetailScreen());
       case found:
         // ถ้าเป็นหน้าพบสินทรัพย์ สร้างหน้า FoundScreen พร้อมส่งข้อมูล asset และ uid
         // ตรวจสอบว่ามีการส่ง args มาหรือไม่
