@@ -14,6 +14,7 @@ class AssetBloc extends ChangeNotifier {
   String _errorMessage = '';
   String _searchQuery = '';
   String? _selectedStatus;
+  bool _isTableView = false; // เพิ่มการติดตามโหมดการแสดงผล
 
   AssetBloc(this._getAssetsUseCase);
 
@@ -25,6 +26,7 @@ class AssetBloc extends ChangeNotifier {
   List<Asset> get filteredAssets => _filteredAssets;
   String get errorMessage => _errorMessage;
   String? get selectedStatus => _selectedStatus;
+  bool get isTableView => _isTableView; // getter สำหรับโหมดการแสดงผล
 
   Future<void> loadAssets() async {
     _status = AssetStatus.loading;
@@ -57,6 +59,12 @@ class AssetBloc extends ChangeNotifier {
       _selectedStatus = status;
     }
     _applyFilters();
+    notifyListeners();
+  }
+
+  // เพิ่มเมธอดสำหรับการสลับโหมดการแสดงผล
+  void toggleViewMode() {
+    _isTableView = !_isTableView;
     notifyListeners();
   }
 

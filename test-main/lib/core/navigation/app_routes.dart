@@ -5,8 +5,6 @@ import 'package:rfid_project/presentation/features/settings/screens/database_tes
 import '../../presentation/features/assets/screens/asset_detail_screen.dart';
 // นำเข้าหน้าจอค้นหาสินทรัพย์
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
-// นำเข้าหน้าจอดูรายละเอียดสินทรัพย์
-import '../../presentation/features/assets/screens/view_assets_screen.dart';
 // นำเข้าหน้าจอหลัก
 import '../../presentation/features/dashboard/screens/home_screen.dart';
 // นำเข้าหน้าจอส่งออกข้อมูล
@@ -19,6 +17,8 @@ import '../../presentation/features/rfid/screens/not_found_screen.dart';
 import '../../presentation/features/rfid/screens/scan_rfid_screen.dart';
 // นำเข้าหน้าจอตั้งค่า
 import '../../presentation/features/settings/screens/settings_screen.dart';
+// นำเข้าหน้าจอรายงาน (เพิ่มใหม่)
+import '../../presentation/features/reports/screens/reports_screen.dart';
 // นำเข้าค่าคงที่ของเส้นทาง
 import '../constants/route_constants.dart';
 
@@ -29,8 +29,8 @@ class AppRoutes {
   static const String searchAssets =
       RouteConstants.searchAssets; // เส้นทางไปหน้าค้นหา
   static const String scanRfid = RouteConstants.scanRfid; // เส้นทางไปหน้าสแกน
-  static const String viewAssets =
-      RouteConstants.viewAssets; // เส้นทางไปหน้าดูสินทรัพย์
+  static const String reports =
+      RouteConstants.reports; // เส้นทางไปหน้ารายงาน (เปลี่ยนจาก viewAssets)
   static const String export = RouteConstants.export; // เส้นทางไปหน้าส่งออก
   static const String found = RouteConstants.found; // เส้นทางไปหน้าพบสินทรัพย์
   static const String notFound =
@@ -69,9 +69,9 @@ class AppRoutes {
       case scanRfid:
         // ถ้าเป็นหน้าสแกน สร้างหน้า ScanRfidScreen ที่ไม่มีอนิเมชั่น
         return _createRouteWithoutAnimation(ScanRfidScreen());
-      case viewAssets:
-        // ถ้าเป็นหน้าดูสินทรัพย์ สร้างหน้า ViewAssetsScreen ที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(ViewAssetsScreen());
+      case reports:
+        // ถ้าเป็นหน้ารายงาน สร้างหน้า ReportsScreen ที่ไม่มีอนิเมชั่น
+        return _createRouteWithoutAnimation(ReportsScreen());
       case export:
         // ถ้าเป็นหน้าส่งออก สร้างหน้า ExportScreen ที่ไม่มีอนิเมชั่น
         return _createRouteWithoutAnimation(ExportScreen());
@@ -90,7 +90,6 @@ class AppRoutes {
       case RouteConstants.notFound:
         // ส่งข้อมูลเป็น positional parameter แทน named parameter
         return MaterialPageRoute(builder: (_) => NotFoundScreen());
-
       case settings:
         // ถ้าเป็นหน้าตั้งค่า สร้างหน้า SettingsScreen ที่ไม่มีอนิเมชั่น
         return _createRouteWithoutAnimation(SettingsScreen());

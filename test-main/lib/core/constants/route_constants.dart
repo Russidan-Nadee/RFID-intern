@@ -7,8 +7,8 @@ class RouteConstants {
   static const String searchAssets = '/searchAssets';
   // หน้าสำหรับสแกนป้ายติดของ
   static const String scanRfid = '/scanRfid';
-  // หน้าแสดงรายการของทั้งหมด
-  static const String viewAssets = '/viewAssets';
+  // หน้าแสดงรายงานต่างๆ (เปลี่ยนจาก viewAssets)
+  static const String reports = '/reports';
   // หน้าส่งออกข้อมูล
   static const String export = '/export';
 
@@ -25,8 +25,6 @@ class RouteConstants {
   static const String settings = '/settings';
   // หน้าข้อมูลส่วนตัว
   static const String profile = '/profile';
-  // หน้าแสดงรายงานต่างๆ
-  static const String reports = '/reports';
 
   static const String databaseTest = '/databaseTest';
 }

@@ -5,6 +5,7 @@ import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/asset_bloc.dart';
 import '../widgets/asset_tile.dart';
+import '../widgets/asset_table_view.dart'; // ย้ายโค้ดส่วนตารางไปไฟล์นี้
 
 class SearchAssetsScreen extends StatefulWidget {
   const SearchAssetsScreen({Key? key}) : super(key: key);
@@ -16,6 +17,7 @@ class SearchAssetsScreen extends StatefulWidget {
 class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedIndex = 1; // Index for the Search tab
+  final GlobalKey _statusColumnKey = GlobalKey(); // Key สำหรับคอลัมน์ Status
 
   @override
   void initState() {
@@ -29,7 +31,7 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
     if (index == _selectedIndex) return;
     Navigator.pushReplacementNamed(
       context,
-      ['/', '/searchAssets', '/scanRfid', '/viewAssets', '/export'][index],
+      ['/', '/searchAssets', '/scanRfid', '/reports', '/export'][index],
     );
   }
 
@@ -42,21 +44,38 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
   @override
   Widget build(BuildContext context) {
     return ScreenContainer(
-      appBar: AppBar(title: const Text('Search Assets')),
+      appBar: AppBar(
+        title: const Text('Search Assets'),
+        actions: [
+          // เพิ่มปุ่มสลับมุมมอง
+          Consumer<AssetBloc>(
+            builder:
+                (context, bloc, _) => IconButton(
+                  icon: Icon(
+                    bloc.isTableView ? Icons.view_list : Icons.table_rows,
+                  ),
+                  onPressed: () => bloc.toggleViewMode(),
+                  tooltip: bloc.isTableView ? 'List View' : 'Table View',
+                ),
+          ),
+        ],
+      ),
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
       child: Column(
         children: [
-          SearchField(
-            controller: _searchController,
-            onChanged: (value) {
-              context.read<AssetBloc>().setSearchQuery(value);
-            },
-            hintText: 'Search by ID, category, brand...',
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SearchField(
+              controller: _searchController,
+              onChanged: (value) {
+                context.read<AssetBloc>().setSearchQuery(value);
+              },
+              hintText: 'Search by ID, category, brand...',
+            ),
           ),
-          const SizedBox(height: 16),
           Expanded(
             child: Consumer<AssetBloc>(
               builder: (context, bloc, child) {
@@ -75,12 +94,19 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
                     ),
                   );
                 } else {
-                  return ListView.builder(
-                    itemCount: bloc.filteredAssets.length,
-                    itemBuilder:
-                        (context, index) =>
-                            AssetTile(asset: bloc.filteredAssets[index]),
-                  );
+                  // ใช้เงื่อนไขเลือกระหว่างมุมมองตารางและมุมมองรายการ
+                  return bloc.isTableView
+                      ? AssetTableView(
+                        assets: bloc.filteredAssets,
+                        statusColumnKey: _statusColumnKey,
+                        bloc: bloc,
+                      )
+                      : ListView.builder(
+                        itemCount: bloc.filteredAssets.length,
+                        itemBuilder:
+                            (context, index) =>
+                                AssetTile(asset: bloc.filteredAssets[index]),
+                      );
                 }
               },
             ),

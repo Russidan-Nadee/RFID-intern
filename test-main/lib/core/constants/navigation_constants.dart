@@ -19,8 +19,8 @@ class NavigationConstants {
       label: 'Scan', // ข้อความแสดงหน้าสแกน
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.visibility), // ไอคอนตา
-      label: 'View', // ข้อความแสดงหน้าดูรายการ
+      icon: Icon(Icons.bar_chart), // เปลี่ยนจากตาเป็นกราฟ
+      label: 'Reports', // เปลี่ยนจาก 'View' เป็น 'Reports'
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.file_download), // ไอคอนดาวน์โหลด
@@ -33,7 +33,7 @@ class NavigationConstants {
     RouteConstants.home, // เส้นทางไปหน้าหลัก
     RouteConstants.searchAssets, // เส้นทางไปหน้าค้นหาสินทรัพย์
     RouteConstants.scanRfid, // เส้นทางไปหน้าสแกน RFID
-    RouteConstants.viewAssets, // เส้นทางไปหน้าดูรายการสินทรัพย์
+    RouteConstants.reports, // เปลี่ยนจาก viewAssets เป็น reports
     RouteConstants.export, // เส้นทางไปหน้าส่งออกข้อมูล
   ];
 }
