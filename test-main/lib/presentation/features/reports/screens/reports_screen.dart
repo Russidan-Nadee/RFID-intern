@@ -4,7 +4,6 @@ import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/reports_bloc.dart';
 import '../widgets/report_chart.dart';
-import '../widgets/report_stats_card.dart';
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
 import 'package:rfid_project/core/di/dependency_injection.dart';
 
@@ -75,9 +74,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         // Report Type Selector - ปรับใหม่ให้เป็น ChoiceChip แทน SegmentedButton
                         _buildReportTypeSelectorChips(bloc),
 
-                        // Summary Stats Cards
-                        _buildSummaryStats(bloc),
-
                         // Main Chart
                         ReportChart(bloc: bloc),
 
@@ -136,65 +132,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   if (selected) bloc.setReportType('department');
                 },
                 avatar: const Icon(Icons.business, size: 18),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryStats(ReportsBloc bloc) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Summary Statistics',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ReportStatsCard(
-                  title: 'Total Assets',
-                  value: bloc.assets.length.toString(),
-                  icon: Icons.inventory_2,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ReportStatsCard(
-                  title: 'Categories',
-                  value: bloc.categoryStats.length.toString(),
-                  icon: Icons.category,
-                  color: Colors.orange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ReportStatsCard(
-                  title: 'Statuses',
-                  value: bloc.statusStats.length.toString(),
-                  icon: Icons.check_circle_outline,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ReportStatsCard(
-                  title: 'Departments',
-                  value: bloc.departmentStats.length.toString(),
-                  icon: Icons.business,
-                  color: Colors.purple,
-                ),
               ),
             ],
           ),
