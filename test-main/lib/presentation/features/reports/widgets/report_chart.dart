@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../blocs/reports_bloc.dart';
-import 'package:fl_chart/fl_chart.dart'; // ต้องเพิ่ม dependency: fl_chart ในไฟล์ pubspec.yaml
+import 'package:fl_chart/fl_chart.dart';
 
 class ReportChart extends StatelessWidget {
   final ReportsBloc bloc;
@@ -36,34 +36,48 @@ class ReportChart extends StatelessWidget {
         data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
     return Card(
-      margin: const EdgeInsets.all(16),
       elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            // ชื่อกราฟ
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const SizedBox(height: 16),
-            AspectRatio(
-              aspectRatio: 1.5,
-              child: PieChart(
-                PieChartData(
-                  sections: _createPieSections(sortedData, bloc.assets.length),
-                  centerSpaceRadius: 40,
-                  sectionsSpace: 2,
+
+            // กราฟวงกลม
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: PieChart(
+                  PieChartData(
+                    sections: _createPieSections(
+                      sortedData,
+                      bloc.assets.length,
+                    ),
+                    centerSpaceRadius: 40,
+                    sectionsSpace: 2,
+                    centerSpaceColor: Colors.white,
+                    pieTouchData: PieTouchData(enabled: false),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: _createLegendItems(sortedData),
-            ),
+
+            // คำอธิบายสัญลักษณ์
+            _buildColorIndicators(sortedData),
           ],
         ),
       ),
@@ -76,33 +90,28 @@ class ReportChart extends StatelessWidget {
   ) {
     // สีประจำส่วนต่างๆ ของกราฟ
     final List<Color> colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-      Colors.pink,
-      Colors.amber,
-      Colors.cyan,
-      Colors.indigo,
+      Colors.blue, // สีฟ้า
+      Colors.green, // สีเขียว
+      Colors.orange, // สีส้ม
+      Colors.purple, // สีม่วง
+      Colors.red, // สีแดง
     ];
 
-    return List.generate(data.length > 10 ? 10 : data.length, (i) {
-      final isOthers = i == 9 && data.length > 10;
-      String title;
+    // จำกัดจำนวนส่วนที่แสดงให้ไม่เกิน 5 ส่วน
+    final int maxSections = data.length > 5 ? 5 : data.length;
+
+    return List.generate(maxSections, (i) {
+      final isOthers = i == 4 && data.length > 5;
       double value;
 
       if (isOthers) {
         // รวมข้อมูลที่เหลือเป็น "Others"
         int othersValue = 0;
-        for (int j = 9; j < data.length; j++) {
+        for (int j = 4; j < data.length; j++) {
           othersValue += data[j].value;
         }
-        title = 'Others';
         value = othersValue / totalAssets * 100;
       } else {
-        title = data[i].key;
         value = data[i].value / totalAssets * 100;
       }
 
@@ -115,44 +124,59 @@ class ReportChart extends StatelessWidget {
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: Colors.white,
+          shadows: [Shadow(blurRadius: 2, color: Colors.black)],
         ),
+        titlePositionPercentageOffset: 0.55,
       );
     });
   }
 
-  List<Widget> _createLegendItems(List<MapEntry<String, int>> data) {
+  Widget _buildColorIndicators(List<MapEntry<String, int>> data) {
     // สีประจำส่วนต่างๆ ของกราฟ
     final List<Color> colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-      Colors.pink,
-      Colors.amber,
-      Colors.cyan,
-      Colors.indigo,
+      Colors.blue, // สีฟ้า
+      Colors.green, // สีเขียว
+      Colors.orange, // สีส้ม
+      Colors.purple, // สีม่วง
+      Colors.red, // สีแดง
     ];
 
-    return List.generate(data.length > 10 ? 10 : data.length, (i) {
-      final isOthers = i == 9 && data.length > 10;
-      String title;
+    // จำกัดจำนวนส่วนที่แสดงให้ไม่เกิน 5 ส่วน
+    final int maxSections = data.length > 5 ? 5 : data.length;
 
-      if (isOthers) {
-        title = 'Others';
-      } else {
-        title = data[i].key;
-      }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      alignment: WrapAlignment.center,
+      children: List.generate(maxSections, (i) {
+        final isOthers = i == 4 && data.length > 5;
+        String title = isOthers ? 'Others' : data[i].key;
 
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(width: 16, height: 16, color: colors[i % colors.length]),
-          const SizedBox(width: 4),
-          Text(title),
-        ],
-      );
-    });
+        // ตัดชื่อให้สั้นลงถ้ายาวเกิน
+        if (title.length > 15) {
+          title = '${title.substring(0, 12)}...';
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(right: 4, bottom: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(color: colors[i % colors.length]),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        );
+      }),
+    );
   }
 }

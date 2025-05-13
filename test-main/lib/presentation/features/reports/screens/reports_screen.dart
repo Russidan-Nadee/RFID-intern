@@ -43,71 +43,74 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return ChangeNotifierProvider<ReportsBloc>.value(
       value: _reportsBloc,
       child: ScreenContainer(
-        appBar: AppBar(title: const Text('Asset Reports')),
+        appBar: AppBar(
+          title: const Text('Asset Reports'),
+          automaticallyImplyLeading: false,
+        ),
         bottomNavigationBar: AppBottomNavigation(
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
         ),
-        child: SafeArea(
-          // เพิ่ม SafeArea เพื่อป้องกันเนื้อหาล้นออกนอกพื้นที่ปลอดภัย
-          child: Consumer<ReportsBloc>(
-            builder: (context, bloc, child) {
-              if (bloc.status == ReportsStatus.loading) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (bloc.status == ReportsStatus.error) {
-                return Center(child: Text('Error: ${bloc.errorMessage}'));
-              } else if (bloc.assets.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'No asset data available for reports',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        child: Consumer<ReportsBloc>(
+          builder: (context, bloc, child) {
+            if (bloc.status == ReportsStatus.loading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (bloc.status == ReportsStatus.error) {
+              return Center(child: Text('Error: ${bloc.errorMessage}'));
+            } else if (bloc.assets.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No asset data available for reports',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              );
+            } else {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Report Type Selector - ปรับใหม่ให้เป็น ChoiceChip แทน SegmentedButton
+                      _buildReportTypeSelectorChips(bloc),
+
+                      // Main Chart
+                      SizedBox(
+                        height: 300, // กำหนดความสูงชัดเจน
+                        child: ReportChart(bloc: bloc),
+                      ),
+
+                      // Asset Distribution Table
+                      _buildDistributionTable(bloc),
+
+                      // เพิ่มพื้นที่ว่างด้านล่าง
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                );
-              } else {
-                return Padding(
-                  // เพิ่ม Padding เพื่อให้เนื้อหาอยู่ในขอบที่เหมาะสม
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Report Type Selector - ปรับใหม่ให้เป็น ChoiceChip แทน SegmentedButton
-                        _buildReportTypeSelectorChips(bloc),
-
-                        // Main Chart
-                        ReportChart(bloc: bloc),
-
-                        // Asset Distribution Table
-                        _buildDistributionTable(bloc),
-
-                        // เพิ่มพื้นที่ว่างด้านล่าง
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                );
-              }
-            },
-          ),
+                ),
+              );
+            }
+          },
         ),
       ),
     );
   }
 
-  // เปลี่ยนจาก SegmentedButton เป็น ChoiceChip แทน (เพื่อความเข้ากันได้ที่ดีกว่า)
+  // สร้าง ChoiceChip สำหรับเลือกประเภทรายงาน
   Widget _buildReportTypeSelectorChips(ReportsBloc bloc) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Group by:',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
+            child: Text(
+              'Group by:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8.0,
+          Row(
             children: [
               ChoiceChip(
                 label: const Text('Category'),
@@ -116,7 +119,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   if (selected) bloc.setReportType('category');
                 },
                 avatar: const Icon(Icons.category, size: 18),
+                backgroundColor: Colors.purple.withAlpha(30),
+                selectedColor: Colors.purple,
+                labelStyle: TextStyle(
+                  color:
+                      bloc.selectedReportType == 'category'
+                          ? Colors.white
+                          : Colors.black,
+                ),
               ),
+              const SizedBox(width: 8),
               ChoiceChip(
                 label: const Text('Status'),
                 selected: bloc.selectedReportType == 'status',
@@ -124,7 +136,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   if (selected) bloc.setReportType('status');
                 },
                 avatar: const Icon(Icons.check_circle_outline, size: 18),
+                backgroundColor: Colors.purple.withAlpha(30),
+                selectedColor: Colors.purple,
+                labelStyle: TextStyle(
+                  color:
+                      bloc.selectedReportType == 'status'
+                          ? Colors.white
+                          : Colors.black,
+                ),
               ),
+              const SizedBox(width: 8),
               ChoiceChip(
                 label: const Text('Department'),
                 selected: bloc.selectedReportType == 'department',
@@ -132,6 +153,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   if (selected) bloc.setReportType('department');
                 },
                 avatar: const Icon(Icons.business, size: 18),
+                backgroundColor: Colors.purple.withAlpha(30),
+                selectedColor: Colors.purple,
+                labelStyle: TextStyle(
+                  color:
+                      bloc.selectedReportType == 'department'
+                          ? Colors.white
+                          : Colors.black,
+                ),
               ),
             ],
           ),
@@ -166,76 +195,130 @@ class _ReportsScreenState extends State<ReportsScreen> {
     List<MapEntry<String, int>> sortedEntries =
         data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0, top: 16.0, left: 4.0),
+          child: Text(
             title,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          Card(
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Table(
-                columnWidths: const {
-                  0: FlexColumnWidth(2),
-                  1: FlexColumnWidth(1),
-                  2: FlexColumnWidth(1),
-                },
-                border: TableBorder.all(color: Colors.grey.shade300, width: 1),
-                children: [
-                  TableRow(
-                    decoration: BoxDecoration(color: Colors.grey.shade200),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              // Header row
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Name',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.grey.shade800,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Count',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.grey.shade800,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Percentage',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.grey.shade800,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Data rows
+              ...sortedEntries.map((entry) {
+                final percentage = (entry.value / bloc.assets.length * 100)
+                    .toStringAsFixed(1);
+
+                // ตัดชื่อให้สั้นลงถ้ายาวเกิน
+                String name = entry.key;
+                if (name.length > 20) {
+                  name = '${name.substring(0, 17)}...';
+                }
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      _buildTableHeader('Name'),
-                      _buildTableHeader('Count'),
-                      _buildTableHeader('Percentage'),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          name,
+                          style: const TextStyle(fontSize: 14),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          entry.value.toString(),
+                          style: const TextStyle(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          '$percentage%',
+                          style: const TextStyle(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ],
                   ),
-                  ...sortedEntries.map((entry) {
-                    final percentage = (entry.value / bloc.assets.length * 100)
-                        .toStringAsFixed(1);
-                    return TableRow(
-                      children: [
-                        _buildTableCell(entry.key),
-                        _buildTableCell(entry.value.toString()),
-                        _buildTableCell('$percentage%'),
-                      ],
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTableHeader(String text) {
-    return TableCell(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Center(
-          child: Text(
-            text,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+                );
+              }).toList(),
+            ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTableCell(String text) {
-    return TableCell(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Center(child: Text(text)),
-      ),
+      ],
     );
   }
 }
