@@ -19,7 +19,6 @@ class RfidScanBloc extends ChangeNotifier {
 
   RfidScanBloc(this._scanRfidUseCase) {
     _assetRepository = DependencyInjection.get<AssetRepository>();
-    // ดึง RfidService และแปลงเป็น RealRfidService
     _rfidService = DependencyInjection.get<RfidService>() as RealRfidService;
   }
 
@@ -27,13 +26,11 @@ class RfidScanBloc extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   String? get lastScannedUid => _lastScannedUid;
 
-  // ฟังก์ชันเพื่อตั้งค่า GUID ที่ผู้ใช้ป้อน
   void setManualGuid(String guid) {
     _rfidService.setManualGuid(guid);
   }
 
   Future<void> performScan(BuildContext context) async {
-    // ตรวจสอบว่าได้ป้อน GUID หรือไม่
     if (guidController.text.isEmpty) {
       _status = RfidScanStatus.error;
       _errorMessage = 'กรุณาระบุ GUID ที่ต้องการค้นหา';
@@ -41,19 +38,19 @@ class RfidScanBloc extends ChangeNotifier {
       return;
     }
 
-    // ตั้งค่า GUID ที่ผู้ใช้ป้อน
     setManualGuid(guidController.text);
-
     _status = RfidScanStatus.scanning;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      // สแกน RFID (จะใช้ค่า GUID ที่ตั้งไว้)
       final result = await _scanRfidUseCase.execute(context);
       _lastScannedUid = result['uid'] as String;
 
-      if (result['found'] == true) {
+      // ตรวจสอบว่าเจอข้อมูลหรือไม่ โดยใช้ _assetRepository
+      final asset = await _assetRepository.findAssetByUid(_lastScannedUid!);
+
+      if (asset != null) {
         _status = RfidScanStatus.found;
         notifyListeners();
 

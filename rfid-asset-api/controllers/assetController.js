@@ -8,9 +8,9 @@ exports.getAssets = async (req, res) => {
       if (req.query.columns) {
          const columnArray = req.query.columns.split(',').map(col => col.trim());
          const validColumns = [
-            'id', 'guid', 'tagid', 'epc', 'itemId', 'itemName',
-            'category', 'status', 'tagType', 'frequency', 'department',
-            'zone', 'lastScanTime', 'value', 'securityClearance'
+            'id', 'guid', 'tagId', 'epc', 'itemId', 'itemName',
+            'category', 'status', 'tagType', 'frequency', 'currentLocation',
+            'zone', 'lastScanTime', 'lastScannedBy', 'batteryLevel'
          ];
 
          const filteredColumns = columnArray.filter(col => validColumns.includes(col));
@@ -19,7 +19,7 @@ exports.getAssets = async (req, res) => {
          }
       }
 
-      const query = `SELECT ${columns} FROM assets LIMIT 1000`;
+      const query = `SELECT ${columns} FROM rfid_assets_details.assets LIMIT 1000`;
       const [rows] = await db.query(query);
 
       res.status(200).json({
@@ -46,9 +46,9 @@ exports.getAssetByUid = async (req, res) => {
       if (req.query.columns) {
          const columnArray = req.query.columns.split(',').map(col => col.trim());
          const validColumns = [
-            'id', 'guid', 'tagid', 'epc', 'itemId', 'itemName',
-            'category', 'status', 'tagType', 'frequency', 'department',
-            'zone', 'lastScanTime', 'value', 'securityClearance'
+            'id', 'guid', 'tagId', 'epc', 'itemId', 'itemName',
+            'category', 'status', 'tagType', 'frequency', 'currentLocation',
+            'zone', 'lastScanTime', 'lastScannedBy', 'batteryLevel'
          ];
 
          const filteredColumns = columnArray.filter(col => validColumns.includes(col));
@@ -57,7 +57,7 @@ exports.getAssetByUid = async (req, res) => {
          }
       }
 
-      const query = `SELECT ${columns} FROM assets WHERE guid = ? LIMIT 1`;
+      const query = `SELECT ${columns} FROM rfid_assets_details.assets WHERE guid = ? LIMIT 1`;
       const [rows] = await db.query(query, [uid]);
 
       if (rows.length === 0) {
@@ -84,7 +84,7 @@ exports.getAssetByUid = async (req, res) => {
 // ค้นหาสินทรัพย์ตามเงื่อนไข
 exports.searchAssets = async (req, res) => {
    try {
-      const { category, status, department, zone } = req.query;
+      const { category, status, currentLocation, zone } = req.query;
 
       let whereClause = '';
       const params = [];
@@ -101,10 +101,10 @@ exports.searchAssets = async (req, res) => {
          params.push(status);
       }
 
-      if (department) {
+      if (currentLocation) {
          whereClause += whereClause ? ' AND ' : '';
-         whereClause += 'department = ?';
-         params.push(department);
+         whereClause += 'currentLocation = ?';
+         params.push(currentLocation);
       }
 
       if (zone) {
@@ -114,8 +114,8 @@ exports.searchAssets = async (req, res) => {
       }
 
       const query = whereClause
-         ? `SELECT * FROM assets WHERE ${whereClause} LIMIT 1000`
-         : 'SELECT * FROM assets LIMIT 1000';
+         ? `SELECT * FROM rfid_assets_details.assets WHERE ${whereClause} LIMIT 1000`
+         : 'SELECT * FROM rfid_assets_details.assets LIMIT 1000';
 
       const [rows] = await db.query(query, params);
 
@@ -139,7 +139,7 @@ exports.getAssetById = async (req, res) => {
    try {
       const { id } = req.params;
 
-      const query = `SELECT * FROM assets WHERE id = ? LIMIT 1`;
+      const query = `SELECT * FROM rfid_assets_details.assets WHERE id = ? LIMIT 1`;
       const [rows] = await db.query(query, [id]);
 
       if (rows.length === 0) {

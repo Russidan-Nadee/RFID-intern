@@ -34,6 +34,6 @@ app.get('/', (req, res) => {
 app.use('/api/assets', assetRoutes);
 
 // เริ่มเซิร์ฟเวอร์
-app.listen(3000, '0.0.0.0', () => {
-   console.log('Server running...');
+app.listen(PORT, '0.0.0.0', () => {
+   console.log(`Server running on port ${PORT}`);
 });

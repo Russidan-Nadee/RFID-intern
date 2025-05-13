@@ -9,7 +9,7 @@ class ApiService {
   // ดึงข้อมูลสินทรัพย์ทั้งหมด
   Future<List<Map<String, dynamic>>> getAssets() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/assets'));
+      final response = await http.get(Uri.parse('$baseUrl/assets'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -27,7 +27,7 @@ class ApiService {
   // ดึงข้อมูลสินทรัพย์ตาม UID
   Future<Map<String, dynamic>?> getAssetByUid(String uid) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/assets/$uid'));
+      final response = await http.get(Uri.parse('$baseUrl/assets/$uid'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -46,7 +46,7 @@ class ApiService {
   Future<bool> updateAssetStatus(String uid, String status) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/api/assets/status/$uid'),
+        Uri.parse('$baseUrl/assets/status/$uid'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'status': status}),
       );
@@ -61,7 +61,7 @@ class ApiService {
   Future<void> insertAsset(Map<String, dynamic> assetData) async {
     try {
       await http.post(
-        Uri.parse('$baseUrl/api/assets'),
+        Uri.parse('$baseUrl/assets'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(assetData),
       );
@@ -73,7 +73,7 @@ class ApiService {
   // ลบสินทรัพย์
   Future<void> deleteAsset(String uid) async {
     try {
-      await http.delete(Uri.parse('$baseUrl/api/assets/$uid'));
+      await http.delete(Uri.parse('$baseUrl/assets/$uid'));
     } catch (e) {
       throw DatabaseException('Error deleting asset: $e');
     }
@@ -82,7 +82,7 @@ class ApiService {
   // ลบสินทรัพย์ทั้งหมด
   Future<void> deleteAllAssets() async {
     try {
-      await http.delete(Uri.parse('$baseUrl/api/assets/all'));
+      await http.delete(Uri.parse('$baseUrl/assets/all'));
     } catch (e) {
       throw DatabaseException('Error deleting all assets: $e');
     }
@@ -91,7 +91,7 @@ class ApiService {
   // ดึงข้อมูลหมวดหมู่ทั้งหมด
   Future<List<String>> getCategories() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/categories'));
+      final response = await http.get(Uri.parse('$baseUrl/categories'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -113,7 +113,7 @@ class ApiService {
   Future<void> addCategory(String name) async {
     try {
       await http.post(
-        Uri.parse('$baseUrl/api/categories'),
+        Uri.parse('$baseUrl/categories'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name}),
       );
@@ -126,7 +126,7 @@ class ApiService {
   Future<void> updateCategory(String oldName, String newName) async {
     try {
       await http.put(
-        Uri.parse('$baseUrl/api/categories/$oldName'),
+        Uri.parse('$baseUrl/categories/$oldName'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': newName}),
       );
@@ -138,7 +138,7 @@ class ApiService {
   // ลบหมวดหมู่
   Future<void> deleteCategory(String name) async {
     try {
-      await http.delete(Uri.parse('$baseUrl/api/categories/$name'));
+      await http.delete(Uri.parse('$baseUrl/categories/$name'));
     } catch (e) {
       throw DatabaseException('Error deleting category: $e');
     }
@@ -147,7 +147,7 @@ class ApiService {
   // ดึงข้อมูลแผนกทั้งหมด
   Future<List<String>> getDepartments() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/departments'));
+      final response = await http.get(Uri.parse('$baseUrl/departments'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -160,6 +160,8 @@ class ApiService {
       }
     } catch (e) {
       throw DatabaseException('Network error: $e');
+      // ในกรณีที่ API ยังไม่รองรับ ให้ return ค่าเริ่มต้น
+      // return ['IT', 'HR', 'Admin', 'Finance'];
     }
   }
 
@@ -167,7 +169,7 @@ class ApiService {
   Future<void> addDepartment(String name) async {
     try {
       await http.post(
-        Uri.parse('$baseUrl/api/departments'),
+        Uri.parse('$baseUrl/departments'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name}),
       );
@@ -180,7 +182,7 @@ class ApiService {
   Future<void> updateDepartment(String oldName, String newName) async {
     try {
       await http.put(
-        Uri.parse('$baseUrl/api/departments/$oldName'),
+        Uri.parse('$baseUrl/departments/$oldName'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': newName}),
       );
@@ -192,7 +194,7 @@ class ApiService {
   // ลบแผนก
   Future<void> deleteDepartment(String name) async {
     try {
-      await http.delete(Uri.parse('$baseUrl/api/departments/$name'));
+      await http.delete(Uri.parse('$baseUrl/departments/$name'));
     } catch (e) {
       throw DatabaseException('Error deleting department: $e');
     }
@@ -201,7 +203,7 @@ class ApiService {
   // สแกน RFID จากอุปกรณ์
   Future<String?> scanRfidTag() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/rfid/scan'));
+      final response = await http.get(Uri.parse('$baseUrl/rfid/scan'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);

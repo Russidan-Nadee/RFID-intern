@@ -5,8 +5,7 @@ class AppConfig {
   static const bool isDevelopment = true;
 
   // การตั้งค่าเกี่ยวกับการเชื่อมต่อกับ API
-  static const String apiBaseUrl =
-      'http://10.0.2.2:3000/api'; // URL ของ API backend
+  static const String apiBaseUrl = 'http://10.0.2.2:3000/api';
 
   // สวิตช์เปิด-ปิดความสามารถต่างๆ
   static const bool enableAnalytics = false;
