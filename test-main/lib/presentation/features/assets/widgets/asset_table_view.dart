@@ -16,184 +16,202 @@ class AssetTableView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // สร้างรายการสถานะที่มีในข้อมูล
-    final statuses = bloc.getAllStatuses();
-
-    return ListView(
-      children: [
-        Table(
-          columnWidths: const {
-            0: FlexColumnWidth(1.2), // ID
-            1: FlexColumnWidth(1), // Category
-            2: FlexColumnWidth(1.2), // Status
-          },
-          border: TableBorder.all(color: Colors.grey.shade300, width: 1),
-          children: [
-            TableRow(
-              decoration: BoxDecoration(color: Colors.grey.shade200),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: ListView(
+        children: [
+          // หัวตาราง
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withAlpha(12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).primaryColor.withAlpha(12),
+              ),
+            ),
+            child: Table(
+              columnWidths: const {
+                0: FlexColumnWidth(1.2), // ID
+                1: FlexColumnWidth(1), // Category
+                2: FlexColumnWidth(1.2), // Status
+              },
               children: [
-                const TableCell(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Center(child: Text('ID')),
+                TableRow(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                const TableCell(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Center(child: Text('Category')),
-                  ),
-                ),
-                TableCell(
-                  child: InkWell(
-                    key: statusColumnKey,
-                    onTap: () {
-                      // แสดง dropdown สำหรับกรองตามสถานะ
-                      _showStatusFilterMenu(context, statuses, bloc);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Status'),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_drop_down,
-                            size: 16,
-                            color:
-                                bloc.selectedStatus != null
-                                    ? Theme.of(context).primaryColor
-                                    : Colors.grey,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  children: [
+                    _buildHeaderCell(context, 'ID'),
+                    _buildHeaderCell(context, 'Category'),
+                    _buildHeaderCell(context, 'Status'),
+                  ],
                 ),
               ],
             ),
-            ...List.generate(
-              assets.length,
-              (index) => _buildTableRow(assets[index], index),
-            ),
-          ],
+          ),
+
+          // แถวข้อมูล
+          ...List.generate(
+            assets.length,
+            (index) => _buildTableRow(context, assets[index], index),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // สร้างเซลล์ส่วนหัว
+  Widget _buildHeaderCell(BuildContext context, String text) {
+    return TableCell(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
+          ),
+          textAlign: TextAlign.center,
         ),
-      ],
+      ),
     );
   }
 
   // สร้างแถวสำหรับตาราง
-  TableRow _buildTableRow(Asset asset, int index) {
-    final isChecked = asset.status == 'Checked In';
-    final bgColor = index.isEven ? Colors.grey.shade100 : Colors.white;
+  Widget _buildTableRow(BuildContext context, Asset asset, int index) {
+    final bool isChecked = asset.status == 'Checked In';
 
-    return TableRow(
-      decoration: BoxDecoration(color: bgColor),
-      children: [
-        TableCell(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(child: Text(asset.id)),
+    // กำหนดสีพื้นหลังตามสถานะ
+    Color bgColor = Colors.white;
+    Color borderColor = Colors.grey.shade200;
+
+    if (asset.status == 'Checked In') {
+      bgColor = Colors.green.shade50;
+      borderColor = Colors.green.shade200;
+    } else if (asset.status == 'Available') {
+      bgColor = Colors.blue.shade50;
+      borderColor = Colors.blue.shade200;
+    } else if (asset.status == 'In Use') {
+      bgColor = Colors.orange.shade50;
+      borderColor = Colors.orange.shade200;
+    } else if (asset.status == 'Maintenance') {
+      bgColor = Colors.red.shade50;
+      borderColor = Colors.red.shade200;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(25),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushReplacementNamed(
+              context,
+              '/assetDetail',
+              arguments: {'guid': asset.uid},
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Table(
+            columnWidths: const {
+              0: FlexColumnWidth(1.2), // ID
+              1: FlexColumnWidth(1), // Category
+              2: FlexColumnWidth(1.2), // Status
+            },
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+            children: [
+              TableRow(
+                children: [
+                  _buildDataCell(asset.id),
+                  _buildDataCell(asset.category),
+                  _buildStatusCell(context, asset.status, isChecked),
+                ],
+              ),
+            ],
           ),
         ),
-        TableCell(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(child: Text(asset.category)),
-          ),
-        ),
-        TableCell(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(asset.status),
-                const SizedBox(width: 4),
-                if (isChecked)
-                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  // แสดง dropdown สำหรับกรองตามสถานะ
-  void _showStatusFilterMenu(
-    BuildContext context,
-    List<String> statuses,
-    AssetBloc bloc,
-  ) {
-    // ดึงตำแหน่งของคอลัมน์ Status
-    final RenderBox? statusColumn =
-        statusColumnKey.currentContext?.findRenderObject() as RenderBox?;
-    final RenderBox? overlay =
-        Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
+  // สร้างเซลล์ข้อมูลทั่วไป
+  Widget _buildDataCell(String text) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
 
-    if (statusColumn != null && overlay != null) {
-      // คำนวณตำแหน่งให้แสดง dropdown ใต้คอลัมน์ Status
-      final statusColumnPos = statusColumn.localToGlobal(
-        Offset.zero,
-        ancestor: overlay,
-      );
-      final statusColumnSize = statusColumn.size;
+  // สร้างเซลล์สถานะ
+  Widget _buildStatusCell(BuildContext context, String status, bool isChecked) {
+    Color statusColor = Colors.grey;
 
-      final RelativeRect position = RelativeRect.fromLTRB(
-        statusColumnPos.dx,
-        statusColumnPos.dy + statusColumnSize.height,
-        statusColumnPos.dx + statusColumnSize.width,
-        statusColumnPos.dy + statusColumnSize.height,
-      );
+    if (status == 'Checked In') {
+      statusColor = Colors.green;
+    } else if (status == 'Available') {
+      statusColor = Colors.blue;
+    } else if (status == 'In Use') {
+      statusColor = Colors.orange;
+    } else if (status == 'Maintenance') {
+      statusColor = Colors.red;
+    }
 
-      showMenu(
-        context: context,
-        position: position,
-        items: [
-          PopupMenuItem(
-            value: null,
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            decoration: BoxDecoration(
+              color: statusColor.withAlpha(50),
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.clear,
-                  color:
-                      bloc.selectedStatus == null
-                          ? Theme.of(context).primaryColor
-                          : Colors.grey,
-                  size: 20,
+                Text(
+                  status,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                const Text('All Statuses'),
+                if (isChecked)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Icon(
+                      Icons.check_circle,
+                      color: statusColor,
+                      size: 16,
+                    ),
+                  ),
               ],
             ),
           ),
-          ...statuses.map(
-            (status) => PopupMenuItem(
-              value: status,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check,
-                    color:
-                        bloc.selectedStatus == status
-                            ? Theme.of(context).primaryColor
-                            : Colors.transparent,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(status),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ).then((value) {
-        if (value != null || value == null) {
-          bloc.setStatusFilter(value);
-        }
-      });
-    }
+        ),
+      ),
+    );
   }
 }
