@@ -15,26 +15,14 @@ class ScanRfidUseCase {
       throw Exception('RFID device is not available');
     }
 
-    // สแกน RFID
+    // สแกน RFID (ในกรณีนี้จะใช้ค่า GUID ที่ผู้ใช้ป้อน)
     final uid = await _rfidService.scanRfid();
 
-    // ถ้าสแกนไม่สำเร็จ
-    if (uid == null) {
-      throw Exception('Failed to scan RFID tag');
+    // ถ้าไม่มีค่า GUID
+    if (uid == null || uid.isEmpty) {
+      throw Exception('กรุณาระบุ GUID ที่ต้องการค้นหา');
     }
 
-    // ค้นหาสินทรัพย์จาก UID
-    final asset = await _assetRepository.findAssetByUid(uid);
-
-    // ส่งผลลัพธ์กลับไป
-    return {'uid': uid, 'asset': asset, 'found': asset != null};
-  }
-
-  // สแกน RFID โดยมีการกำหนด UID ล่วงหน้า (สำหรับการทดสอบ)
-  Future<Map<String, dynamic>> executeWithUid(
-    String uid,
-    BuildContext context,
-  ) async {
     // ค้นหาสินทรัพย์จาก UID
     final asset = await _assetRepository.findAssetByUid(uid);
 

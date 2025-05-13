@@ -1,29 +1,17 @@
-// ไฟล์นี้เก็บการตั้งค่าของแอพทั้งหมด
-
 class AppConfig {
   // การตั้งค่าพื้นฐานของแอพ
-  static const String appName = 'RFID Asset Management'; // ชื่อแอพ
-  static const String appVersion = '1.0.0'; // เลขเวอร์ชันของแอพ
-  static const bool isDevelopment =
-      true; // บอกว่ากำลังพัฒนาอยู่ ยังไม่ใช่เวอร์ชันจริง
+  static const String appName = 'RFID Asset Management';
+  static const String appVersion = '1.0.0';
+  static const bool isDevelopment = true;
 
-  // การตั้งค่าเกี่ยวกับการเชื่อมต่อกับเซิร์ฟเวอร์
+  // การตั้งค่าเกี่ยวกับการเชื่อมต่อกับ API
   static const String apiBaseUrl =
-      'https://api.example.com'; // ที่อยู่หลักของ API ที่จะติดต่อด้วย
-
-  // เพิ่มการตั้งค่า MySQL ตรงนี้
-  static const String mysqlHost = '10.0.2.2';
-  static const int mysqlPort = 3306;
-  static const String mysqlUser = 'root';
-  static const String mysqlPassword =
-      'first27122546'; // ใส่รหัสผ่านถ้ามีstatic const String mysqlHo
-  static const String mysqlDatabase = 'rfid_assets_details';
+      'http://10.0.2.2:3000/api'; // URL ของ API backend
 
   // สวิตช์เปิด-ปิดความสามารถต่างๆ
-  static const bool enableAnalytics = false; // ปิดการเก็บสถิติการใช้งาน
-  static const bool enableNotifications = true; // เปิดการแจ้งเตือน
+  static const bool enableAnalytics = false;
+  static const bool enableNotifications = true;
 
-  // เพิ่มสวิตช์เพื่อเลือกใช้ MySQL แทนการใช้ SQLite
-  static const bool useRemoteDatabase =
-      true; // ตั้งค่าเป็น true เมื่อต้องการใช้ MySQL
+  // ใช้ API แทนการเชื่อมต่อฐานข้อมูลโดยตรง
+  static const bool useRemoteDatabase = true;
 }

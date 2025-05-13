@@ -1,44 +1,50 @@
 import '../../domain/entities/asset.dart';
 import '../../domain/repositories/asset_repository.dart';
-import '../../core/config/app_config.dart';
-import '../datasources/local/database_helper.dart';
-import '../datasources/remote/mysql_data_source.dart';
+import '../datasources/remote/api_service.dart';
 import '../models/asset_model.dart';
 
 class AssetRepositoryImpl implements AssetRepository {
-  final DatabaseHelper _databaseHelper;
-  final MySqlDataSource? _mysqlDataSource;
+  final ApiService _apiService;
 
-  AssetRepositoryImpl(this._databaseHelper, [this._mysqlDataSource]);
+  AssetRepositoryImpl(this._apiService);
 
   // จัดการสินทรัพย์
   @override
   Future<List<Asset>> getAssets() async {
-    if (AppConfig.useRemoteDatabase && _mysqlDataSource != null) {
-      // ใช้งาน MySQL
-      final assetsMaps = await _mysqlDataSource.getAssets();
-      return assetsMaps.map((map) => AssetModel.fromMap(map)).toList();
-    } else {
-      // ใช้งาน SQLite
-      final assetsMaps = await _databaseHelper.getAssets();
-      return assetsMaps.map((map) => AssetModel.fromMap(map)).toList();
-    }
+    final assetsData = await _apiService.getAssets();
+    return assetsData.map((map) {
+      // แปลงข้อมูลจาก API เป็นรูปแบบที่ frontend ใช้
+      final assetMap = {
+        'id': map['itemId'] ?? '',
+        'uid': map['guid'] ?? '',
+        'category': map['category'] ?? '',
+        'status': map['status'] ?? '',
+        'brand': map['itemName'] ?? '',
+        'department': map['department'] ?? '',
+        'date': map['lastScanTime'] ?? '',
+      };
+      return AssetModel.fromMap(assetMap);
+    }).toList();
   }
 
   // เปลี่ยนชื่อจาก getAssetByUid เป็น findAssetByUid ให้ตรงกับที่เรียกใช้ในโค้ด
   @override
   Future<Asset?> findAssetByUid(String uid) async {
-    if (AppConfig.useRemoteDatabase && _mysqlDataSource != null) {
-      // ใช้งาน MySQL
-      final assetMap = await _mysqlDataSource.getAssetByUid(uid);
-      if (assetMap == null) return null;
-      return AssetModel.fromMap(assetMap);
-    } else {
-      // ใช้งาน SQLite
-      final assetMap = await _databaseHelper.getAssetByUid(uid);
-      if (assetMap == null) return null;
-      return AssetModel.fromMap(assetMap);
-    }
+    final assetData = await _apiService.getAssetByUid(uid);
+    if (assetData == null) return null;
+
+    // แปลงข้อมูลจาก API เป็นรูปแบบที่ frontend ใช้
+    final assetMap = {
+      'id': assetData['itemId'] ?? '',
+      'uid': assetData['guid'] ?? '',
+      'category': assetData['category'] ?? '',
+      'status': assetData['status'] ?? '',
+      'brand': assetData['itemName'] ?? '',
+      'department': assetData['department'] ?? '',
+      'date': assetData['lastScanTime'] ?? '',
+    };
+
+    return AssetModel.fromMap(assetMap);
   }
 
   // เพิ่มเมธอด getAssetByUid เพื่อให้ตรงกับอินเตอร์เฟส
@@ -49,13 +55,7 @@ class AssetRepositoryImpl implements AssetRepository {
 
   @override
   Future<bool> updateAssetStatus(String uid, String status) async {
-    if (AppConfig.useRemoteDatabase && _mysqlDataSource != null) {
-      // ใช้งาน MySQL
-      return await _mysqlDataSource.updateStatus(uid, status);
-    } else {
-      // ใช้งาน SQLite
-      return await _databaseHelper.updateStatus(uid, status);
-    }
+    return await _apiService.updateAssetStatus(uid, status);
   }
 
   // เพิ่มเมธอด updateAsset เพื่อให้ตรงกับอินเตอร์เฟส
@@ -64,148 +64,100 @@ class AssetRepositoryImpl implements AssetRepository {
     // แปลง Asset เป็น AssetModel
     final assetModel = asset as AssetModel;
 
-    if (AppConfig.useRemoteDatabase && _mysqlDataSource != null) {
-      // ใช้งาน MySQL - อาจต้องเพิ่มเมธอดนี้ใน MySqlDataSource
-      // มีวิธีง่ายๆ คือใช้ updateStatus แทนเพื่อไม่ต้องสร้างเมธอดใหม่
-      bool success = await _mysqlDataSource.updateStatus(
-        assetModel.uid,
-        assetModel.status,
-      );
+    // ส่งข้อมูลไปยัง API
+    final success = await _apiService.updateAssetStatus(
+      assetModel.uid,
+      assetModel.status,
+    );
 
-      if (success) {
-        return asset;
-      }
-      return null;
-    } else {
-      // ใช้งาน SQLite
-      bool success = await _databaseHelper.updateAsset(
-        assetModel.uid,
-        assetModel.id,
-        assetModel.category,
-        assetModel.brand,
-        assetModel.department,
-        assetModel.status,
-        assetModel.date,
-      );
-
-      if (success) {
-        return asset;
-      }
-      return null;
+    if (success) {
+      return asset;
     }
+    return null;
   }
 
   @override
   Future<void> insertAsset(Asset asset) async {
     final assetModel = asset as AssetModel;
 
-    if (AppConfig.useRemoteDatabase && _mysqlDataSource != null) {
-      // ใช้งาน MySQL
-      await _mysqlDataSource.insertNewAsset(
-        assetModel.id,
-        assetModel.category,
-        assetModel.brand,
-        assetModel.department,
-        assetModel.uid,
-        assetModel.date,
-      );
-    } else {
-      // ใช้งาน SQLite
-      await _databaseHelper.insertNewAsset(
-        assetModel.id,
-        assetModel.category,
-        assetModel.brand,
-        assetModel.department,
-        assetModel.uid,
-        assetModel.date,
-      );
-    }
+    // แปลงข้อมูลให้ตรงกับโครงสร้าง API
+    final assetData = {
+      'itemId': assetModel.id,
+      'guid': assetModel.uid,
+      'category': assetModel.category,
+      'itemName': assetModel.brand,
+      'department': assetModel.department,
+      'status': assetModel.status,
+      'lastScanTime': assetModel.date,
+    };
+
+    // ส่งข้อมูลไปยัง API
+    await _apiService.insertAsset(assetData);
   }
 
   @override
   Future<void> deleteAsset(String uid) async {
-    if (AppConfig.useRemoteDatabase && _mysqlDataSource != null) {
-      // ใช้งาน MySQL
-      await _mysqlDataSource.deleteAssetByUid(uid);
-    } else {
-      // ใช้งาน SQLite
-      await _databaseHelper.deleteAssetByUid(uid);
-    }
+    await _apiService.deleteAsset(uid);
   }
 
   @override
   Future<void> deleteAllAssets() async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    // เพื่อความปลอดภัย อาจไม่ควรอนุญาตให้ลบข้อมูลทั้งหมดในฐานข้อมูลระยะไกล
-    if (!AppConfig.useRemoteDatabase) {
-      await _databaseHelper.deleteAllAssets();
-    }
+    await _apiService.deleteAllAssets();
   }
 
   // จัดการหมวดหมู่
   @override
   Future<List<String>> getCategories() async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    return await _databaseHelper.getCategories();
+    return await _apiService.getCategories();
   }
 
   @override
   Future<void> addCategory(String name) async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    await _databaseHelper.addCategory(name);
+    await _apiService.addCategory(name);
   }
 
   @override
   Future<void> updateCategory(String oldName, String newName) async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    await _databaseHelper.updateCategory(oldName, newName);
+    await _apiService.updateCategory(oldName, newName);
   }
 
   @override
   Future<void> deleteCategory(String name) async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    await _databaseHelper.deleteCategory(name);
+    await _apiService.deleteCategory(name);
   }
 
   // จัดการแผนก
   @override
   Future<List<String>> getDepartments() async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    return await _databaseHelper.getDepartments();
+    return await _apiService.getDepartments();
   }
 
   @override
   Future<void> addDepartment(String name) async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    await _databaseHelper.addDepartment(name);
+    await _apiService.addDepartment(name);
   }
 
   @override
   Future<void> updateDepartment(String oldName, String newName) async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    await _databaseHelper.updateDepartment(oldName, newName);
+    await _apiService.updateDepartment(oldName, newName);
   }
 
   @override
   Future<void> deleteDepartment(String name) async {
-    // หมายเหตุ: ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-    await _databaseHelper.deleteDepartment(name);
+    await _apiService.deleteDepartment(name);
   }
 
-  // เพิ่มเมธอด getRandomUid เพื่อสุ่ม UID จากฐานข้อมูล
   @override
   Future<String?> getRandomUid() async {
     try {
-      if (AppConfig.useRemoteDatabase && _mysqlDataSource != null) {
-        // ต้องเพิ่มเมธอดนี้ใน MySqlDataSource ถ้าต้องการใช้กับ MySQL
-        // ตัวอย่างเช่น: return await _mysqlDataSource!.getRandomUid();
-        return null;
-      } else {
-        // ใช้งาน SQLite
-        return await _databaseHelper.getRandomUid();
-      }
+      final assets = await getAssets();
+      if (assets.isEmpty) return null;
+
+      // สุ่มเลือก UID จากรายการสินทรัพย์
+      final random =
+          assets[(DateTime.now().millisecondsSinceEpoch % assets.length)];
+      return random.uid;
     } catch (e) {
-      print('Error in getRandomUid: ${e.toString()}');
       return null;
     }
   }

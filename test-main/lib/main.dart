@@ -3,8 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
-import 'package:rfid_project/domain/usecases/rfid/generate_random_asset_info_usecase.dart';
-import 'package:rfid_project/domain/usecases/rfid/get_random_uid_usecase.dart';
 import 'core/navigation/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'core/di/dependency_injection.dart';
@@ -56,15 +54,11 @@ class MyApp extends StatelessWidget {
           create:
               (_) => RfidScanBloc(
                 DependencyInjection.getIt.get<ScanRfidUseCase>(),
-                DependencyInjection.getIt.get<GetRandomUidUseCase>(),
-                DependencyInjection.getIt.get<GenerateRandomAssetInfoUseCase>(),
               ),
         ),
-
         ChangeNotifierProvider(
           create: (_) => SettingsBloc(DependencyInjection.getIt.get()),
         ),
-        // เพิ่ม Provider อื่นๆ ตามที่จำเป็น
       ],
       child: MaterialApp(
         title: 'RFID Asset Management',

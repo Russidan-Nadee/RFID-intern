@@ -23,61 +23,42 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  // แสดง dialog ตัวเลือกสำหรับการสแกน
-  void _showScanOptionsDialog(BuildContext context) {
-    final bloc = Provider.of<RfidScanBloc>(context, listen: false);
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Scan Options'),
-          content: const Text('Do you want to find an asset?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-
-                // ตั้งค่าว่าต้องการเจอสินทรัพย์
-                bloc.setFindPreference(true);
-
-                // ดำเนินการสแกน
-                bloc.performScan(context);
-              },
-              child: const Text('Yes, Find Asset'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-
-                // ตั้งค่าว่าไม่ต้องการเจอสินทรัพย์
-                bloc.setFindPreference(false);
-
-                // ดำเนินการสแกน
-                bloc.performScan(context);
-              },
-              child: const Text('No, Do Not Find Asset'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ScreenContainer(
-      appBar: AppBar(title: const Text('Scan RFID')),
+      appBar: AppBar(title: const Text('ค้นหา RFID')),
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
       child: Consumer<RfidScanBloc>(
         builder: (context, bloc, child) {
-          return Center(
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // ข้อความคำแนะนำ
+                const Text(
+                  'กรอก GUID หรือ รหัสที่ต้องการค้นหา',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+
+                // ช่องกรอก GUID
+                TextField(
+                  controller: bloc.guidController,
+                  decoration: InputDecoration(
+                    labelText: 'GUID / รหัสสินทรัพย์',
+                    hintText: 'เช่น JR-7281, WP-0609, TR-5442 เป็นต้น',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.qr_code),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
                 // Error message if any
                 if (bloc.errorMessage.isNotEmpty)
                   Padding(
@@ -85,26 +66,27 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
                     child: Text(
                       bloc.errorMessage,
                       style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
                     ),
                   ),
 
-                // ปุ่มสแกน RFID เพียงปุ่มเดียว
+                // ปุ่มค้นหา
                 PrimaryButton(
-                  text: 'Scan',
-                  icon: Icons.qr_code_scanner,
+                  text: 'ค้นหา',
+                  icon: Icons.search,
                   isLoading: bloc.status == RfidScanStatus.scanning,
                   onPressed: () {
-                    _showScanOptionsDialog(context);
+                    bloc.performScan(context);
                   },
                 ),
 
                 const SizedBox(height: 32),
 
-                // Additional instructions
+                // คำแนะนำเพิ่มเติม
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'Scan an RFID tag to locate assets in the system.',
+                    'คุณสามารถป้อน GUID หรือรหัสที่ปรากฏบนสินทรัพย์เพื่อตรวจสอบข้อมูล',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey, fontSize: 14),
                   ),

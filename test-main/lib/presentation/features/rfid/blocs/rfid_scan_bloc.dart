@@ -1,74 +1,75 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/usecases/rfid/scan_rfid_usecase.dart';
-import '../../../../domain/usecases/rfid/get_random_uid_usecase.dart';
-import '../../../../domain/usecases/rfid/generate_random_asset_info_usecase.dart';
-import '../../../../domain/entities/random_asset_info.dart';
-import '../../../../data/models/asset_model.dart';
 import '../../../../domain/repositories/asset_repository.dart';
 import '../../../../core/di/dependency_injection.dart';
+import '../../../../data/datasources/remote/real_rfid_service.dart';
+import '../../../../core/services/rfid_service.dart';
 
-enum RfidScanStatus { initial, scanning, found, notFound, error, saving, saved }
+enum RfidScanStatus { initial, scanning, found, notFound, error }
 
 class RfidScanBloc extends ChangeNotifier {
   final ScanRfidUseCase _scanRfidUseCase;
-  final GetRandomUidUseCase _getRandomUidUseCase;
-  final GenerateRandomAssetInfoUseCase _generateRandomAssetInfoUseCase;
   late final AssetRepository _assetRepository;
+  late final RealRfidService _rfidService;
+  final TextEditingController guidController = TextEditingController();
 
   RfidScanStatus _status = RfidScanStatus.initial;
   String _errorMessage = '';
-  bool _wantToFind = true;
   String? _lastScannedUid;
-  RandomAssetInfo? _randomAssetInfo;
 
-  RfidScanBloc(
-    this._scanRfidUseCase,
-    this._getRandomUidUseCase,
-    this._generateRandomAssetInfoUseCase,
-  ) {
-    // ดึงเฉพาะ repository ที่จำเป็น
+  RfidScanBloc(this._scanRfidUseCase) {
     _assetRepository = DependencyInjection.get<AssetRepository>();
+    // ดึง RfidService และแปลงเป็น RealRfidService
+    _rfidService = DependencyInjection.get<RfidService>() as RealRfidService;
   }
 
   RfidScanStatus get status => _status;
   String get errorMessage => _errorMessage;
   String? get lastScannedUid => _lastScannedUid;
-  RandomAssetInfo? get randomAssetInfo => _randomAssetInfo;
 
-  // กำหนดว่าต้องการเจอสินทรัพย์หรือไม่
-  void setFindPreference(bool wantToFind) {
-    _wantToFind = wantToFind;
+  // ฟังก์ชันเพื่อตั้งค่า GUID ที่ผู้ใช้ป้อน
+  void setManualGuid(String guid) {
+    _rfidService.setManualGuid(guid);
   }
 
   Future<void> performScan(BuildContext context) async {
+    // ตรวจสอบว่าได้ป้อน GUID หรือไม่
+    if (guidController.text.isEmpty) {
+      _status = RfidScanStatus.error;
+      _errorMessage = 'กรุณาระบุ GUID ที่ต้องการค้นหา';
+      notifyListeners();
+      return;
+    }
+
+    // ตั้งค่า GUID ที่ผู้ใช้ป้อน
+    setManualGuid(guidController.text);
+
     _status = RfidScanStatus.scanning;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      if (_wantToFind) {
-        // กรณีกดปุ่ม Yes -> สุ่ม UID แล้วไปหน้า Found
-        final uid = await _getRandomUidUseCase.execute();
-        _lastScannedUid = uid;
+      // สแกน RFID (จะใช้ค่า GUID ที่ตั้งไว้)
+      final result = await _scanRfidUseCase.execute(context);
+      _lastScannedUid = result['uid'] as String;
 
+      if (result['found'] == true) {
         _status = RfidScanStatus.found;
         notifyListeners();
 
         Navigator.pushNamed(
           context,
           '/found',
-          arguments: {'uid': uid ?? 'Unknown'},
+          arguments: {'uid': _lastScannedUid},
         );
       } else {
-        // กรณีกดปุ่ม No -> สุ่มข้อมูลแล้วไปหน้า Not Found
-        _randomAssetInfo = await _generateRandomAssetInfoUseCase.execute();
         _status = RfidScanStatus.notFound;
         notifyListeners();
 
         Navigator.pushNamed(
           context,
           '/notFound',
-          arguments: {'randomAssetInfo': _randomAssetInfo},
+          arguments: {'uid': _lastScannedUid},
         );
       }
     } catch (e) {
@@ -78,55 +79,16 @@ class RfidScanBloc extends ChangeNotifier {
     }
   }
 
-  // เพิ่มเมธอดเพื่อสุ่มข้อมูลใหม่
-  Future<RandomAssetInfo> generateNewRandomAsset() async {
-    _randomAssetInfo = await _generateRandomAssetInfoUseCase.execute();
-    notifyListeners();
-    return _randomAssetInfo!;
-  }
-
-  // เมธอดสำหรับบันทึกข้อมูลลงฐานข้อมูล (ใช้ Repository โดยตรง)
-  Future<bool> saveAssetToDatabase() async {
-    if (_randomAssetInfo == null) {
-      _errorMessage = 'No asset information to save';
-      notifyListeners();
-      return false;
-    }
-
-    _status = RfidScanStatus.saving;
-    notifyListeners();
-
-    try {
-      // สร้าง AssetModel จากข้อมูล RandomAssetInfo
-      final assetModel = AssetModel(
-        id: _randomAssetInfo!.id,
-        uid: _randomAssetInfo!.uid,
-        category: _randomAssetInfo!.category,
-        brand: _randomAssetInfo!.brand,
-        department: _randomAssetInfo!.department,
-        date: _randomAssetInfo!.date,
-        status: _randomAssetInfo!.status,
-      );
-
-      // บันทึกข้อมูลลงฐานข้อมูลโดยตรงผ่าน Repository
-      await _assetRepository.insertAsset(assetModel);
-
-      _status = RfidScanStatus.saved;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _status = RfidScanStatus.error;
-      _errorMessage = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-
   void resetStatus() {
     _status = RfidScanStatus.initial;
     _errorMessage = '';
     _lastScannedUid = null;
-    _randomAssetInfo = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    guidController.dispose();
+    super.dispose();
   }
 }
