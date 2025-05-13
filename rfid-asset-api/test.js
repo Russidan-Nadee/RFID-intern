@@ -1,7 +1,7 @@
 const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
-   host: '10.0.2.2',  // ลองใช้ IP นี้
+   host: '127.0.0.1',  // ลองใช้ IP นี้
    user: 'root',
    password: 'first27122546',
    database: 'rfid_assets_details'

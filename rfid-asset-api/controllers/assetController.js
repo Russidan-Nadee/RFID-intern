@@ -44,7 +44,17 @@ exports.getAssetByUid = async (req, res) => {
 
       let columns = '*';
       if (req.query.columns) {
-         // โค้ดเหมือนด้านบน
+         const columnArray = req.query.columns.split(',').map(col => col.trim());
+         const validColumns = [
+            'id', 'guid', 'tagid', 'epc', 'itemId', 'itemName',
+            'category', 'status', 'tagType', 'frequency', 'department',
+            'zone', 'lastScanTime', 'value', 'securityClearance'
+         ];
+
+         const filteredColumns = columnArray.filter(col => validColumns.includes(col));
+         if (filteredColumns.length > 0) {
+            columns = filteredColumns.join(', ');
+         }
       }
 
       const query = `SELECT ${columns} FROM assets WHERE guid = ? LIMIT 1`;
@@ -113,6 +123,35 @@ exports.searchAssets = async (req, res) => {
          success: true,
          count: rows.length,
          data: rows
+      });
+   } catch (error) {
+      console.error('เกิดข้อผิดพลาด:', error);
+      res.status(500).json({
+         success: false,
+         message: 'เกิดข้อผิดพลาด',
+         error: error.message
+      });
+   }
+};
+
+// ดึงข้อมูลตาม ID
+exports.getAssetById = async (req, res) => {
+   try {
+      const { id } = req.params;
+
+      const query = `SELECT * FROM assets WHERE id = ? LIMIT 1`;
+      const [rows] = await db.query(query, [id]);
+
+      if (rows.length === 0) {
+         return res.status(404).json({
+            success: false,
+            message: `ไม่พบสินทรัพย์ที่มี ID: ${id}`
+         });
+      }
+
+      res.status(200).json({
+         success: true,
+         data: rows[0]
       });
    } catch (error) {
       console.error('เกิดข้อผิดพลาด:', error);
