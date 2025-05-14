@@ -24,7 +24,7 @@ class ApiService {
     }
   }
 
-  // ดึงข้อมูลสินทรัพย์ตาม UID
+  // ดึงข้อมูลสินทรัพย์ตาม tagId (เปลี่ยนจาก uid)
   Future<Map<String, dynamic>?> getAssetByUid(String uid) async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/assets/$uid'));

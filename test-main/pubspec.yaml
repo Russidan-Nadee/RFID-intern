@@ -44,6 +44,7 @@ dependencies:
   flutter_local_notifications: ^19.1.0
   http: ^1.4.0
   mysql1: ^0.20.0
+  permission_handler: ^12.0.0+1
   
   # Chart dependencies for data visualization
   fl_chart: ^0.63.0

@@ -72,30 +72,49 @@ class AssetTile extends StatelessWidget {
             // เพิ่มปุ่มดูรายละเอียดเพิ่มเติม
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
-              child: TextButton.icon(
-                onPressed: () {
-                  // ใช้โค้ดเดียวกับ onTap ของ InkWell
-                  if (asset.uid.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('ไม่พบ GUID ของสินทรัพย์นี้'),
-                      ),
-                    );
-                    return;
-                  }
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      // ใช้โค้ดเดียวกับ onTap ของ InkWell
+                      if (asset.uid.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('ไม่พบ GUID ของสินทรัพย์นี้'),
+                          ),
+                        );
+                        return;
+                      }
 
-                  // นำทางไปยังหน้ารายละเอียด โดยส่ง uid แต่ใช้ชื่อคีย์เป็น 'guid'
-                  Navigator.pushNamed(
-                    context,
-                    '/assetDetail',
-                    arguments: {'guid': asset.uid},
-                  );
-                },
-                icon: const Icon(Icons.visibility),
-                label: const Text('ดูรายละเอียดเพิ่มเติม'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).primaryColor,
-                ),
+                      // นำทางไปยังหน้ารายละเอียด โดยส่ง uid แต่ใช้ชื่อคีย์เป็น 'guid'
+                      Navigator.pushNamed(
+                        context,
+                        '/assetDetail',
+                        arguments: {'guid': asset.uid},
+                      );
+                    },
+                    icon: const Icon(Icons.visibility),
+                    label: const Text('ดูรายละเอียดเพิ่มเติม'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).primaryColor,
+                    ),
+                  ),
+
+                  // เพิ่มปุ่ม Export
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/export',
+                        arguments: {'assetId': asset.id, 'assetUid': asset.uid},
+                      );
+                    },
+                    icon: const Icon(Icons.file_download),
+                    label: const Text('Export CSV'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.green),
+                  ),
+                ],
               ),
             ),
           ],

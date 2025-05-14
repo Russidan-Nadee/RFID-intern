@@ -13,6 +13,9 @@ abstract class AssetRepository {
   // เพิ่มเมธอดสำหรับการสุ่ม UID
   Future<String?> getRandomUid();
 
+  // เพิ่มเมธอดใหม่เพื่อดึงข้อมูลดิบทั้งหมด
+  Future<Map<String, dynamic>?> getRawAssetData(String uid);
+
   // จัดการหมวดหมู่
   Future<List<String>> getCategories();
   Future<void> addCategory(String name);

@@ -126,20 +126,56 @@ class AssetTableView extends StatelessWidget {
             );
           },
           borderRadius: BorderRadius.circular(12),
-          child: Table(
-            columnWidths: const {
-              0: FlexColumnWidth(1.2), // ID
-              1: FlexColumnWidth(1), // Category
-              2: FlexColumnWidth(1.2), // Status
-            },
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          child: Column(
             children: [
-              TableRow(
+              Table(
+                columnWidths: const {
+                  0: FlexColumnWidth(1.2), // ID
+                  1: FlexColumnWidth(1), // Category
+                  2: FlexColumnWidth(1.2), // Status
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                 children: [
-                  _buildDataCell(asset.id),
-                  _buildDataCell(asset.category),
-                  _buildStatusCell(context, asset.status, isChecked),
+                  TableRow(
+                    children: [
+                      _buildDataCell(asset.id),
+                      _buildDataCell(asset.category),
+                      _buildStatusCell(context, asset.status, isChecked),
+                    ],
+                  ),
                 ],
+              ),
+
+              // เพิ่มปุ่ม Export
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/export',
+                          arguments: {
+                            'assetId': asset.id,
+                            'assetUid': asset.uid,
+                          },
+                        );
+                      },
+                      icon: const Icon(Icons.file_download, size: 16),
+                      label: const Text(
+                        'Export CSV',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.green,
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size(60, 24),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

@@ -10,7 +10,7 @@ class AssetModel implements Asset {
   @override
   final String brand;
   @override
-  final String uid;
+  final String uid; // คงเดิมเพื่อไม่ให้กระทบกับอินเทอร์เฟส Asset แต่เข้าใจว่านี่คือ tagId
   @override
   final String department;
   @override
@@ -21,7 +21,7 @@ class AssetModel implements Asset {
     required this.category,
     required this.status,
     required this.brand,
-    required this.uid,
+    required this.uid, // ในแอปยังคงเรียก uid แต่เข้าใจว่านี่คือ tagId
     required this.department,
     required this.date,
   });
@@ -34,10 +34,9 @@ class AssetModel implements Asset {
       status: map['status']?.toString() ?? '',
       brand: map['brand']?.toString() ?? map['itemName']?.toString() ?? '',
       uid:
-          map['uid']?.toString() ??
-          map['guid']?.toString() ??
+          map['tagId']?.toString() ??
           map['epc']?.toString() ??
-          '',
+          '', // เปลี่ยนจาก guid เป็น tagId
       department:
           map['department']?.toString() ??
           map['currentLocation']?.toString() ??
@@ -54,8 +53,7 @@ class AssetModel implements Asset {
       'status': status,
       'brand': brand,
       'itemName': brand,
-      'uid': uid,
-      'guid': uid,
+      'tagId': uid, // เปลี่ยนจาก uid/guid เป็น tagId
       'epc': uid,
       'department': department,
       'currentLocation': department,

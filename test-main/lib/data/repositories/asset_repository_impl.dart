@@ -16,7 +16,7 @@ class AssetRepositoryImpl implements AssetRepository {
       // แปลงข้อมูลจาก API เป็นรูปแบบที่ frontend ใช้
       final assetMap = {
         'id': map['id'] ?? map['itemId'] ?? '',
-        'uid': map['guid'] ?? map['epc'] ?? '',
+        'tagId': map['tagId'] ?? map['epc'] ?? '',
         'category': map['category'] ?? '',
         'status': map['status'] ?? '',
         'brand': map['itemName'] ?? '',
@@ -27,6 +27,17 @@ class AssetRepositoryImpl implements AssetRepository {
     }).toList();
   }
 
+  // เพิ่มเมธอดใหม่เพื่อดึงข้อมูลดิบทั้งหมด
+  @override
+  Future<Map<String, dynamic>?> getRawAssetData(String uid) async {
+    try {
+      return await _apiService.getAssetByUid(uid);
+    } catch (e) {
+      print('Error getting raw asset data: $e');
+      rethrow; // ส่งต่อข้อผิดพลาดเพื่อให้ชั้นบนจัดการ
+    }
+  }
+
   @override
   Future<Asset?> findAssetByUid(String uid) async {
     final assetData = await _apiService.getAssetByUid(uid);
@@ -34,8 +45,8 @@ class AssetRepositoryImpl implements AssetRepository {
 
     // แปลงข้อมูลจาก API เป็นรูปแบบที่ frontend ใช้
     final assetMap = {
-      'id': assetData['itemId'] ?? '',
-      'uid': assetData['guid'] ?? assetData['epc'] ?? '',
+      'id': assetData['id'] ?? assetData['itemId'] ?? '',
+      'tagId': assetData['tagId'] ?? assetData['epc'] ?? '',
       'category': assetData['category'] ?? '',
       'status': assetData['status'] ?? '',
       'brand': assetData['itemName'] ?? '',
@@ -75,7 +86,7 @@ class AssetRepositoryImpl implements AssetRepository {
     final assetModel = asset as AssetModel;
     final assetData = {
       'itemId': assetModel.id,
-      'guid': assetModel.uid,
+      'tagId': assetModel.uid,
       'category': assetModel.category,
       'itemName': assetModel.brand,
       'currentLocation': assetModel.department,
@@ -118,7 +129,6 @@ class AssetRepositoryImpl implements AssetRepository {
 
   @override
   Future<List<String>> getDepartments() async {
-    // ถ้ายังไม่มี method นี้ใน ApiService ให้สร้างเพิ่ม
     try {
       return await _apiService.getDepartments();
     } catch (e) {
@@ -128,7 +138,6 @@ class AssetRepositoryImpl implements AssetRepository {
 
   @override
   Future<void> addDepartment(String name) async {
-    // ถ้ายังไม่มี method นี้ใน ApiService ให้สร้างเพิ่ม
     try {
       await _apiService.addDepartment(name);
     } catch (e) {
@@ -138,7 +147,6 @@ class AssetRepositoryImpl implements AssetRepository {
 
   @override
   Future<void> updateDepartment(String oldName, String newName) async {
-    // ถ้ายังไม่มี method นี้ใน ApiService ให้สร้างเพิ่ม
     try {
       await _apiService.updateDepartment(oldName, newName);
     } catch (e) {
@@ -148,7 +156,6 @@ class AssetRepositoryImpl implements AssetRepository {
 
   @override
   Future<void> deleteDepartment(String name) async {
-    // ถ้ายังไม่มี method นี้ใน ApiService ให้สร้างเพิ่ม
     try {
       await _apiService.deleteDepartment(name);
     } catch (e) {
