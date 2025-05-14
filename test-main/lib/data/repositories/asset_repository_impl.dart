@@ -1,7 +1,10 @@
+import 'dart:io';
 import '../../domain/entities/asset.dart';
 import '../../domain/repositories/asset_repository.dart';
 import '../datasources/remote/api_service.dart';
 import '../models/asset_model.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:csv/csv.dart';
 
 class AssetRepositoryImpl implements AssetRepository {
   final ApiService _apiService;
@@ -172,6 +175,49 @@ class AssetRepositoryImpl implements AssetRepository {
           assets[(DateTime.now().millisecondsSinceEpoch % assets.length)];
       return random.uid;
     } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<String?> exportAssetsToCSV(
+    List<Asset> assets,
+    List<String> columns,
+  ) async {
+    try {
+      // สร้างข้อมูล CSV (ส่วนนี้เหมือนเดิม)
+      List<List<dynamic>> rows = [];
+      rows.add(columns);
+      for (var asset in assets) {
+        List<dynamic> row = [];
+        if (columns.contains('ID')) row.add(asset.id);
+        if (columns.contains('Category')) row.add(asset.category);
+        if (columns.contains('Brand')) row.add(asset.brand);
+        if (columns.contains('Status')) row.add(asset.status);
+        if (columns.contains('Department')) row.add(asset.department);
+        if (columns.contains('Date')) row.add(asset.date);
+        if (columns.contains('UID')) row.add(asset.uid);
+
+        rows.add(row);
+      }
+
+      String csv = const ListToCsvConverter().convert(rows);
+
+      // สร้างชื่อไฟล์
+      final now = DateTime.now();
+      final timestamp =
+          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour}${now.minute}';
+      final filename = 'assets_export_$timestamp.csv';
+
+      // บันทึกไฟล์ในพื้นที่แคชของแอพ
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/$filename';
+      final file = File(path);
+      await file.writeAsString(csv);
+
+      return path;
+    } catch (e) {
+      print('Error exporting to CSV: $e');
       return null;
     }
   }

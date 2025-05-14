@@ -1,7 +1,6 @@
 import '../entities/asset.dart';
 
 abstract class AssetRepository {
-  // จัดการสินทรัพย์
   Future<List<Asset>> getAssets();
   Future<Asset?> getAssetByUid(String uid);
   Future<bool> updateAssetStatus(String uid, String status);
@@ -10,19 +9,13 @@ abstract class AssetRepository {
   Future<void> deleteAllAssets();
   Future<Asset?> findAssetByUid(String uid);
   Future<Asset?> updateAsset(Asset asset);
-  // เพิ่มเมธอดสำหรับการสุ่ม UID
   Future<String?> getRandomUid();
-
-  // เพิ่มเมธอดใหม่เพื่อดึงข้อมูลดิบทั้งหมด
+  Future<String?> exportAssetsToCSV(List<Asset> assets, List<String> columns);
   Future<Map<String, dynamic>?> getRawAssetData(String uid);
-
-  // จัดการหมวดหมู่
   Future<List<String>> getCategories();
   Future<void> addCategory(String name);
   Future<void> updateCategory(String oldName, String newName);
   Future<void> deleteCategory(String name);
-
-  // จัดการแผนก
   Future<List<String>> getDepartments();
   Future<void> addDepartment(String name);
   Future<void> updateDepartment(String oldName, String newName);
