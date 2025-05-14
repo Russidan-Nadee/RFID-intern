@@ -44,7 +44,7 @@ class AssetTableView extends StatelessWidget {
                   children: [
                     _buildHeaderCell(context, 'ID'),
                     _buildHeaderCell(context, 'Category'),
-                    _buildHeaderCell(context, 'Status'),
+                    _buildStatusHeaderCell(context),
                   ],
                 ),
               ],
@@ -78,10 +78,144 @@ class AssetTableView extends StatelessWidget {
     );
   }
 
+  // สร้างเซลล์หัวสำหรับคอลัมน์ Status ที่สามารถกดเพื่อเปิด Dropdown
+  Widget _buildStatusHeaderCell(BuildContext context) {
+    return TableCell(
+      key: statusColumnKey,
+      child: Builder(
+        builder: (context) {
+          return InkWell(
+            onTap: () {
+              _showStatusFilterDropdown(context);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 16.0,
+                horizontal: 8.0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Status',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.filter_list,
+                    size: 16,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // แสดง Dropdown สำหรับเลือกสถานะที่ต้องการกรอง
+  void _showStatusFilterDropdown(BuildContext context) {
+    final RenderBox? renderBox =
+        statusColumnKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final position = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    // ดึงสถานะทั้งหมดที่มีในข้อมูล
+    final List<String> allStatuses = bloc.getAllStatuses();
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + size.height,
+        position.dx + size.width,
+        position.dy + size.height + 200,
+      ),
+      items: [
+        // เพิ่มตัวเลือก "All" เพื่อยกเลิกการกรอง
+        PopupMenuItem<String>(
+          value: 'ALL',
+          child: Row(
+            children: [
+              Icon(
+                Icons.clear_all,
+                color:
+                    bloc.selectedStatus == null
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Show All',
+                style: TextStyle(
+                  fontWeight:
+                      bloc.selectedStatus == null
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                  color:
+                      bloc.selectedStatus == null
+                          ? Theme.of(context).primaryColor
+                          : Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // เพิ่มรายการสถานะทั้งหมด
+        ...allStatuses.map((status) {
+          final isSelected = bloc.selectedStatus == status;
+          return PopupMenuItem<String>(
+            value: status,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color:
+                      isSelected
+                          ? Theme.of(context).primaryColor
+                          : Colors.transparent,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    color:
+                        isSelected
+                            ? Theme.of(context).primaryColor
+                            : Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    ).then((value) {
+      if (value != null) {
+        if (value == 'ALL') {
+          // ยกเลิกการกรอง
+          bloc.setStatusFilter(null);
+        } else {
+          // กรองตามสถานะที่เลือก
+          bloc.setStatusFilter(value);
+        }
+      }
+    });
+  }
+
   // สร้างแถวสำหรับตาราง
   Widget _buildTableRow(BuildContext context, Asset asset, int index) {
-    final bool isChecked = asset.status == 'Checked In';
-
     // กำหนดสีพื้นหลังตามสถานะ
     Color bgColor = Colors.white;
     Color borderColor = Colors.grey.shade200;
@@ -119,63 +253,31 @@ class AssetTableView extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            Navigator.pushReplacementNamed(
+            Navigator.pushNamed(
               context,
               '/assetDetail',
               arguments: {'guid': asset.uid},
             );
           },
           borderRadius: BorderRadius.circular(12),
-          child: Column(
+          child: Table(
+            columnWidths: const {
+              0: FlexColumnWidth(1.2), // ID
+              1: FlexColumnWidth(1), // Category
+              2: FlexColumnWidth(1.2), // Status
+            },
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
-              Table(
-                columnWidths: const {
-                  0: FlexColumnWidth(1.2), // ID
-                  1: FlexColumnWidth(1), // Category
-                  2: FlexColumnWidth(1.2), // Status
-                },
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              TableRow(
                 children: [
-                  TableRow(
-                    children: [
-                      _buildDataCell(asset.id),
-                      _buildDataCell(asset.category),
-                      _buildStatusCell(context, asset.status, isChecked),
-                    ],
+                  _buildDataCell(asset.id),
+                  _buildDataCell(asset.category),
+                  _buildStatusCell(
+                    context,
+                    asset.status,
+                    asset.status == 'Checked In',
                   ),
                 ],
-              ),
-
-              // เพิ่มปุ่ม Export
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/export',
-                          arguments: {
-                            'assetId': asset.id,
-                            'assetUid': asset.uid,
-                          },
-                        );
-                      },
-                      icon: const Icon(Icons.file_download, size: 16),
-                      label: const Text(
-                        'Export CSV',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.green,
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: Size(60, 24),
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),

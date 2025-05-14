@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/asset_bloc.dart';
+import '../widgets/asset_table_view.dart';
 
 class SearchAssetsScreen extends StatefulWidget {
   const SearchAssetsScreen({Key? key}) : super(key: key);
@@ -14,6 +15,7 @@ class SearchAssetsScreen extends StatefulWidget {
 class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedIndex = 1; // Index for the Search tab
+  final GlobalKey _statusColumnKey = GlobalKey();
 
   @override
   void initState() {
@@ -57,11 +59,19 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: primaryColor),
-            onPressed: () {
-              context.read<AssetBloc>().loadAssets();
-            },
+          // เพิ่มปุ่มสลับโหมดการแสดง
+          Consumer<AssetBloc>(
+            builder:
+                (context, bloc, _) => IconButton(
+                  icon: Icon(
+                    bloc.isTableView ? Icons.view_list : Icons.grid_view,
+                    color: primaryColor,
+                  ),
+                  onPressed: () {
+                    bloc.toggleViewMode();
+                  },
+                  tooltip: bloc.isTableView ? 'Card View' : 'Table View',
+                ),
           ),
         ],
       ),
@@ -110,6 +120,8 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
                       ),
                     ),
                   ),
+
+                  // ลบส่วนแถบกรองตามสถานะออก (ตามความต้องการ)
 
                   // แสดงจำนวนที่พบ
                   Consumer<AssetBloc>(
@@ -171,7 +183,14 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
                 } else if (bloc.filteredAssets.isEmpty) {
                   return _buildEmptyResults();
                 } else {
-                  return _buildResultsList(bloc, cardColor, primaryColor);
+                  // เลือกแสดงผลตามโหมดที่เลือก
+                  return bloc.isTableView
+                      ? AssetTableView(
+                        assets: bloc.filteredAssets,
+                        statusColumnKey: _statusColumnKey,
+                        bloc: bloc,
+                      )
+                      : _buildResultsList(bloc, cardColor, primaryColor);
                 }
               },
             ),
@@ -237,7 +256,7 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
     );
   }
 
-  // แสดงรายการผลลัพธ์
+  // แสดงรายการผลลัพธ์แบบการ์ด
   Widget _buildResultsList(
     AssetBloc bloc,
     Color cardColor,
@@ -284,6 +303,10 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
                   ),
                 ),
               ],
+            ),
+            subtitle: Text(
+              'Status: ${asset.status}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
             trailing: Icon(Icons.chevron_right, color: Colors.grey),
             onTap: () {
