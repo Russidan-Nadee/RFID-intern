@@ -45,8 +45,10 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create:
-              (_) =>
-                  ExportBloc(DependencyInjection.getIt.get<GetAssetsUseCase>()),
+              (_) => ExportBloc(
+                DependencyInjection.getIt.get<GetAssetsUseCase>(),
+                DependencyInjection.getIt.get<AssetRepository>(),
+              ),
         ),
         ChangeNotifierProvider(
           create:

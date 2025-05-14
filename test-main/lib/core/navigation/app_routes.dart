@@ -1,5 +1,6 @@
 // lib/core/navigation/app_routes.dart
 import 'package:flutter/material.dart';
+import 'package:rfid_project/lib/presentation/features/export/screens/export_confirmation_screen.dart';
 import 'package:rfid_project/presentation/features/settings/screens/database_test_screen.dart';
 // นำเข้าหน้าแสดงรายละเอียดสินทรัพย์เต็ม
 import '../../presentation/features/assets/screens/asset_detail_screen.dart';
@@ -40,8 +41,7 @@ class AppRoutes {
   static const String databaseTest = RouteConstants.databaseTest;
   static const String assetDetail =
       RouteConstants.assetDetail; // เส้นทางไปหน้ารายละเอียดสินทรัพย์เต็ม
-
-  // ฟังก์ชันสร้างเส้นทางตามชื่อที่ได้รับ
+  static const String exportConfirmation = '/exportConfirmation';
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
     // รับ arguments ที่ส่งมาพร้อมกับการนำทาง
     final args = routeSettings.arguments;
@@ -93,6 +93,8 @@ class AppRoutes {
       case settings:
         // ถ้าเป็นหน้าตั้งค่า สร้างหน้า SettingsScreen ที่ไม่มีอนิเมชั่น
         return _createRouteWithoutAnimation(SettingsScreen());
+      case exportConfirmation:
+        return _createRouteWithoutAnimation(ExportConfirmationScreen());
       default:
         // ถ้าไม่ตรงกับเส้นทางใดเลย ให้ไปที่หน้าหลักที่ไม่มีอนิเมชั่น
         return _createRouteWithoutAnimation(HomeScreen());

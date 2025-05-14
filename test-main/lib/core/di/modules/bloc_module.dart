@@ -30,7 +30,9 @@ class BlocModule {
     _getIt.registerFactory(() => DashboardBloc(_getIt<GetAssetsUseCase>()));
 
     // ลงทะเบียน ExportBloc
-    _getIt.registerFactory(() => ExportBloc(_getIt<GetAssetsUseCase>()));
+    _getIt.registerFactory(
+      () => ExportBloc(_getIt<GetAssetsUseCase>(), _getIt<AssetRepository>()),
+    );
 
     // ลงทะเบียน RfidScanBloc - ใช้เฉพาะ ScanRfidUseCase
     _getIt.registerFactory(() => RfidScanBloc(_getIt<ScanRfidUseCase>()));

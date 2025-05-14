@@ -1,3 +1,4 @@
+// lib/presentation/features/assets/screens/search_assets_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
@@ -59,7 +60,28 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
           ),
         ),
         actions: [
-          // เพิ่มปุ่มสลับโหมดการแสดง
+          // เพิ่มปุ่ม Export
+          Consumer<AssetBloc>(
+            builder:
+                (context, bloc, _) => IconButton(
+                  icon: Icon(Icons.file_download, color: primaryColor),
+                  onPressed: () {
+                    // ส่งข้อมูลการค้นหาไปยังหน้า Export
+                    Navigator.pushNamed(
+                      context,
+                      '/export',
+                      arguments: {
+                        'searchParams': {
+                          'status': bloc.selectedStatus,
+                          'query': _searchController.text,
+                        },
+                      },
+                    );
+                  },
+                  tooltip: 'Export Search Results',
+                ),
+          ),
+          // ปุ่มสลับโหมดการแสดง
           Consumer<AssetBloc>(
             builder:
                 (context, bloc, _) => IconButton(
@@ -120,8 +142,6 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
                       ),
                     ),
                   ),
-
-                  // ลบส่วนแถบกรองตามสถานะออก (ตามความต้องการ)
 
                   // แสดงจำนวนที่พบ
                   Consumer<AssetBloc>(
@@ -308,7 +328,24 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
               'Status: ${asset.status}',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
-            trailing: Icon(Icons.chevron_right, color: Colors.grey),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Add Export button for each asset
+                IconButton(
+                  icon: Icon(Icons.file_download, color: Colors.green),
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/export',
+                      arguments: {'assetId': asset.id, 'assetUid': asset.uid},
+                    );
+                  },
+                  tooltip: 'Export this asset',
+                ),
+                Icon(Icons.chevron_right, color: Colors.grey),
+              ],
+            ),
             onTap: () {
               Navigator.pushNamed(
                 context,

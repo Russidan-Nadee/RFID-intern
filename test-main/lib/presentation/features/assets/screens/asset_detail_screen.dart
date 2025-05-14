@@ -200,6 +200,12 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     final status = assetData['status']?.toString() ?? 'Unknown';
     Color statusColor = _getStatusColor(status);
 
+    // ดึงข้อมูลสำหรับ Export
+    final tagId =
+        assetData['tagId']?.toString() ?? assetData['epc']?.toString() ?? '';
+    final itemId =
+        assetData['id']?.toString() ?? assetData['itemId']?.toString() ?? '';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -228,6 +234,22 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                   text: 'กลับ',
                   icon: Icons.arrow_back,
                   onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: PrimaryButton(
+                  text: 'Export',
+                  icon: Icons.file_download,
+                  color: Colors.green,
+                  onPressed: () {
+                    // ส่งทั้ง tagId และ itemId ไปยังหน้า Export
+                    Navigator.pushNamed(
+                      context,
+                      '/export',
+                      arguments: {'assetId': itemId, 'assetUid': tagId},
+                    );
+                  },
                 ),
               ),
             ],
