@@ -76,7 +76,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
                       // Main Chart
                       SizedBox(
-                        height: 300, // กำหนดความสูงชัดเจน
+                        height: 350, // เพิ่มความสูงจาก 300 เป็น 350
                         child: ReportChart(bloc: bloc),
                       ),
 
@@ -84,7 +84,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       _buildDistributionTable(bloc),
 
                       // เพิ่มพื้นที่ว่างด้านล่าง
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
@@ -105,9 +105,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
-            child: Text(
-              'Group by:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            child: Center(
+              child: Text(
+                'Group by',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
           Row(
@@ -210,6 +212,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             color: Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
           ),
+          margin: const EdgeInsets.only(bottom: 24), // เพิ่มระยะห่างด้านล่าง
           child: Column(
             children: [
               // Header row
@@ -278,7 +281,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
                 return Container(
                   padding: const EdgeInsets.symmetric(
-                    vertical: 10,
+                    vertical: 8, // ลดจาก 10 เหลือ 8
                     horizontal: 8,
                   ),
                   decoration: BoxDecoration(
@@ -292,7 +295,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         flex: 2,
                         child: Text(
                           name,
-                          style: const TextStyle(fontSize: 14),
+                          style: const TextStyle(
+                            fontSize: 13,
+                          ), // ลดจาก 14 เป็น 13
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -300,14 +305,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       Expanded(
                         child: Text(
                           entry.value.toString(),
-                          style: const TextStyle(fontSize: 14),
+                          style: const TextStyle(
+                            fontSize: 13,
+                          ), // ลดจาก 14 เป็น 13
                           textAlign: TextAlign.center,
                         ),
                       ),
                       Expanded(
                         child: Text(
                           '$percentage%',
-                          style: const TextStyle(fontSize: 14),
+                          style: const TextStyle(
+                            fontSize: 13,
+                          ), // ลดจาก 14 เป็น 13
                           textAlign: TextAlign.center,
                         ),
                       ),

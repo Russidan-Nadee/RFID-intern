@@ -119,14 +119,15 @@ class ReportChart extends StatelessWidget {
         color: colors[i % colors.length],
         value: value,
         title: '${value.toStringAsFixed(1)}%',
-        radius: 100,
+        radius: 90, // ลดขนาดรัศมีจาก 100 เป็น 90
         titleStyle: const TextStyle(
-          fontSize: 14,
+          fontSize: 12, // ลดขนาดตัวอักษรจาก 14 เป็น 12
           fontWeight: FontWeight.bold,
           color: Colors.white,
           shadows: [Shadow(blurRadius: 2, color: Colors.black)],
         ),
-        titlePositionPercentageOffset: 0.55,
+        titlePositionPercentageOffset:
+            0.6, // ปรับตำแหน่งให้เข้าไปในวงกลมมากขึ้น
       );
     });
   }
@@ -145,32 +146,32 @@ class ReportChart extends StatelessWidget {
     final int maxSections = data.length > 5 ? 5 : data.length;
 
     return Wrap(
-      spacing: 8,
-      runSpacing: 4,
+      spacing: 6, // ลดจาก 8
+      runSpacing: 2, // ลดจาก 4
       alignment: WrapAlignment.center,
       children: List.generate(maxSections, (i) {
         final isOthers = i == 4 && data.length > 5;
         String title = isOthers ? 'Others' : data[i].key;
 
         // ตัดชื่อให้สั้นลงถ้ายาวเกิน
-        if (title.length > 15) {
-          title = '${title.substring(0, 12)}...';
+        if (title.length > 12) {
+          title = '${title.substring(0, 9)}...';
         }
 
         return Container(
-          margin: const EdgeInsets.only(right: 4, bottom: 4),
+          margin: const EdgeInsets.only(right: 2, bottom: 2), // ลดระยะห่าง
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 12,
-                height: 12,
+                width: 10, // ลดจาก 12
+                height: 10, // ลดจาก 12
                 decoration: BoxDecoration(color: colors[i % colors.length]),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 2), // ลดจาก 4
               Text(
                 title,
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 10), // ลดจาก 12
                 overflow: TextOverflow.ellipsis,
               ),
             ],
