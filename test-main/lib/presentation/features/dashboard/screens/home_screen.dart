@@ -6,6 +6,7 @@ import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../../domain/entities/asset.dart';
 import '../../../../domain/repositories/asset_repository.dart';
 import '../../../../core/di/dependency_injection.dart';
+import '../../../../core/utils/icon_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -14,7 +15,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  late Future<List<Asset>> _assetsFuture;
+  bool _isLoading = true;
+  List<Asset> _assets = [];
+  String _errorMessage = '';
+
   final AssetRepository _assetRepository =
       DependencyInjection.get<AssetRepository>();
 
@@ -24,42 +28,57 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadAssets();
   }
 
-  void _loadAssets() {
-    _assetsFuture = _assetRepository.getAssets();
+  Future<void> _loadAssets() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final assets = await _assetRepository.getAssets();
+      setState(() {
+        _assets = assets;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
   }
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
-
-    setState(() {
-      _selectedIndex = index;
-    });
-
     NavigationService.navigateToTabByIndex(context, index);
   }
 
   @override
   Widget build(BuildContext context) {
+    // กำหนดโทนสีหลัก
+    final primaryColor = Color(0xFF6A5ACD); // สีม่วงสไลวันเดอร์
+    final backgroundColor = Colors.white;
+    final cardColor = Color(0xFFF5F5F8); // สีเทาอ่อนสำหรับการ์ด
+    final lightPrimaryColor = Color(0xFFE6E4F4); // สีม่วงอ่อนแทน withOpacity
+
     return ScreenContainer(
+      backgroundColor: backgroundColor,
+      statusBarColor: Color(0xFFE0E0E0), // สีเทาสำหรับ StatusBar
       appBar: AppBar(
-        title: const Text('Asset Management Dashboard'),
-        automaticallyImplyLeading: false,
+        title: Text(
+          'Asset Management Dashboard',
+          style: TextStyle(
+            color: primaryColor,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: Icon(Icons.settings, color: primaryColor),
             onPressed: () {
-              Navigator.pushReplacementNamed(context, RouteConstants.settings);
+              Navigator.pushNamed(context, RouteConstants.settings);
             },
-            tooltip: 'การตั้งค่า',
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {
-                _loadAssets();
-              });
-            },
-            tooltip: 'รีเฟรชข้อมูล',
           ),
         ],
       ),
@@ -67,315 +86,311 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-      child: FutureBuilder<List<Asset>>(
-        future: _assetsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      child:
+          _isLoading
+              ? Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                ),
+              )
+              : _errorMessage.isNotEmpty
+              ? _buildErrorView(primaryColor)
+              : _buildHomeContent(primaryColor, cardColor, lightPrimaryColor),
+    );
+  }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('เกิดข้อผิดพลาด: ${snapshot.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _loadAssets();
-                      });
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('ลองใหม่'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final assets = snapshot.data ?? [];
-
-          // เรียงลำดับสินทรัพย์ตามวันที่สแกนล่าสุด
-          final latestAssets = List<Asset>.from(assets);
-          latestAssets.sort((a, b) {
-            try {
-              final dateA = DateTime.parse(a.date);
-              final dateB = DateTime.parse(b.date);
-              return dateB.compareTo(dateA);
-            } catch (e) {
-              return 0;
-            }
-          });
-
-          // จำกัดแค่ 5 รายการแรก
-          final latestFiveAssets = latestAssets.take(5).toList();
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _loadAssets();
-              });
-            },
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // แสดงจำนวนสินทรัพย์ทั้งหมด
-                  _buildTotalAssetCard(assets.length),
-
-                  const SizedBox(height: 24),
-
-                  // แสดงรายการที่สแกนล่าสุด 5 รายการในรูปแบบการแจ้งเตือน
-                  _buildLatestScannedAssetsSection(latestFiveAssets),
-                ],
-              ),
-            ),
-          );
-        },
+  // แสดงข้อผิดพลาด
+  Widget _buildErrorView(Color primaryColor) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 16),
+          Text('เกิดข้อผิดพลาด: $_errorMessage'),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _loadAssets,
+            icon: const Icon(Icons.refresh),
+            label: const Text('ลองใหม่'),
+            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTotalAssetCard(int totalAssets) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Row(
+  // แสดงเนื้อหาหน้า Home
+  Widget _buildHomeContent(
+    Color primaryColor,
+    Color cardColor,
+    Color lightPrimaryColor,
+  ) {
+    // เรียงลำดับสินทรัพย์ตามวันที่สแกนล่าสุด
+    final latestAssets = List<Asset>.from(_assets);
+    latestAssets.sort((a, b) {
+      try {
+        final dateA = DateTime.parse(a.date);
+        final dateB = DateTime.parse(b.date);
+        return dateB.compareTo(dateA);
+      } catch (e) {
+        return 0;
+      }
+    });
+
+    // จำกัดแค่ 5 รายการแรก
+    final latestFiveAssets = latestAssets.take(5).toList();
+
+    return RefreshIndicator(
+      color: primaryColor,
+      onRefresh: () async {
+        await _loadAssets();
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.inventory_2, size: 48, color: Colors.blue),
-            const SizedBox(width: 24),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // แสดงจำนวนสินทรัพย์ทั้งหมด
+            Container(
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(12),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: lightPrimaryColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2,
+                      size: 32,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'สินทรัพย์ทั้งหมด',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                      ),
+                      Text(
+                        '${_assets.length} รายการ',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // หัวข้อการแจ้งเตือนล่าสุด
+            Row(
               children: [
-                const Text(
-                  'สินทรัพย์ทั้งหมด',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
+                Icon(Icons.notifications, color: primaryColor),
+                const SizedBox(width: 8),
                 Text(
-                  '$totalAssets รายการ',
-                  style: const TextStyle(
-                    fontSize: 32,
+                  'การแจ้งเตือนล่าสุด',
+                  style: TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: Colors.grey[800],
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+
+            // รายการการแจ้งเตือน
+            latestFiveAssets.isEmpty
+                ? Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.grey),
+                      SizedBox(width: 16),
+                      Text('ไม่มีการแจ้งเตือนล่าสุด'),
+                    ],
+                  ),
+                )
+                : ListView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  itemCount: latestFiveAssets.length,
+                  itemBuilder: (context, index) {
+                    final asset = latestFiveAssets[index];
+
+                    // กำหนดสีตามสถานะโดยไม่ใช้ withOpacity
+                    Color statusColor = primaryColor;
+                    Color bgStatusColor = lightPrimaryColor;
+
+                    if (asset.status.toLowerCase() == 'checked in') {
+                      statusColor = Colors.green;
+                      bgStatusColor = Color(0xFFE6F4E6); // สีเขียวอ่อน
+                    } else if (asset.status.toLowerCase() == 'in use') {
+                      statusColor = Colors.orange;
+                      bgStatusColor = Color(0xFFF9F0E6); // สีส้มอ่อน
+                    } else if (asset.status.toLowerCase() == 'maintenance') {
+                      statusColor = Colors.red;
+                      bgStatusColor = Color(0xFFF9E6E6); // สีแดงอ่อน
+                    }
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(8),
+                            blurRadius: 3,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            RouteConstants.assetDetail,
+                            arguments: {'guid': asset.uid},
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: bgStatusColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    getStatusIcon(asset.status),
+                                    color: statusColor,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      asset.id,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${asset.category} - ${asset.status}',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    _formatDate(asset.date),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.grey,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+            // เพิ่มส่วนดูทรัพย์สินทั้งหมดที่ด้านล่าง
+            const SizedBox(height: 32),
+            Container(
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              width: double.infinity,
+              child: InkWell(
+                onTap: () {
+                  _onItemTapped(1); // 1 คือ index ของหน้า Search
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search, color: Colors.white, size: 24),
+                      SizedBox(width: 12),
+                      Text(
+                        'ดูทรัพย์สินทั้งหมด',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // เพิ่มพื้นที่ว่างด้านล่าง
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLatestScannedAssetsSection(List<Asset> assets) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.notifications, color: Colors.orange.shade800),
-            const SizedBox(width: 8),
-            const Text(
-              'การแจ้งเตือนล่าสุด',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (assets.isEmpty)
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 2,
-            child: const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.grey),
-                  SizedBox(width: 16),
-                  Text('ไม่มีการแจ้งเตือนล่าสุด'),
-                ],
-              ),
-            ),
-          )
-        else
-          ListView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            itemCount: assets.length,
-            itemBuilder: (context, index) {
-              final asset = assets[index];
-
-              // กำหนดสีและไอคอนตามสถานะ
-              Color cardColor = Colors.white;
-              IconData statusIcon = Icons.info_outline;
-              Color iconColor = Colors.blue;
-
-              if (asset.status == 'Checked In') {
-                cardColor = Colors.green.shade50;
-                statusIcon = Icons.check_circle_outline;
-                iconColor = Colors.green;
-              } else if (asset.status == 'Available') {
-                cardColor = Colors.blue.shade50;
-                statusIcon = Icons.inventory_2;
-                iconColor = Colors.blue;
-              } else if (asset.status == 'In Use') {
-                cardColor = Colors.orange.shade50;
-                statusIcon = Icons.people_outline;
-                iconColor = Colors.orange;
-              } else if (asset.status == 'Maintenance') {
-                cardColor = Colors.red.shade50;
-                statusIcon = Icons.build_outlined;
-                iconColor = Colors.red;
-              }
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-                color: cardColor,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushReplacementNamed(
-                      context,
-                      RouteConstants.assetDetail,
-                      arguments: {'guid': asset.uid},
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: iconColor.withAlpha(51),
-                          child: Icon(statusIcon, color: iconColor),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      asset.brand,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: iconColor.withAlpha(50),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      asset.status,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: iconColor,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'ID: ${asset.id} • ${_getActivityMessage(asset)}',
-                                style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatDateTimeForNotification(asset.date),
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-
-        if (assets.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Center(
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.search),
-              label: const Text('ดูสินทรัพย์ทั้งหมด'),
-              onPressed: () {
-                Navigator.pushReplacementNamed(
-                  context,
-                  RouteConstants.searchAssets,
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  String _getActivityMessage(Asset asset) {
-    switch (asset.status) {
-      case 'Checked In':
-        return 'ตรวจรับเข้าแล้ว';
-      case 'Available':
-        return 'พร้อมใช้งาน';
-      case 'In Use':
-        return 'กำลังใช้งาน';
-      case 'Maintenance':
-        return 'อยู่ในการซ่อมบำรุง';
-      default:
-        return 'สถานะ: ${asset.status}';
-    }
-  }
-
-  String _formatDateTimeForNotification(String dateString) {
+  String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
       final now = DateTime.now();

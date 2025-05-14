@@ -198,24 +198,28 @@ class _ExportScreenState extends State<ExportScreen> {
                     ),
                   ),
                 ),
-                PrimaryButton(
-                  text: 'Export CSV',
-                  icon: Icons.file_download,
-                  isLoading: bloc.status == ExportStatus.exporting,
-                  onPressed: () async {
-                    await bloc.exportData();
+                Center(
+                  child: PrimaryButton(
+                    text: 'Export CSV',
+                    icon: Icons.file_download,
+                    isLoading: bloc.status == ExportStatus.exporting,
+                    onPressed: () async {
+                      await bloc.exportData();
 
-                    if (bloc.status == ExportStatus.exportComplete &&
-                        bloc.lastExportedFilePath != null) {
-                      await Share.shareXFiles([
-                        XFile(bloc.lastExportedFilePath!),
-                      ], text: 'RFID Asset Export');
-                    } else if (bloc.status == ExportStatus.error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: ${bloc.errorMessage}')),
-                      );
-                    }
-                  },
+                      if (bloc.status == ExportStatus.exportComplete &&
+                          bloc.lastExportedFilePath != null) {
+                        await Share.shareXFiles([
+                          XFile(bloc.lastExportedFilePath!),
+                        ], text: 'RFID Asset Export');
+                      } else if (bloc.status == ExportStatus.error) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${bloc.errorMessage}'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 ),
                 SizedBox(height: 24),
 

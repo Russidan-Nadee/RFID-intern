@@ -1,9 +1,9 @@
 import 'package:get_it/get_it.dart';
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
-import 'package:rfid_project/domain/usecases/cartegory/add_category_usecase.dart';
-import 'package:rfid_project/domain/usecases/cartegory/delete_category_usecase.dart';
-import 'package:rfid_project/domain/usecases/cartegory/get_categories_usecase.dart';
-import 'package:rfid_project/domain/usecases/cartegory/update_category_usecase.dart';
+import 'package:rfid_project/domain/usecases/category/add_category_usecase.dart';
+import 'package:rfid_project/domain/usecases/category/delete_category_usecase.dart';
+import 'package:rfid_project/domain/usecases/category/get_categories_usecase.dart';
+import 'package:rfid_project/domain/usecases/category/update_category_usecase.dart';
 import 'package:rfid_project/domain/usecases/rfid/scan_rfid_usecase.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import 'package:rfid_project/presentation/features/assets/blocs/asset_bloc.dart';

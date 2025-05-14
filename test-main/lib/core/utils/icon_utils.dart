@@ -1,3 +1,4 @@
+// lib/core/utils/icon_utils.dart
 import 'package:flutter/material.dart';
 
 IconData getCategoryIcon(String category) {
@@ -12,5 +13,20 @@ IconData getCategoryIcon(String category) {
       return Icons.phone_android;
     default:
       return Icons.devices_other;
+  }
+}
+
+IconData getStatusIcon(String status) {
+  switch (status.toLowerCase()) {
+    case 'checked in':
+      return Icons.check_circle_outline;
+    case 'available':
+      return Icons.inventory_2;
+    case 'in use':
+      return Icons.people_outline;
+    case 'maintenance':
+      return Icons.build_outlined;
+    default:
+      return Icons.info_outline;
   }
 }

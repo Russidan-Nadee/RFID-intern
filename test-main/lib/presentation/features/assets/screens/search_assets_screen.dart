@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../common_widgets/inputs/search_field.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/asset_bloc.dart';
-import '../widgets/asset_tile.dart';
-import '../widgets/asset_table_view.dart';
 
 class SearchAssetsScreen extends StatefulWidget {
   const SearchAssetsScreen({Key? key}) : super(key: key);
@@ -14,33 +11,15 @@ class SearchAssetsScreen extends StatefulWidget {
   State<SearchAssetsScreen> createState() => _SearchAssetsScreenState();
 }
 
-class _SearchAssetsScreenState extends State<SearchAssetsScreen>
-    with SingleTickerProviderStateMixin {
+class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedIndex = 1; // Index for the Search tab
-  final GlobalKey _statusColumnKey = GlobalKey(); // Key สำหรับคอลัมน์ Status
-  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ตรวจสอบ tab ที่เลือกเมื่อ bloc มีการเปลี่ยนแปลง
-      final bloc = context.read<AssetBloc>();
-      _tabController.index = bloc.isTableView ? 1 : 0;
-
-      bloc.loadAssets();
-    });
-
-    _tabController.addListener(() {
-      final bloc = context.read<AssetBloc>();
-      if (_tabController.index == 0 && bloc.isTableView) {
-        bloc.toggleViewMode();
-      } else if (_tabController.index == 1 && !bloc.isTableView) {
-        bloc.toggleViewMode();
-      }
+      Provider.of<AssetBloc>(context, listen: false).loadAssets();
     });
   }
 
@@ -55,46 +34,34 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen>
   @override
   void dispose() {
     _searchController.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // ใช้โทนสีใหม่
+    final primaryColor = Color(0xFF6A5ACD); // สีม่วงสไลวันเดอร์
+    final backgroundColor = Colors.white;
+    final cardColor = Color(0xFFF5F5F8); // สีเทาอ่อนสำหรับการ์ด
+
     return ScreenContainer(
+      backgroundColor: backgroundColor,
+      statusBarColor: Color(0xFFE0E0E0), // สีเทาสำหรับ StatusBar
       appBar: AppBar(
-        title: const Text('Asset Search'),
-        automaticallyImplyLeading: false,
-        elevation: 0,
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-              ),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: Theme.of(context).primaryColor,
-              labelColor: Theme.of(context).primaryColor,
-              unselectedLabelColor: Colors.white,
-              indicatorWeight: 3,
-              tabs: const [
-                Tab(icon: Icon(Icons.view_list), text: 'List View'),
-                Tab(icon: Icon(Icons.grid_on), text: 'Table View'),
-              ],
-            ),
+        title: Text(
+          'Asset Search',
+          style: TextStyle(
+            color: primaryColor,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: primaryColor),
             onPressed: () {
               context.read<AssetBloc>().loadAssets();
             },
-            tooltip: 'Refresh',
           ),
         ],
       ),
@@ -104,52 +71,107 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen>
       ),
       child: Column(
         children: [
-          // ส่วนค้นหาที่สวยงาม
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).primaryColor.withAlpha(25),
-                  Colors.white,
+          // ส่วนค้นหา
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(51),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
                 ],
               ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  // ช่องค้นหา
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        context.read<AssetBloc>().setSearchQuery(value);
+                      },
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.search, color: Colors.grey),
+                        hintText: 'Search for assets...',
+                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+
+                  // แสดงจำนวนที่พบ
+                  Consumer<AssetBloc>(
+                    builder: (context, bloc, _) {
+                      if (bloc.status == AssetStatus.loading) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                primaryColor,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12.0),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: primaryColor,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Found ${bloc.filteredAssets.length} assets',
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withAlpha(25),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: SearchField(
-              controller: _searchController,
-              onChanged: (value) {
-                context.read<AssetBloc>().setSearchQuery(value);
-              },
-              hintText: 'Search for assets...',
             ),
           ),
 
-          // ส่วนแสดงผลลัพธ์
+          // รายการผลลัพธ์
           Expanded(
             child: Consumer<AssetBloc>(
-              builder: (context, bloc, child) {
+              builder: (context, bloc, _) {
                 if (bloc.status == AssetStatus.loading) {
-                  return _buildLoadingView();
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                    ),
+                  );
                 } else if (bloc.status == AssetStatus.error) {
                   return _buildErrorView(bloc.errorMessage);
                 } else if (bloc.filteredAssets.isEmpty) {
                   return _buildEmptyResults();
                 } else {
-                  return _buildResultsView(bloc);
+                  return _buildResultsList(bloc, cardColor, primaryColor);
                 }
               },
             ),
@@ -159,78 +181,25 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen>
     );
   }
 
-  // สร้างหน้าโหลดที่สวยงาม
-  Widget _buildLoadingView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 80,
-            height: 80,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).primaryColor,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Loading assets...',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // สร้างหน้าแสดงข้อผิดพลาด
+  // แสดงข้อผิดพลาด
   Widget _buildErrorView(String errorMessage) {
     return Center(
-      child: Container(
-        margin: const EdgeInsets.all(32),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.red.shade200),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 72, color: Colors.red),
-            const SizedBox(height: 24),
+            Icon(Icons.error_outline, size: 48, color: Colors.red),
+            SizedBox(height: 16),
             Text(
               'Error loading assets',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.red.shade800,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 8),
             Text(
               errorMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red.shade700),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.read<AssetBloc>().loadAssets();
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              style: TextStyle(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -238,66 +207,29 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen>
     );
   }
 
-  // สร้างหน้าเมื่อไม่พบผลลัพธ์
+  // แสดงเมื่อไม่พบผลลัพธ์
   Widget _buildEmptyResults() {
     return Center(
-      child: Container(
-        margin: const EdgeInsets.all(32),
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: Colors.blue.shade50,
-          borderRadius: BorderRadius.circular(24),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.shade100,
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.search_off,
-                size: 64,
-                color: Colors.blue.shade300,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
+            Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+            SizedBox(height: 16),
+            Text(
               'No assets found',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 8),
             Text(
               'Try using different search terms',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.clear),
-              label: const Text('Clear Search'),
-              onPressed: () {
-                _searchController.clear();
-                context.read<AssetBloc>().setSearchQuery('');
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              style: TextStyle(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -305,123 +237,65 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen>
     );
   }
 
-  // สร้างหน้าแสดงผลลัพธ์
-  Widget _buildResultsView(AssetBloc bloc) {
-    return Stack(
-      children: [
-        TabBarView(
-          controller: _tabController,
-          children: [
-            // List View
-            _buildListView(bloc),
-
-            // Table View
-            _buildTableView(bloc),
-          ],
-        ),
-
-        // FAB สำหรับกลับไปด้านบน (แสดงเฉพาะเมื่อมีผลลัพธ์มากกว่า 10 รายการ)
-        if (bloc.filteredAssets.length > 10)
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: FloatingActionButton(
-              backgroundColor: Theme.of(context).primaryColor,
-              mini: true,
-              onPressed: () {
-                // สร้างความเชื่อมโยงกับ ScrollController (ถ้าต้องการ)
-                // หรือโค้ดอย่างง่ายสำหรับความเข้ากันได้
-                final scrollController = PrimaryScrollController.of(context);
-                if (scrollController != null) {
-                  scrollController.animateTo(
-                    0,
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                  );
-                }
-              },
-              child: const Icon(Icons.arrow_upward),
-              tooltip: 'Scroll to top',
+  // แสดงรายการผลลัพธ์
+  Widget _buildResultsList(
+    AssetBloc bloc,
+    Color cardColor,
+    Color primaryColor,
+  ) {
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(horizontal: 16.0),
+      itemCount: bloc.filteredAssets.length,
+      itemBuilder: (context, index) {
+        final asset = bloc.filteredAssets[index];
+        return Container(
+          margin: EdgeInsets.only(bottom: 8.0),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ListTile(
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: primaryColor.withAlpha(50),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Icon(Icons.inventory, color: primaryColor, size: 20),
+              ),
             ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildListView(AssetBloc bloc) {
-    return Column(
-      children: [
-        // ส่วนหัวแสดงจำนวนผลลัพธ์
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                size: 20,
-                color: Theme.of(context).primaryColor,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Found ${bloc.filteredAssets.length} assets',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
+            title: Row(
+              children: [
+                Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[700],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        // รายการสินทรัพย์
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(8),
-            itemCount: bloc.filteredAssets.length,
-            itemBuilder: (context, index) {
-              final asset = bloc.filteredAssets[index];
-              return AssetTile(asset: asset);
+                SizedBox(width: 8),
+                Text(
+                  asset.category,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            trailing: Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/assetDetail',
+                arguments: {'guid': asset.uid},
+              );
             },
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTableView(AssetBloc bloc) {
-    return Column(
-      children: [
-        // ส่วนหัวแสดงจำนวนผลลัพธ์
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                size: 20,
-                color: Theme.of(context).primaryColor,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Found ${bloc.filteredAssets.length} assets',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // ตารางสินทรัพย์
-        Expanded(
-          child: AssetTableView(
-            assets: bloc.filteredAssets,
-            statusColumnKey: _statusColumnKey,
-            bloc: bloc,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

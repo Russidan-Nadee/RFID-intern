@@ -16,9 +16,8 @@ import 'domain/usecases/assets/get_assets_usecase.dart';
 import 'domain/usecases/rfid/scan_rfid_usecase.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // เพิ่มบรรทัดนี้เพื่อให้สามารถใช้ async ใน main ได้
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // เริ่มต้น DependencyInjection ก่อนรันแอพ
   await DependencyInjection.init();
 
   runApp(MyApp());
@@ -29,7 +28,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // ลงทะเบียน Provider สำหรับทุก Bloc
         Provider<AssetRepository>(
           create: (_) => DependencyInjection.getIt.get<AssetRepository>(),
         ),

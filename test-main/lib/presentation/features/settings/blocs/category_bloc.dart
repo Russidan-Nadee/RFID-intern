@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:rfid_project/domain/usecases/cartegory/add_category_usecase.dart'; // สะกดผิด ควรเป็น category
-import 'package:rfid_project/domain/usecases/cartegory/delete_category_usecase.dart'; // สะกดผิด ควรเป็น category
-import 'package:rfid_project/domain/usecases/cartegory/get_categories_usecase.dart'; // สะกดผิด ควรเป็น category
-import 'package:rfid_project/domain/usecases/cartegory/update_category_usecase.dart'; // สะกดผิด ควรเป็น category
+import 'package:rfid_project/domain/usecases/category/add_category_usecase.dart'; // สะกดผิด ควรเป็น category
+import 'package:rfid_project/domain/usecases/category/delete_category_usecase.dart'; // สะกดผิด ควรเป็น category
+import 'package:rfid_project/domain/usecases/category/get_categories_usecase.dart'; // สะกดผิด ควรเป็น category
+import 'package:rfid_project/domain/usecases/category/update_category_usecase.dart'; // สะกดผิด ควรเป็น category
 
 enum CategoryStatus { initial, loading, loaded, error }
 
