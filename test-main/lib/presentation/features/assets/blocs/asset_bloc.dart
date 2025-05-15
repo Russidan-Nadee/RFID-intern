@@ -67,6 +67,33 @@ class AssetBloc extends ChangeNotifier {
     _isTableView = !_isTableView;
     notifyListeners();
   }
+  // เพิ่มฟังก์ชันใหม่ในคลาส AssetBloc
+
+  // เพิ่มฟังก์ชันสำหรับการนำทางไปดูรายละเอียดสินทรัพย์
+  void navigateToAssetDetail(BuildContext context, Asset asset) {
+    Navigator.pushNamed(
+      context,
+      '/assetDetail',
+      arguments: {'guid': asset.uid},
+    );
+  }
+
+  // เพิ่มฟังก์ชันสำหรับการนำทางไปส่งออกสินทรัพย์
+  void navigateToExport(
+    BuildContext context,
+    Asset asset, {
+    bool scrollToBottom = false,
+  }) {
+    Navigator.pushNamed(
+      context,
+      '/export',
+      arguments: {
+        'assetId': asset.id,
+        'assetUid': asset.uid,
+        'scrollToBottom': scrollToBottom,
+      },
+    );
+  }
 
   void _applyFilters() {
     _filteredAssets = List.from(_assets);

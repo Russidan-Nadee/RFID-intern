@@ -70,4 +70,21 @@ class DashboardBloc extends ChangeNotifier {
     // เก็บเฉพาะ 5 รายการแรก
     _latestAssets = sortedAssets.take(5).toList();
   }
+
+  // เพิ่มเมธอดสำหรับการนำทางไปยังรายละเอียดสินทรัพย์
+  void navigateToAssetDetails(BuildContext context, Asset asset) {
+    Navigator.pushNamed(
+      context,
+      '/assetDetail',
+      arguments: {'guid': asset.uid},
+    );
+  }
+
+  // เพิ่มเมธอดสำหรับการนำทางไปยังหน้าค้นหา
+  void navigateToSearch(BuildContext context) {
+    Navigator.pushNamed(context, '/searchAssets');
+  }
+
+  // เช็คว่ามีข้อมูลพร้อมแสดงหรือไม่
+  bool get hasData => _latestAssets.isNotEmpty;
 }

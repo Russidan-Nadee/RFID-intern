@@ -1,9 +1,9 @@
 // lib/presentation/features/assets/screens/asset_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../../domain/repositories/asset_repository.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
+import '../../../../core/di/dependency_injection.dart';
 
 class AssetDetailScreen extends StatefulWidget {
   const AssetDetailScreen({Key? key}) : super(key: key);
@@ -17,6 +17,16 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
   Map<String, dynamic>? _assetData;
   bool _isLoading = true;
   String? _errorMessage;
+
+  // เพิ่มตัวแปรนี้เพื่อดึง repository จาก DI โดยตรง
+  late final AssetRepository _assetRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    // ดึง repository จาก DI โดยตรงแทนการใช้ Provider
+    _assetRepository = DependencyInjection.get<AssetRepository>();
+  }
 
   @override
   void didChangeDependencies() {
@@ -53,8 +63,8 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     });
 
     try {
-      final repository = Provider.of<AssetRepository>(context, listen: false);
-      final data = await repository.getRawAssetData(_guid!);
+      // ใช้ _assetRepository โดยตรงแทนการดึงจาก Provider
+      final data = await _assetRepository.getRawAssetData(_guid!);
 
       setState(() {
         _assetData = data;
