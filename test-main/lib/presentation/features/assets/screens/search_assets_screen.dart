@@ -338,7 +338,11 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
                     Navigator.pushNamed(
                       context,
                       '/export',
-                      arguments: {'assetId': asset.id, 'assetUid': asset.uid},
+                      arguments: {
+                        'assetId': asset.id,
+                        'assetUid': asset.uid,
+                        'scrollTobottom': true,
+                      },
                     );
                   },
                   tooltip: 'Export this asset',
