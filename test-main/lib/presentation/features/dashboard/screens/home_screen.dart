@@ -1,51 +1,31 @@
+// lib/presentation/features/dashboard/screens/home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/navigation/navigation_service.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../../domain/entities/asset.dart';
-import '../../../../domain/repositories/asset_repository.dart';
-import '../../../../core/di/dependency_injection.dart';
 import '../../../../core/utils/icon_utils.dart';
+import '../blocs/dashboard_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  bool _isLoading = true;
-  List<Asset> _assets = [];
-  String _errorMessage = '';
-
-  final AssetRepository _assetRepository =
-      DependencyInjection.get<AssetRepository>();
 
   @override
   void initState() {
     super.initState();
-    _loadAssets();
-  }
-
-  Future<void> _loadAssets() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
+    // ใช้ bloc ที่ถูก provide แล้วจาก Provider แทนการเข้าถึง repository โดยตรง
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardBloc>().loadDashboardData();
     });
-
-    try {
-      final assets = await _assetRepository.getAssets();
-      setState(() {
-        _assets = assets;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.toString();
-      });
-    }
   }
 
   void _onItemTapped(int index) {
@@ -86,31 +66,41 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-      child:
-          _isLoading
-              ? Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                ),
-              )
-              : _errorMessage.isNotEmpty
-              ? _buildErrorView(primaryColor)
-              : _buildHomeContent(primaryColor, cardColor, lightPrimaryColor),
+      child: Consumer<DashboardBloc>(
+        builder: (context, bloc, _) {
+          if (bloc.status == DashboardStatus.loading) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              ),
+            );
+          } else if (bloc.status == DashboardStatus.error) {
+            return _buildErrorView(primaryColor, bloc);
+          } else {
+            return _buildHomeContent(
+              primaryColor,
+              cardColor,
+              lightPrimaryColor,
+              bloc,
+            );
+          }
+        },
+      ),
     );
   }
 
   // แสดงข้อผิดพลาด
-  Widget _buildErrorView(Color primaryColor) {
+  Widget _buildErrorView(Color primaryColor, DashboardBloc bloc) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 16),
-          Text('เกิดข้อผิดพลาด: $_errorMessage'),
+          Text('เกิดข้อผิดพลาด: ${bloc.errorMessage}'),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: _loadAssets,
+            onPressed: () => bloc.loadDashboardData(),
             icon: const Icon(Icons.refresh),
             label: const Text('ลองใหม่'),
             style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
@@ -120,31 +110,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // แสดงเนื้อหาหน้า Home
+  // แสดงเนื้อหาหน้า Home - ใช้ข้อมูลจาก bloc แทนการอ่านโดยตรง
   Widget _buildHomeContent(
     Color primaryColor,
     Color cardColor,
     Color lightPrimaryColor,
+    DashboardBloc bloc,
   ) {
-    // เรียงลำดับสินทรัพย์ตามวันที่สแกนล่าสุด
-    final latestAssets = List<Asset>.from(_assets);
-    latestAssets.sort((a, b) {
-      try {
-        final dateA = DateTime.parse(a.date);
-        final dateB = DateTime.parse(b.date);
-        return dateB.compareTo(dateA);
-      } catch (e) {
-        return 0;
-      }
-    });
-
-    // จำกัดแค่ 5 รายการแรก
-    final latestFiveAssets = latestAssets.take(5).toList();
+    // ดึงข้อมูลจาก bloc แทนการดึงข้อมูลมาประมวลผลเองใน Widget
+    final assets = bloc.assets;
+    final latestAssets = bloc.latestAssets;
 
     return RefreshIndicator(
       color: primaryColor,
       onRefresh: () async {
-        await _loadAssets();
+        await bloc.loadDashboardData();
       },
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -189,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       ),
                       Text(
-                        '${_assets.length} รายการ',
+                        '${bloc.totalAssets} รายการ',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -222,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
 
             // รายการการแจ้งเตือน
-            latestFiveAssets.isEmpty
+            latestAssets.isEmpty
                 ? Container(
                   decoration: BoxDecoration(
                     color: cardColor,
@@ -240,110 +220,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 : ListView.builder(
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
-                  itemCount: latestFiveAssets.length,
+                  itemCount: latestAssets.length,
                   itemBuilder: (context, index) {
-                    final asset = latestFiveAssets[index];
-
-                    // กำหนดสีตามสถานะโดยไม่ใช้ withOpacity
-                    Color statusColor = primaryColor;
-                    Color bgStatusColor = lightPrimaryColor;
-
-                    if (asset.status.toLowerCase() == 'checked in') {
-                      statusColor = Colors.green;
-                      bgStatusColor = Color(0xFFE6F4E6); // สีเขียวอ่อน
-                    } else if (asset.status.toLowerCase() == 'in use') {
-                      statusColor = Colors.orange;
-                      bgStatusColor = Color(0xFFF9F0E6); // สีส้มอ่อน
-                    } else if (asset.status.toLowerCase() == 'maintenance') {
-                      statusColor = Colors.red;
-                      bgStatusColor = Color(0xFFF9E6E6); // สีแดงอ่อน
-                    }
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(8),
-                            blurRadius: 3,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            RouteConstants.assetDetail,
-                            arguments: {'guid': asset.uid},
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: bgStatusColor,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    getStatusIcon(asset.status),
-                                    color: statusColor,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      asset.id,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${asset.category} - ${asset.status}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    _formatDate(asset.date),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    color: Colors.grey,
-                                    size: 16,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    return _buildAssetItem(
+                      latestAssets[index],
+                      primaryColor,
+                      cardColor,
+                      lightPrimaryColor,
                     );
                   },
                 ),
@@ -390,7 +273,108 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _formatDate(String dateString) {
+  // สร้าง Widget แสดงรายการสินทรัพย์
+  Widget _buildAssetItem(
+    Asset asset,
+    Color primaryColor,
+    Color cardColor,
+    Color lightPrimaryColor,
+  ) {
+    // กำหนดสีตามสถานะโดยไม่ใช้ withOpacity
+    Color statusColor = primaryColor;
+    Color bgStatusColor = lightPrimaryColor;
+
+    if (asset.status.toLowerCase() == 'checked in') {
+      statusColor = Colors.green;
+      bgStatusColor = Color(0xFFE6F4E6); // สีเขียวอ่อน
+    } else if (asset.status.toLowerCase() == 'in use') {
+      statusColor = Colors.orange;
+      bgStatusColor = Color(0xFFF9F0E6); // สีส้มอ่อน
+    } else if (asset.status.toLowerCase() == 'maintenance') {
+      statusColor = Colors.red;
+      bgStatusColor = Color(0xFFF9E6E6); // สีแดงอ่อน
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            RouteConstants.assetDetail,
+            arguments: {'guid': asset.uid},
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: bgStatusColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Icon(
+                    getStatusIcon(asset.status),
+                    color: statusColor,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      asset.id,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      '${asset.category} - ${asset.status}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _formatTimeAgo(asset.date),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  SizedBox(height: 4),
+                  Icon(Icons.chevron_right, color: Colors.grey, size: 16),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ฟังก์ชันการแสดงเวลา - ควรอยู่ใน ViewModel
+  String _formatTimeAgo(String dateString) {
     try {
       final date = DateTime.parse(dateString);
       final now = DateTime.now();

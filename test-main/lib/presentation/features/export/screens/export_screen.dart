@@ -1,7 +1,7 @@
 // lib/presentation/features/export/screens/export_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rfid_project/lib/presentation/features/export/screens/export_confirmation_screen.dart';
+import 'package:rfid_project/presentation/features/export/screens/export_confirmation_screen.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
