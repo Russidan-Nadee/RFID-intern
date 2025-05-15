@@ -1,29 +1,20 @@
-// lib/core/navigation/app_routes.dart
 import 'package:flutter/material.dart';
-import 'package:rfid_project/presentation/features/export/screens/export_confirmation_screen.dart';
+// นำเข้าด้วยเส้นทางแบบเต็ม และใช้ show เพื่อยืนยันว่านำเข้าถูกคลาส
+import 'package:rfid_project/presentation/features/export/screens/export_confirmation_screen.dart'
+    show ExportConfirmationScreen;
+import 'package:rfid_project/presentation/features/export/screens/export_screen.dart'
+    show ExportScreen;
 import 'package:rfid_project/presentation/features/settings/screens/database_test_screen.dart';
-// นำเข้าหน้าแสดงรายละเอียดสินทรัพย์เต็ม
 import '../../presentation/features/assets/screens/asset_detail_screen.dart';
-// นำเข้าหน้าจอค้นหาสินทรัพย์
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
-// นำเข้าหน้าจอหลัก
 import '../../presentation/features/dashboard/screens/home_screen.dart';
-// นำเข้าหน้าจอส่งออกข้อมูล
-import '../../presentation/features/export/screens/export_screen.dart';
-// นำเข้าหน้าจอแสดงผลเมื่อพบสินทรัพย์
 import '../../presentation/features/rfid/screens/found_screen.dart';
-// นำเข้าหน้าจอแสดงผลเมื่อไม่พบสินทรัพย์
 import '../../presentation/features/rfid/screens/not_found_screen.dart';
-// นำเข้าหน้าจอสแกน RFID
 import '../../presentation/features/rfid/screens/scan_rfid_screen.dart';
-// นำเข้าหน้าจอตั้งค่า
 import '../../presentation/features/settings/screens/settings_screen.dart';
-// นำเข้าหน้าจอรายงาน (เพิ่มใหม่)
 import '../../presentation/features/reports/screens/reports_screen.dart';
-// นำเข้าค่าคงที่ของเส้นทาง
 import '../constants/route_constants.dart';
 
-// คลาสจัดการเส้นทางทั้งหมดในแอป
 class AppRoutes {
   // ประกาศชื่อเส้นทางต่างๆ โดยใช้ค่าจาก RouteConstants
   static const String home = RouteConstants.home; // เส้นทางไปหน้าหลัก
@@ -42,62 +33,87 @@ class AppRoutes {
   static const String assetDetail =
       RouteConstants.assetDetail; // เส้นทางไปหน้ารายละเอียดสินทรัพย์เต็ม
   static const String exportConfirmation = '/exportConfirmation';
+
+  // ฟังก์ชั่นสำหรับสร้าง Route ที่ไม่มีอนิเมชั่น
+  static Route<dynamic> _createRouteWithoutAnimation(
+    Widget page,
+    RouteSettings settings,
+  ) {
+    return PageRouteBuilder(
+      settings: settings,
+      pageBuilder: (_, __, ___) => page,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+    );
+  }
+
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
     // รับ arguments ที่ส่งมาพร้อมกับการนำทาง
     final args = routeSettings.arguments;
 
-    // ฟังก์ชั่นสำหรับสร้าง Route ที่ไม่มีอนิเมชั่น
-    Route<dynamic> _createRouteWithoutAnimation(Widget page) {
-      return PageRouteBuilder(
-        settings: routeSettings,
-        pageBuilder: (_, __, ___) => page,
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      );
-    }
-
     // ตรวจสอบชื่อเส้นทางและสร้างหน้าจอที่เหมาะสม
     switch (routeSettings.name) {
       case databaseTest:
-        return _createRouteWithoutAnimation(DatabaseTestScreen());
+        return _createRouteWithoutAnimation(
+          const DatabaseTestScreen(),
+          routeSettings,
+        );
       case home:
-        // ถ้าเป็นหน้าหลัก สร้างหน้า HomeScreen ที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(HomeScreen());
+        return _createRouteWithoutAnimation(const HomeScreen(), routeSettings);
       case searchAssets:
-        // ถ้าเป็นหน้าค้นหา สร้างหน้า SearchAssetsScreen ที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(SearchAssetsScreen());
+        return _createRouteWithoutAnimation(
+          const SearchAssetsScreen(),
+          routeSettings,
+        );
       case scanRfid:
-        // ถ้าเป็นหน้าสแกน สร้างหน้า ScanRfidScreen ที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(ScanRfidScreen());
+        return _createRouteWithoutAnimation(
+          const ScanRfidScreen(),
+          routeSettings,
+        );
       case reports:
-        // ถ้าเป็นหน้ารายงาน สร้างหน้า ReportsScreen ที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(ReportsScreen());
+        return _createRouteWithoutAnimation(
+          const ReportsScreen(),
+          routeSettings,
+        );
       case export:
-        // ถ้าเป็นหน้าส่งออก สร้างหน้า ExportScreen ที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(ExportScreen());
+        return _createRouteWithoutAnimation(
+          const ExportScreen(), // แก้ไขตัวสะกดให้ถูกต้อง
+          routeSettings,
+        );
       case assetDetail:
-        // ถ้าเป็นหน้ารายละเอียดสินทรัพย์เต็ม สร้างหน้า AssetDetailScreen ที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(AssetDetailScreen());
+        return _createRouteWithoutAnimation(
+          const AssetDetailScreen(),
+          routeSettings,
+        );
       case found:
-        // ถ้าเป็นหน้าพบสินทรัพย์ สร้างหน้า FoundScreen พร้อมส่งข้อมูล asset และ uid
-        // ตรวจสอบว่ามีการส่ง args มาหรือไม่
         if (args is Map<String, dynamic>) {
-          // ส่งข้อมูล asset และ uid ไปยัง FoundScreen ที่ไม่มีอนิเมชั่น
-          return _createRouteWithoutAnimation(FoundScreen());
+          return _createRouteWithoutAnimation(
+            const FoundScreen(),
+            routeSettings,
+          );
         }
-        // กรณีไม่มี args หรือ args ไม่ถูกต้อง ให้กลับไปหน้าสแกน
-        return _createRouteWithoutAnimation(ScanRfidScreen());
-      case RouteConstants.notFound:
-        // ส่งข้อมูลเป็น positional parameter แทน named parameter
-        return MaterialPageRoute(builder: (_) => NotFoundScreen());
+        return _createRouteWithoutAnimation(
+          const ScanRfidScreen(),
+          routeSettings,
+        );
+      case notFound:
+        return _createRouteWithoutAnimation(
+          const NotFoundScreen(),
+          routeSettings,
+        );
       case settings:
-        // ถ้าเป็นหน้าตั้งค่า สร้างหน้า SettingsScreen ที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(SettingsScreen());
+        return _createRouteWithoutAnimation(
+          const SettingsScreen(),
+          routeSettings,
+        );
       case exportConfirmation:
-        return _createRouteWithoutAnimation(ExportConfirmationScreen());
+        // ใช้ Widget constructor แทนที่จะใช้ class อย่างเดียว
+        return _createRouteWithoutAnimation(
+          ExportConfirmationScreen(),
+          routeSettings,
+        );
       default:
-        // ถ้าไม่ตรงกับเส้นทางใดเลย ให้ไปที่หน้าหลักที่ไม่มีอนิเมชั่น
-        return _createRouteWithoutAnimation(HomeScreen());
+        return _createRouteWithoutAnimation(const HomeScreen(), routeSettings);
     }
   }
 }

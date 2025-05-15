@@ -98,7 +98,7 @@ class ScreenContainer extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).primaryColor.withOpacity(0.1),
+              Theme.of(context).primaryColor.withAlpha(50),
               backgroundColor,
             ],
           ),

@@ -6,6 +6,7 @@ class ExportSelectedAssets extends StatelessWidget {
   final Function(Asset) onRemoveAsset;
   final VoidCallback onClearAll;
   final VoidCallback onAddMore;
+  final VoidCallback onSelectAll;
 
   const ExportSelectedAssets({
     Key? key,
@@ -13,6 +14,7 @@ class ExportSelectedAssets extends StatelessWidget {
     required this.onRemoveAsset,
     required this.onClearAll,
     required this.onAddMore,
+    required this.onSelectAll,
   }) : super(key: key);
 
   @override
@@ -34,12 +36,19 @@ class ExportSelectedAssets extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                // ปุ่มล้างทั้งหมด
-                if (selectedAssets.isNotEmpty)
-                  TextButton(
-                    child: const Text('ล้างทั้งหมด'),
-                    onPressed: onClearAll,
-                  ),
+                Row(
+                  children: [
+                    TextButton(
+                      child: const Text('เลือกทั้งหมด'),
+                      onPressed: onSelectAll,
+                    ),
+                    if (selectedAssets.isNotEmpty)
+                      TextButton(
+                        child: const Text('ล้างทั้งหมด'),
+                        onPressed: onClearAll,
+                      ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 16),

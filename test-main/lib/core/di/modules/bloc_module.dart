@@ -8,7 +8,6 @@ import '../../../domain/usecases/category/get_categories_usecase.dart';
 import '../../../domain/usecases/category/update_category_usecase.dart';
 import '../../../domain/usecases/rfid/scan_rfid_usecase.dart';
 import '../../../domain/repositories/asset_repository.dart';
-import '../../../domain/usecases/assets/update_asset_usecase.dart';
 import '../../../presentation/features/assets/blocs/asset_bloc.dart';
 import '../../../presentation/features/dashboard/blocs/dashboard_bloc.dart';
 import '../../../presentation/features/export/blocs/export_bloc.dart';

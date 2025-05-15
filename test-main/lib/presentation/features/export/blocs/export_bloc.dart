@@ -497,4 +497,21 @@ class ExportBloc extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> selectAllAssets() async {
+    _status = ExportStatus.loading;
+    notifyListeners();
+
+    try {
+      final allAssets = await _getAssetsUseCase.execute();
+      _selectedAssets = List<Asset>.from(allAssets);
+      _previewAssets = _selectedAssets.take(5).toList();
+      _status = ExportStatus.loaded;
+    } catch (e) {
+      _status = ExportStatus.error;
+      _errorMessage = e.toString();
+    }
+
+    notifyListeners();
+  }
 }
