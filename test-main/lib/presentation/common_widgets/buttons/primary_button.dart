@@ -15,7 +15,8 @@ class PrimaryButton extends StatelessWidget {
     this.isLoading = false,
     this.color,
     this.icon,
-    this.isDarkWhenPressed = false, // ค่าเริ่มต้นเป็น false
+    this.isDarkWhenPressed = false,
+    // ค่าเริ่มต้นเป็น false
   }) : super(key: key);
 
   @override
