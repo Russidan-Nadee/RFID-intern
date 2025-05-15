@@ -17,33 +17,48 @@ class ExportScreen extends StatefulWidget {
   _ExportScreenState createState() => _ExportScreenState();
 }
 
-class _ExportScreenState extends State<ExportScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ExportScreenState extends State<ExportScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String? _selectedStatus;
-  String? _selectedLocation;
-  String? _selectedCategory;
+  final ScrollController _scrollController = ScrollController();
+
+  bool _shouldScrollToBottom = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // รับค่า arguments
       final args =
           ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-      // ส่ง arguments ไปยัง bloc
       Provider.of<ExportBloc>(context, listen: false).setArguments(args);
+
+      if (args != null && args['fromSearch'] == true) {
+        _shouldScrollToBottom = true;
+      }
+
+      if (_shouldScrollToBottom) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      }
     });
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -69,360 +84,92 @@ class _ExportScreenState extends State<ExportScreen>
             return const Center(child: CircularProgressIndicator());
           }
 
-          return Column(
-            children: [
-              // Tab Bar สำหรับสลับระหว่างเลือกข้อมูลและเลือกคอลัมน์
-              TabBar(
-                controller: _tabController,
-                labelColor: Theme.of(context).primaryColor,
-                tabs: const [
-                  Tab(text: 'เลือกข้อมูล'),
-                  Tab(text: 'เลือกคอลัมน์'),
-                ],
-              ),
+          return SingleChildScrollView(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ส่วนเลือกคอลัมน์
+                _buildSelectColumnsSection(bloc),
 
-              // Tab Bar View
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Tab 1: เลือกข้อมูล
-                    _buildSelectDataTab(bloc),
+                const SizedBox(height: 24),
 
-                    // Tab 2: เลือกคอลัมน์
-                    _buildSelectColumnsTab(bloc),
-                  ],
+                // ส่วนรายการที่เลือก (ย้ายมาอยู่ต่อกับส่วนเลือกคอลัมน์)
+                _buildSelectedAssetsSection(bloc),
+
+                // ส่วนแสดงตัวอย่างข้อมูล
+                if (bloc.selectedAssets.isNotEmpty &&
+                    bloc.selectedColumns.isNotEmpty)
+                  _buildDataPreview(bloc),
+
+                // ปุ่ม Export
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: PrimaryButton(
+                      text: 'Export CSV',
+                      icon: Icons.file_download,
+                      onPressed: () {
+                        // นำทางไปยังหน้ายืนยันการส่งออก
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => const ExportConfirmationScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
-              ),
-
-              // ส่วนแสดงตัวอย่างข้อมูล
-
-              // ปุ่ม Export
-              // เปลี่ยนส่วนปุ่ม Export เป็น
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: PrimaryButton(
-                  text: 'Export CSV',
-                  icon: Icons.file_download,
-                  onPressed: () {
-                    // นำทางไปยังหน้ายืนยันการส่งออก
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ExportConfirmationScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  // สร้างแท็บเลือกข้อมูล
-  Widget _buildSelectDataTab(ExportBloc bloc) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ส่วนค้นหาด่วน
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'ค้นหาด่วน',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // สถานะ
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'สถานะ',
-                      border: OutlineInputBorder(),
-                    ),
-                    value: _selectedStatus,
-                    items: const [
-                      DropdownMenuItem(value: null, child: Text('ทั้งหมด')),
-                      DropdownMenuItem(
-                        value: 'Available',
-                        child: Text('Available'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Checked In',
-                        child: Text('Checked In'),
-                      ),
-                      DropdownMenuItem(value: 'In Use', child: Text('In Use')),
-                      DropdownMenuItem(
-                        value: 'Maintenance',
-                        child: Text('Maintenance'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Damaged',
-                        child: Text('Damaged'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedStatus = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ตำแหน่ง
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'ตำแหน่ง',
-                      border: OutlineInputBorder(),
-                    ),
-                    value: _selectedLocation,
-                    items: const [
-                      DropdownMenuItem(value: null, child: Text('ทั้งหมด')),
-                      DropdownMenuItem(
-                        value: 'Warehouse A',
-                        child: Text('Warehouse A'),
-                      ),
-                      DropdownMenuItem(value: 'Office', child: Text('Office')),
-                      DropdownMenuItem(
-                        value: 'Production',
-                        child: Text('Production'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Storage',
-                        child: Text('Storage'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedLocation = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // หมวดหมู่
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'หมวดหมู่',
-                      border: OutlineInputBorder(),
-                    ),
-                    value: _selectedCategory,
-                    items: const [
-                      DropdownMenuItem(value: null, child: Text('ทั้งหมด')),
-                      DropdownMenuItem(
-                        value: 'Raw Material',
-                        child: Text('Raw Material'),
-                      ),
-                      DropdownMenuItem(value: 'Laptop', child: Text('Laptop')),
-                      DropdownMenuItem(value: 'Mouse', child: Text('Mouse')),
-                      DropdownMenuItem(
-                        value: 'Monitor',
-                        child: Text('Monitor'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ปุ่มค้นหา
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      child: const Text('ค้นหา'),
-                      onPressed: () {
-                        bloc.searchAssets(
-                          status: _selectedStatus,
-                          location: _selectedLocation,
-                          category: _selectedCategory,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+  // สร้างส่วนเลือกคอลัมน์
+  Widget _buildSelectColumnsSection(ExportBloc bloc) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'เลือกคอลัมน์สำหรับส่งออก',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
+            const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
-
-          // ผลการค้นหา
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'ผลการค้นหา',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (bloc.previewAssets.isNotEmpty)
-                        ElevatedButton(
-                          child: const Text('เลือกทั้งหมด'),
-                          onPressed: () {
-                            bloc.addAssets(bloc.previewAssets);
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  if (bloc.previewAssets.isEmpty)
-                    const Center(child: Text('ไม่พบรายการที่ตรงกับเงื่อนไข'))
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: bloc.previewAssets.length,
-                      itemBuilder: (context, index) {
-                        final asset = bloc.previewAssets[index];
-                        final isSelected = bloc.isAssetSelected(asset);
-
-                        return ListTile(
-                          title: Text('${asset.id} - ${asset.category}'),
-                          subtitle: Text(
-                            '${asset.status} - ${asset.department}',
-                          ),
-                          trailing: IconButton(
-                            icon: Icon(
-                              isSelected
-                                  ? Icons.remove_circle
-                                  : Icons.add_circle,
-                              color: isSelected ? Colors.red : Colors.green,
-                            ),
-                            onPressed: () {
-                              bloc.toggleAssetSelection(asset);
-                            },
-                          ),
-                          onTap: () {
-                            bloc.toggleAssetSelection(asset);
-                          },
-                        );
-                      },
-                    ),
-                ],
-              ),
+            // ปุ่มเลือกทั้งหมด/ยกเลิกทั้งหมด
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  child: const Text('เลือกทั้งหมด'),
+                  onPressed: () {
+                    bloc.selectAllColumns();
+                  },
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  child: const Text('ยกเลิกทั้งหมด'),
+                  onPressed: () {
+                    bloc.deselectAllColumns();
+                  },
+                ),
+              ],
             ),
-          ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // รายการที่เลือก
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'รายการที่เลือก (${bloc.selectedAssets.length})',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (bloc.selectedAssets.isNotEmpty)
-                        TextButton(
-                          child: const Text('ล้างทั้งหมด'),
-                          onPressed: () {
-                            bloc.clearSelectedAssets();
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  if (bloc.selectedAssets.isEmpty)
-                    const Center(child: Text('ยังไม่มีรายการที่เลือก'))
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: bloc.selectedAssets.length,
-                      itemBuilder: (context, index) {
-                        final asset = bloc.selectedAssets[index];
-
-                        return ListTile(
-                          title: Text('${asset.id} - ${asset.category}'),
-                          subtitle: Text(
-                            '${asset.status} - ${asset.department}',
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(
-                              Icons.remove_circle,
-                              color: Colors.red,
-                            ),
-                            onPressed: () {
-                              bloc.removeAsset(asset);
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // สร้างแท็บเลือกคอลัมน์
-  Widget _buildSelectColumnsTab(ExportBloc bloc) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ปุ่มเลือกทั้งหมด/ยกเลิกทั้งหมด
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton(
-                child: const Text('เลือกทั้งหมด'),
-                onPressed: () {
-                  bloc.selectAllColumns();
-                },
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                child: const Text('ยกเลิกทั้งหมด'),
-                onPressed: () {
-                  bloc.deselectAllColumns();
-                },
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // สร้างรายการคอลัมน์ตามกลุ่ม
-          for (final groupEntry in bloc.columnGroups.entries)
-            Card(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: ExpansionTile(
+            // สร้างรายการคอลัมน์ตามกลุ่ม
+            for (final groupEntry in bloc.columnGroups.entries)
+              ExpansionTile(
                 title: Text(
                   groupEntry.key,
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -458,14 +205,178 @@ class _ExportScreenState extends State<ExportScreen>
                   ),
                 ],
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // สร้างส่วนรายการที่เลือก
+  Widget _buildSelectedAssetsSection(ExportBloc bloc) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'รายการที่เลือก (${bloc.selectedAssets.length})',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                // ปุ่มล้างทั้งหมด
+                if (bloc.selectedAssets.isNotEmpty)
+                  TextButton(
+                    child: const Text('ล้างทั้งหมด'),
+                    onPressed: () {
+                      bloc.clearSelectedAssets();
+                    },
+                  ),
+              ],
             ),
-        ],
+            const SizedBox(height: 16),
+
+            // ถ้าไม่มีรายการที่เลือก
+            if (bloc.selectedAssets.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: Text(
+                    'ยังไม่มีรายการที่เลือก',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              )
+            else
+              // แสดงรายการที่เลือก
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: bloc.selectedAssets.length,
+                itemBuilder: (context, index) {
+                  final asset = bloc.selectedAssets[index];
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        // สามารถกดที่แถวเพื่อดำเนินการบางอย่างได้
+                        // เช่น แสดงรายละเอียดเพิ่มเติม
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${asset.id} - ${asset.category}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${asset.status} - ${asset.department}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // ปุ่มลบ
+                            IconButton(
+                              icon: const Icon(
+                                Icons.remove_circle,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                bloc.removeAsset(asset);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+            // ปุ่มเพิ่มรายการ (สี่เหลี่ยมที่มีเครื่องหมาย + อยู่ข้างใน)
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () {
+                // เด้งไปยังหน้าค้นหาเพื่อเลือกรายการเพิ่มเติม
+                Navigator.pushNamed(context, '/searchAssets');
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.deepPurple.shade200),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'เพิ่มรายการ',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   // สร้างส่วนแสดงตัวอย่างข้อมูล
   Widget _buildDataPreview(ExportBloc bloc) {
+    final visibleColumns = bloc.selectedColumns.take(5).toList();
+    final hasMoreColumns = bloc.selectedColumns.length > 5;
+    final visibleAssets = bloc.selectedAssets.take(3).toList();
+    final hasMoreAssets = bloc.selectedAssets.length > 3;
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -487,30 +398,25 @@ class _ExportScreenState extends State<ExportScreen>
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
                   columns: [
-                    for (final column in bloc.selectedColumns.take(5))
+                    for (final column in visibleColumns)
                       DataColumn(label: Text(_getColumnDisplayName(column))),
-                    if (bloc.selectedColumns.length > 5)
-                      const DataColumn(label: Text('...')),
+                    if (hasMoreColumns) const DataColumn(label: Text('...')),
                   ],
                   rows: [
-                    for (final asset in bloc.selectedAssets.take(3))
+                    for (final asset in visibleAssets)
                       DataRow(
                         cells: [
-                          for (final column in bloc.selectedColumns.take(5))
+                          for (final column in visibleColumns)
                             DataCell(Text(_getAssetValue(asset, column))),
-                          if (bloc.selectedColumns.length > 5)
-                            const DataCell(Text('...')),
+                          if (hasMoreColumns) const DataCell(Text('...')),
                         ],
                       ),
-                    if (bloc.selectedAssets.length > 3)
-                      const DataRow(
+                    if (hasMoreAssets)
+                      DataRow(
                         cells: [
-                          DataCell(Text('...')),
-                          DataCell(Text('...')),
-                          DataCell(Text('...')),
-                          DataCell(Text('...')),
-                          DataCell(Text('...')),
-                          DataCell(Text('...')),
+                          for (int i = 0; i < visibleColumns.length; i++)
+                            const DataCell(Text('...')),
+                          if (hasMoreColumns) const DataCell(Text('...')),
                         ],
                       ),
                   ],
