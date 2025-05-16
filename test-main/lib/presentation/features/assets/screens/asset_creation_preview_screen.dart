@@ -1,7 +1,6 @@
-// ใน lib/presentation/features/assets/screens/asset_creation_preview_screen.dart
+/* Path: lib/presentation/features/assets/screens/asset_creation_preview_screen.dart */
 import 'package:flutter/material.dart';
 import 'package:rfid_project/domain/entities/asset.dart';
-import '../../../common_widgets/buttons/primary_button.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 
 class AssetCreationPreviewScreen extends StatelessWidget {
@@ -23,6 +22,7 @@ class AssetCreationPreviewScreen extends StatelessWidget {
         title: const Text('รายละเอียดสินทรัพย์'),
         centerTitle: true,
         elevation: 0,
+        automaticallyImplyLeading: false, // ซ่อนปุ่มกลับบน AppBar
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -44,23 +44,63 @@ class AssetCreationPreviewScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // ปุ่มดำเนินการ - เปลี่ยนจาก Export เป็น Create
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: PrimaryButton(
-                text: 'Create Asset',
-                icon: Icons.add_circle_outline,
-                color: Colors.green,
-                isLoading: false,
-                onPressed: () {
-                  // ไม่มีการทำงานใดๆ (ปุ่มเปล่า)
-                  print(
-                    'Create Asset button pressed - no action implemented yet',
-                  );
-                },
+              child: Row(
+                children: [
+                  // ปุ่มกลับ (ด้านซ้าย)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      icon: const Icon(Icons.arrow_back, color: Colors.purple),
+                      label: const Text(
+                        'กลับ',
+                        style: TextStyle(color: Colors.purple),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple.shade50,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  // ปุ่ม Create Asset (ด้านขวา) - เปลี่ยนกลับเป็น Create Asset
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          onCreatePressed ??
+                          () {
+                            print(
+                              'Create Asset button pressed - no action implemented yet',
+                            );
+                          },
+                      icon: const Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Create Asset',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-
             const SizedBox(height: 16),
           ],
         ),
@@ -227,7 +267,11 @@ class AssetCreationPreviewScreen extends StatelessWidget {
       'itemName': asset.itemName,
       'lastScanTime': asset.lastScanTime,
       'lastScannedBy': asset.lastScannedBy,
-      // เพิ่มฟิลด์อื่นๆ ตามที่ต้องการ
+      'status': asset.status,
+      'tagId': asset.tagId,
+      'tagType': asset.tagType,
+      'value': asset.value,
+      'zone': asset.zone,
     };
 
     return Container(

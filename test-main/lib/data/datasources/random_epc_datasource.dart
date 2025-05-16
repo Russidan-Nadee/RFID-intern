@@ -1,3 +1,4 @@
+/* Path: lib/data/datasources/epc_datasource.dart */
 import 'dart:math';
 import '../../../domain/repositories/asset_repository.dart';
 
@@ -41,29 +42,52 @@ class RandomEpcDatasource implements EpcDatasource {
       // ใช้ Set เพื่อป้องกันข้อมูลซ้ำ
       Set<String> epcSet = {};
 
-      // สุ่มจำนวน EPC ที่ต้องการ (2-4 รายการ)
+      // สุ่มจำนวน EPC จริงที่ต้องการ (4-6 รายการ)
       final random = Random();
-      final totalItemCount = random.nextInt(3) + 2; // สุ่มจำนวน 2-4
-
-      // จำนวน EPC จากฐานข้อมูล (1-2 รายการ)
       final dbItemCount = min(
-        assets.isEmpty ? 0 : random.nextInt(2) + 1,
+        4 + random.nextInt(3), // สุ่มจำนวน 4-6
         assets.length,
       );
 
-      // เพิ่ม EPC จากฐานข้อมูล
-      for (int i = 0; i < dbItemCount; i++) {
-        final randomIndex = random.nextInt(assets.length);
-        final randomAsset = assets[randomIndex];
-        if (randomAsset.epc.isNotEmpty) {
-          epcSet.add(randomAsset.epc);
+      // ถ้าไม่มีข้อมูลในฐานข้อมูลหรือมีไม่พอ
+      if (assets.isEmpty || assets.length < 4) {
+        // สร้าง EPC สุ่มแทนข้อมูลจริงที่ไม่พอ
+        int randomItemsNeeded = assets.isEmpty ? 5 : (4 - assets.length);
+
+        // เพิ่ม EPC จากฐานข้อมูลทั้งหมดที่มี
+        for (final asset in assets) {
+          if (asset.epc.isNotEmpty) {
+            epcSet.add(asset.epc);
+          }
+        }
+
+        // เพิ่ม EPC สุ่มให้ครบจำนวนที่ต้องการ
+        while (epcSet.length < randomItemsNeeded + assets.length) {
+          epcSet.add(generateRandomEpc());
+        }
+      } else {
+        // มีข้อมูลในฐานข้อมูลเพียงพอ
+
+        // สุ่มเลือก EPC จากฐานข้อมูล dbItemCount รายการ
+        List<int> randomIndices = [];
+        while (randomIndices.length < dbItemCount) {
+          final randomIndex = random.nextInt(assets.length);
+          if (!randomIndices.contains(randomIndex)) {
+            randomIndices.add(randomIndex);
+          }
+        }
+
+        // เพิ่ม EPC จากฐานข้อมูลตามที่สุ่มได้
+        for (final index in randomIndices) {
+          final asset = assets[index];
+          if (asset.epc.isNotEmpty) {
+            epcSet.add(asset.epc);
+          }
         }
       }
 
-      // เพิ่ม EPC สุ่มเพิ่มเติมให้ครบจำนวน
-      while (epcSet.length < totalItemCount) {
-        epcSet.add(generateRandomEpc());
-      }
+      // เพิ่ม EPC สุ่มอีก 1 รายการเสมอ
+      epcSet.add(generateRandomEpc());
 
       // แปลงเป็น List และคืนค่า
       return epcSet.toList();

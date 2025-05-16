@@ -85,6 +85,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
         title: const Text('รายละเอียดสินทรัพย์'),
         centerTitle: true,
         elevation: 0,
+        automaticallyImplyLeading: false,
       ),
       child:
           _guid == null

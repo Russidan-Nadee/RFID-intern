@@ -23,6 +23,7 @@ class ExportConfirmationScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: IconThemeData(color: primaryColor),
