@@ -117,7 +117,7 @@ class ExportSelectedAssets extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${asset.status} - ${asset.department}',
+                                      '${asset.status} - ${asset.currentLocation}',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Colors.grey.shade700,

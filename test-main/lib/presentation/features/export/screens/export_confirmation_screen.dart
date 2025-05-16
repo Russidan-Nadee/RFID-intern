@@ -12,7 +12,6 @@ class ExportConfirmationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final primaryColor = const Color(0xFF6A5ACD);
     final cardColor = const Color(0xFFF5F5F8);
-    final lightPrimaryColor = const Color(0xFFE6E4F4);
 
     return ScreenContainer(
       appBar: AppBar(
@@ -48,29 +47,33 @@ class ExportConfirmationScreen extends StatelessWidget {
   }
 
   Widget _buildExportDetails(ExportBloc bloc, Color primaryColor) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F8),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'รายละเอียดการส่งออก',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: primaryColor,
+    return Center(
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F8),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'รายละเอียดการส่งออก',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const Text('ไฟล์ข้อมูลที่จะส่งออก: CSV'),
-          Text('จำนวนรายการที่จะส่งออก: ${bloc.selectedAssets.length} รายการ'),
-          Text('คอลัมน์ที่เลือก: ${bloc.selectedColumns.length} คอลัมน์'),
-          Text('ขนาดไฟล์โดยประมาณ: ${bloc.estimatedFileSize} KB'),
-        ],
+            const SizedBox(height: 16),
+            const Text('ไฟล์ข้อมูลที่จะส่งออก: CSV'),
+            Text(
+              'จำนวนรายการที่จะส่งออก: ${bloc.selectedAssets.length} รายการ',
+            ),
+            Text('คอลัมน์ที่เลือก: ${bloc.selectedColumns.length} คอลัมน์'),
+            Text('ขนาดไฟล์โดยประมาณ: ${bloc.estimatedFileSize} KB'),
+          ],
+        ),
       ),
     );
   }
@@ -147,18 +150,30 @@ class ExportConfirmationScreen extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: const Color(0xFFEFECFD), // สีม่วงอ่อนมากๆ
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(18), // โค้งมนมากขึ้น
               ),
-              side: BorderSide(color: primaryColor),
             ),
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text('ยกเลิก', style: TextStyle(color: primaryColor)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                'ยกเลิกการส่งออก',
+                style: TextStyle(
+                  color: const Color(0xFF6750A4), // สีม่วงเข้มแบบ Material 3
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 16),

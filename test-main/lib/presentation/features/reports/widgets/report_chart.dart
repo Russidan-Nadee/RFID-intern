@@ -23,7 +23,7 @@ class ReportChart extends StatelessWidget {
         title = 'Asset Distribution by Status';
         break;
       case 'department':
-        data = bloc.departmentStats;
+        data = bloc.currentLocationStats;
         title = 'Asset Distribution by Department';
         break;
       default:

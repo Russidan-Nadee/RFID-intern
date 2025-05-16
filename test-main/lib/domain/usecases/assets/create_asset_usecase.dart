@@ -10,34 +10,46 @@ class CreateAssetUseCase {
   /// สร้างสินทรัพย์ใหม่ในระบบ
   ///
   /// [id] คือรหัสสินทรัพย์
-  /// [uid] คือรหัส RFID
+  /// [tagId] คือรหัส RFID tag
   /// [category] คือหมวดหมู่
-  /// [brand] คือแบรนด์หรือรุ่น
-  /// [department] คือแผนกที่ดูแล
+  /// [itemName] คือชื่อสินค้าหรือรุ่น
+  /// [currentLocation] คือตำแหน่งปัจจุบัน
   /// [status] คือสถานะ (ค่าเริ่มต้นคือ 'Available')
   Future<Asset?> execute({
     required String id,
-    required String uid,
+    required String tagId,
     required String category,
-    required String brand,
-    required String department,
+    required String itemName,
+    required String currentLocation,
     String status = 'Available',
   }) async {
     try {
       // สร้างวันที่ปัจจุบัน
       final now = DateTime.now();
-      final date =
+      final lastScanTime =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
       // สร้าง AssetModel จากข้อมูลที่ได้รับ
       final asset = AssetModel(
-        id: id.toUpperCase(), // แปลงเป็นตัวพิมพ์ใหญ่
-        uid: uid.toUpperCase(), // แปลงเป็นตัวพิมพ์ใหญ่
+        id: id.toUpperCase(),
+        tagId: tagId.toUpperCase(),
+        epc: tagId.toUpperCase(), // ใช้ค่าเดียวกับ tagId
+        itemId: id.toUpperCase(), // ใช้ค่าเดียวกับ id
+        itemName: itemName,
         category: category,
-        brand: brand,
-        department: department,
         status: status,
-        date: date,
+        tagType: 'RFID',
+        saleDate: '',
+        frequency: '13.56 MHz',
+        currentLocation: currentLocation,
+        zone: '',
+        lastScanTime: lastScanTime,
+        lastScannedBy: 'System',
+        batteryLevel: 'N/A',
+        batchNumber: '',
+        manufacturingDate: '',
+        expiryDate: '',
+        value: '',
       );
 
       // บันทึกลงในฐานข้อมูล

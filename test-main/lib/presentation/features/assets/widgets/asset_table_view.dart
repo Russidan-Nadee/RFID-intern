@@ -256,7 +256,7 @@ class AssetTableView extends StatelessWidget {
             Navigator.pushNamed(
               context,
               '/assetDetail',
-              arguments: {'guid': asset.uid},
+              arguments: {'guid': asset.tagId}, // แก้จาก uid เป็น tagId
             );
           },
           borderRadius: BorderRadius.circular(12),

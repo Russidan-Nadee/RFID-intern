@@ -79,10 +79,10 @@ class _ScanResultDisplayState extends State<ScanResultDisplay> {
 
                 // Asset details
                 _buildDetailRow('Category', asset.category),
-                _buildDetailRow('Item Name', asset.brand),
-                _buildDetailRow('Location', asset.department),
+                _buildDetailRow('Item Name', asset.itemName),
+                _buildDetailRow('Location', asset.currentLocation),
                 _buildDetailRow('Status', asset.status),
-                _buildDetailRow('Last Scan', asset.date),
+                _buildDetailRow('Last Scan', asset.lastScanTime),
               ],
             ),
           ),

@@ -1,6 +1,5 @@
 // lib/core/di/modules/bloc_module.dart
 import 'package:get_it/get_it.dart';
-import 'package:rfid_project/domain/usecases/export/prepare_export_columns_usecase.dart';
 import '../../../domain/usecases/assets/get_assets_usecase.dart';
 import '../../../domain/usecases/category/add_category_usecase.dart';
 import '../../../domain/usecases/category/delete_category_usecase.dart';
@@ -38,11 +37,7 @@ class BlocModule {
 
     // ลงทะเบียน ExportBloc
     _getIt.registerFactory<ExportBloc>(
-      () => ExportBloc(
-        _getIt<GetAssetsUseCase>(),
-        _getIt<AssetRepository>(),
-        _getIt<PrepareExportColumnsUseCase>(),
-      ),
+      () => ExportBloc(_getIt<GetAssetsUseCase>(), _getIt<AssetRepository>()),
     );
 
     // ลงทะเบียน RfidScanBloc

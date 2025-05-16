@@ -2,20 +2,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
+import 'package:rfid_project/domain/usecases/export/prepare_export_columns_usecase.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../domain/usecases/assets/get_assets_usecase.dart';
 import '../../../../domain/entities/asset.dart';
 import '../../../../domain/entities/export_column.dart';
 import '../../../../domain/entities/export_configuration.dart';
 import '../../../../domain/repositories/asset_repository.dart';
-import '../../../../domain/usecases/export/prepare_export_columns_usecase.dart';
 
 enum ExportStatus { initial, loading, loaded, exporting, exportComplete, error }
 
 class ExportBloc extends ChangeNotifier {
   final GetAssetsUseCase _getAssetsUseCase;
   final AssetRepository _assetRepository;
-  final PrepareExportColumnsUseCase _prepareExportColumnsUseCase;
 
   ExportStatus _status = ExportStatus.initial;
   List<Asset> _allAssets = [];
@@ -33,14 +32,16 @@ class ExportBloc extends ChangeNotifier {
 
   // ข้อมูลสินทรัพย์เฉพาะ
   String? _assetId;
-  String? _assetUid;
+  String? _assettagId;
 
   ExportBloc(
     this._getAssetsUseCase,
     this._assetRepository,
-    this._prepareExportColumnsUseCase,
+    // ลบพารามิเตอร์นี้ออก
+    // this._prepareExportColumnsUseCase,
   ) : _exportConfig = ExportConfiguration(
-        columns: _prepareExportColumnsUseCase.execute(),
+        // สร้างอินสแตนซ์ใหม่และเรียกใช้โดยตรง
+        columns: PrepareExportColumnsUseCase().execute(),
       ) {
     _initExportHistory();
   }
@@ -57,7 +58,7 @@ class ExportBloc extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   String? get lastExportedFilePath => _lastExportedFilePath;
   String? get assetId => _assetId;
-  String? get assetUid => _assetUid;
+  String? get assettagId => _assettagId;
   bool get isFromSearch => _isFromSearch;
   Map<String, dynamic>? get searchParams => _searchParams;
   ExportConfiguration get exportConfig => _exportConfig;
@@ -96,9 +97,9 @@ class ExportBloc extends ChangeNotifier {
     if (args == null) return;
 
     // ตรวจสอบว่ามาจากหน้ารายละเอียดสินทรัพย์
-    if (args.containsKey('assetId') && args.containsKey('assetUid')) {
+    if (args.containsKey('assetId') && args.containsKey('assettagId')) {
       _assetId = args['assetId'];
-      _assetUid = args['assetUid'];
+      _assettagId = args['assettagId'];
       _loadSingleAsset(clearExisting: false);
     }
     // ตรวจสอบว่ามาจากหน้าค้นหา
@@ -115,22 +116,22 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
   }
 
-  // โหลดข้อมูลสินทรัพย์เฉพาะจาก UID
+  // โหลดข้อมูลสินทรัพย์เฉพาะจาก tagId
   Future<void> _loadSingleAsset({bool clearExisting = true}) async {
-    if (_assetUid == null) return;
+    if (_assettagId == null) return;
 
     _status = ExportStatus.loading;
     notifyListeners();
 
     try {
-      final asset = await _assetRepository.findAssetByUid(_assetUid!);
+      final asset = await _assetRepository.findAssetByTagId(_assettagId!);
 
       if (asset != null) {
         if (clearExisting) {
           _selectedAssets = [asset];
         } else {
           // เช็คว่ามีในรายการเลือกอยู่แล้วหรือไม่
-          if (!_selectedAssets.any((a) => a.uid == asset.uid)) {
+          if (!_selectedAssets.any((a) => a.tagId == asset.tagId)) {
             _selectedAssets.add(asset);
           }
         }
@@ -140,7 +141,7 @@ class ExportBloc extends ChangeNotifier {
         _status = ExportStatus.loaded;
       } else {
         _status = ExportStatus.error;
-        _errorMessage = 'ไม่พบสินทรัพย์ที่มี UID: $_assetUid';
+        _errorMessage = 'ไม่พบสินทรัพย์ที่มี tagId: $_assettagId';
       }
     } catch (e) {
       _status = ExportStatus.error;
@@ -178,9 +179,9 @@ class ExportBloc extends ChangeNotifier {
                   .where(
                     (asset) =>
                         asset.id.toLowerCase().contains(query) ||
-                        asset.brand.toLowerCase().contains(query) ||
+                        asset.itemName.toLowerCase().contains(query) ||
                         asset.category.toLowerCase().contains(query) ||
-                        asset.department.toLowerCase().contains(query),
+                        asset.currentLocation.toLowerCase().contains(query),
                   )
                   .toList();
         } else {
@@ -195,7 +196,7 @@ class ExportBloc extends ChangeNotifier {
       } else {
         // เพิ่มเฉพาะรายการที่ยังไม่มี
         for (var asset in searchResults) {
-          if (!_selectedAssets.any((a) => a.uid == asset.uid)) {
+          if (!_selectedAssets.any((a) => a.tagId == asset.tagId)) {
             _selectedAssets.add(asset);
           }
         }
@@ -244,7 +245,7 @@ class ExportBloc extends ChangeNotifier {
 
   // เพิ่ม/ลบสินทรัพย์จากรายการที่เลือก
   void toggleAssetSelection(Asset asset) {
-    final index = _selectedAssets.indexWhere((a) => a.uid == asset.uid);
+    final index = _selectedAssets.indexWhere((a) => a.tagId == asset.tagId);
 
     if (index >= 0) {
       _selectedAssets.removeAt(index);
@@ -257,7 +258,7 @@ class ExportBloc extends ChangeNotifier {
 
   // เช็คว่าสินทรัพย์ถูกเลือกหรือไม่
   bool isAssetSelected(Asset asset) {
-    return _selectedAssets.any((a) => a.uid == asset.uid);
+    return _selectedAssets.any((a) => a.tagId == asset.tagId);
   }
 
   // เพิ่มสินทรัพย์หลายรายการ
@@ -272,7 +273,7 @@ class ExportBloc extends ChangeNotifier {
 
   // ลบสินทรัพย์
   void removeAsset(Asset asset) {
-    _selectedAssets.removeWhere((a) => a.uid == asset.uid);
+    _selectedAssets.removeWhere((a) => a.tagId == asset.tagId);
     notifyListeners();
   }
 
@@ -359,31 +360,18 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ดึงค่าจากสินทรัพย์ตามชื่อคอลัมน์
-  dynamic getAssetValueByColumnKey(Asset asset, String columnKey) {
-    switch (columnKey) {
-      case 'id':
-        return asset.id;
-      case 'category':
-        return asset.category;
-      case 'status':
-        return asset.status;
-      case 'brand':
-      case 'itemName':
-        return asset.brand;
-      case 'uid':
-      case 'tagId':
-      case 'epc':
-        return asset.uid;
-      case 'department':
-      case 'currentLocation':
-        return asset.department;
-      case 'date':
-      case 'lastScanTime':
-        return asset.date;
-      // สำหรับฟิลด์อื่นๆ ที่ไม่มีใน Asset Entity ให้คืนค่าว่าง
-      default:
-        return '';
+  Future<void> shareExportedFile() async {
+    if (_lastExportedFilePath != null) {
+      try {
+        final file = XFile(_lastExportedFilePath!);
+        await Share.shareXFiles([file], subject: 'RFID Asset Data Export');
+      } catch (e) {
+        _errorMessage = 'Error sharing file: $e';
+        notifyListeners();
+      }
+    } else {
+      _errorMessage = 'No exported file available to share';
+      notifyListeners();
     }
   }
 
@@ -470,22 +458,6 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
   }
 
-  // แชร์ไฟล์ล่าสุดที่ส่งออก
-  Future<void> shareExportedFile() async {
-    if (_lastExportedFilePath != null) {
-      try {
-        final file = XFile(_lastExportedFilePath!);
-        await Share.shareXFiles([file], subject: 'RFID Asset Data Export');
-      } catch (e) {
-        _errorMessage = 'Error sharing file: $e';
-        notifyListeners();
-      }
-    } else {
-      _errorMessage = 'No exported file available to share';
-      notifyListeners();
-    }
-  }
-
   // ฟังก์ชันนี้จะถูกเรียกเมื่อต้องการส่งออกข้อมูล
   Future<void> exportData() async {
     if (_exportConfig.format == 'CSV') {
@@ -513,5 +485,54 @@ class ExportBloc extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  // ดึงค่าจากสินทรัพย์ตามชื่อคอลัมน์
+  dynamic getAssetValueByColumnKey(Asset asset, String columnKey) {
+    // ดึงข้อมูลเฉพาะฟิลด์ที่มีในตาราง MySQL
+    switch (columnKey) {
+      case 'id':
+        return asset.id;
+      case 'tagId':
+        return asset.tagId;
+      case 'epc':
+        return asset.epc;
+      case 'itemId':
+        return asset.itemId;
+      case 'itemName':
+        return asset.itemName;
+      case 'category':
+        return asset.category;
+      case 'status':
+        return asset.status;
+      case 'tagType':
+        return asset.tagType;
+      case 'saleDate':
+        return asset.saleDate;
+      case 'frequency':
+        return asset.frequency;
+      case 'currentLocation':
+        return asset.currentLocation;
+      case 'zone':
+        return asset.zone;
+      case 'lastScanTime':
+        return asset.lastScanTime;
+      case 'lastScannedBy':
+        return asset.lastScannedBy;
+      case 'batteryLevel':
+        return asset.batteryLevel;
+      case 'batchNumber':
+        return asset.batchNumber;
+      case 'manufacturingDate':
+        return asset.manufacturingDate;
+      case 'expiryDate':
+        return asset.expiryDate;
+      case 'value':
+        return asset.value;
+
+      // กรณีไม่พบคอลัมน์ที่ระบุ
+      default:
+        return '';
+    }
   }
 }

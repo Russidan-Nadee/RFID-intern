@@ -185,7 +185,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title = 'Assets by Status';
         break;
       case 'department':
-        data = bloc.departmentStats;
+        data = bloc.currentLocationStats;
         title = 'Assets by Department';
         break;
       default:

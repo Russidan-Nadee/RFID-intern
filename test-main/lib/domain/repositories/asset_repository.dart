@@ -8,6 +8,7 @@ abstract class AssetRepository {
   Future<void> deleteAsset(String uid);
   Future<void> deleteAllAssets();
   Future<Asset?> findAssetByUid(String uid);
+  Future<Asset?> findAssetByTagId(String tagId); // เพิ่มเมธอดใหม่นี้
   Future<Asset?> updateAsset(Asset asset);
   Future<String?> getRandomUid();
   Future<String?> exportAssetsToCSV(List<Asset> assets, List<String> columns);

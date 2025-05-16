@@ -67,14 +67,13 @@ class AssetBloc extends ChangeNotifier {
     _isTableView = !_isTableView;
     notifyListeners();
   }
-  // เพิ่มฟังก์ชันใหม่ในคลาส AssetBloc
 
   // เพิ่มฟังก์ชันสำหรับการนำทางไปดูรายละเอียดสินทรัพย์
   void navigateToAssetDetail(BuildContext context, Asset asset) {
     Navigator.pushNamed(
       context,
       '/assetDetail',
-      arguments: {'guid': asset.uid},
+      arguments: {'guid': asset.tagId}, // แก้จาก uid เป็น tagId
     );
   }
 
@@ -89,7 +88,7 @@ class AssetBloc extends ChangeNotifier {
       '/export',
       arguments: {
         'assetId': asset.id,
-        'assetUid': asset.uid,
+        'assetUid': asset.tagId, // แก้จาก uid เป็น tagId
         'scrollToBottom': scrollToBottom,
       },
     );
@@ -114,7 +113,9 @@ class AssetBloc extends ChangeNotifier {
             return asset.id.toLowerCase().contains(query) ||
                 asset.category.toLowerCase().contains(query) ||
                 asset.status.toLowerCase().contains(query) ||
-                asset.brand.toLowerCase().contains(query);
+                asset.itemName.toLowerCase().contains(
+                  query,
+                ); // แก้จาก brand เป็น itemName
           }).toList();
     }
   }

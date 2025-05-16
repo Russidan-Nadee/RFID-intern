@@ -11,22 +11,24 @@ class AssetRepositoryImpl implements AssetRepository {
 
   AssetRepositoryImpl(this._apiService);
 
+  @override
+  Future<Asset?> findAssetByTagId(String tagId) async {
+    final assetData = await _apiService.getAssetByUid(
+      tagId,
+    ); // ใช้ API ที่มีอยู่แล้ว
+    if (assetData == null) return null;
+
+    // ส่งข้อมูลทั้งหมดจาก API ไปยัง AssetModel
+    return AssetModel.fromMap(assetData);
+  }
+
   // จัดการสินทรัพย์
   @override
   Future<List<Asset>> getAssets() async {
     final assetsData = await _apiService.getAssets();
     return assetsData.map((map) {
-      // แปลงข้อมูลจาก API เป็นรูปแบบที่ frontend ใช้
-      final assetMap = {
-        'id': map['id'] ?? map['itemId'] ?? '',
-        'tagId': map['tagId'] ?? map['epc'] ?? '',
-        'category': map['category'] ?? '',
-        'status': map['status'] ?? '',
-        'brand': map['itemName'] ?? '',
-        'department': map['currentLocation'] ?? '',
-        'date': map['lastScanTime'] ?? '',
-      };
-      return AssetModel.fromMap(assetMap);
+      // ส่งข้อมูลทั้งหมดจาก API ไปยัง AssetModel
+      return AssetModel.fromMap(map);
     }).toList();
   }
 
@@ -37,7 +39,7 @@ class AssetRepositoryImpl implements AssetRepository {
       return await _apiService.getAssetByUid(uid);
     } catch (e) {
       print('Error getting raw asset data: $e');
-      rethrow; // ส่งต่อข้อผิดพลาดเพื่อให้ชั้นบนจัดการ
+      rethrow;
     }
   }
 
@@ -46,18 +48,8 @@ class AssetRepositoryImpl implements AssetRepository {
     final assetData = await _apiService.getAssetByUid(uid);
     if (assetData == null) return null;
 
-    // แปลงข้อมูลจาก API เป็นรูปแบบที่ frontend ใช้
-    final assetMap = {
-      'id': assetData['id'] ?? assetData['itemId'] ?? '',
-      'tagId': assetData['tagId'] ?? assetData['epc'] ?? '',
-      'category': assetData['category'] ?? '',
-      'status': assetData['status'] ?? '',
-      'brand': assetData['itemName'] ?? '',
-      'department': assetData['currentLocation'] ?? '',
-      'date': assetData['lastScanTime'] ?? '',
-    };
-
-    return AssetModel.fromMap(assetMap);
+    // ส่งข้อมูลทั้งหมดจาก API ไปยัง AssetModel
+    return AssetModel.fromMap(assetData);
   }
 
   @override
@@ -73,8 +65,9 @@ class AssetRepositoryImpl implements AssetRepository {
   @override
   Future<Asset?> updateAsset(Asset asset) async {
     final assetModel = asset as AssetModel;
+    // แก้ไขการเรียกใช้ uid และ status เป็น tagId และ status
     final success = await _apiService.updateAssetStatus(
-      assetModel.uid,
+      assetModel.tagId,
       assetModel.status,
     );
 
@@ -87,15 +80,7 @@ class AssetRepositoryImpl implements AssetRepository {
   @override
   Future<void> insertAsset(Asset asset) async {
     final assetModel = asset as AssetModel;
-    final assetData = {
-      'itemId': assetModel.id,
-      'tagId': assetModel.uid,
-      'category': assetModel.category,
-      'itemName': assetModel.brand,
-      'currentLocation': assetModel.department,
-      'status': assetModel.status,
-      'lastScanTime': assetModel.date,
-    };
+    final assetData = assetModel.toMap();
     await _apiService.insertAsset(assetData);
   }
 
@@ -109,7 +94,6 @@ class AssetRepositoryImpl implements AssetRepository {
     await _apiService.deleteAllAssets();
   }
 
-  // เพิ่ม method ที่หายไป
   @override
   Future<List<String>> getCategories() async {
     return await _apiService.getCategories();
@@ -173,7 +157,8 @@ class AssetRepositoryImpl implements AssetRepository {
       if (assets.isEmpty) return null;
       final random =
           assets[(DateTime.now().millisecondsSinceEpoch % assets.length)];
-      return random.uid;
+      // แก้ไขการเรียกใช้ uid เป็น tagId
+      return random.tagId;
     } catch (e) {
       return null;
     }
@@ -185,18 +170,82 @@ class AssetRepositoryImpl implements AssetRepository {
     List<String> columns,
   ) async {
     try {
-      // สร้างข้อมูล CSV (ส่วนนี้เหมือนเดิม)
+      // สร้างข้อมูล CSV
       List<List<dynamic>> rows = [];
       rows.add(columns);
       for (var asset in assets) {
         List<dynamic> row = [];
-        if (columns.contains('ID')) row.add(asset.id);
-        if (columns.contains('Category')) row.add(asset.category);
-        if (columns.contains('Brand')) row.add(asset.brand);
-        if (columns.contains('Status')) row.add(asset.status);
-        if (columns.contains('Department')) row.add(asset.department);
-        if (columns.contains('Date')) row.add(asset.date);
-        if (columns.contains('UID')) row.add(asset.uid);
+
+        // ใช้ for loop แทนเพื่อรองรับทุกคอลัมน์ที่อาจถูกเลือก
+        for (var column in columns) {
+          var value;
+
+          // แมปคอลัมน์ในตาราง MySQL
+          switch (column) {
+            case 'ID':
+              value = asset.id;
+              break;
+            case 'Item ID':
+              value = asset.itemId;
+              break;
+            case 'Tag ID':
+              value = asset.tagId;
+              break;
+            case 'EPC':
+              value = asset.epc;
+              break;
+            case 'Item Name':
+              value = asset.itemName;
+              break;
+            case 'Category':
+              value = asset.category;
+              break;
+            case 'Status':
+              value = asset.status;
+              break;
+            case 'Tag Type':
+              value = asset.tagType;
+              break;
+            case 'Sale Date':
+              value = asset.saleDate;
+              break;
+            case 'Frequency':
+              value = asset.frequency;
+              break;
+            case 'Current Location':
+              value = asset.currentLocation;
+              break;
+            case 'Zone':
+              value = asset.zone;
+              break;
+            case 'Last Scan Time':
+              value = asset.lastScanTime;
+              break;
+            case 'Last Scanned By':
+              value = asset.lastScannedBy;
+              break;
+            case 'Battery Level':
+              value = asset.batteryLevel;
+              break;
+            case 'Batch Number':
+              value = asset.batchNumber;
+              break;
+            case 'Manufacturing Date':
+              value = asset.manufacturingDate;
+              break;
+            case 'Expiry Date':
+              value = asset.expiryDate;
+              break;
+            case 'Value':
+              value = asset.value;
+              break;
+            default:
+              value = '';
+              break;
+          }
+
+          row.add(value);
+        }
 
         rows.add(row);
       }

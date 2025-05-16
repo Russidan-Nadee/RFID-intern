@@ -10,7 +10,7 @@ class ReportsBloc extends ChangeNotifier {
   ReportsStatus _status = ReportsStatus.initial;
   List<Asset> _assets = [];
   String _errorMessage = '';
-  String _selectedReportType = 'category'; // category, status, department
+  String _selectedReportType = 'category'; // category, status, currentLocation
 
   ReportsBloc(this._getAssetsUseCase);
 
@@ -38,10 +38,10 @@ class ReportsBloc extends ChangeNotifier {
   }
 
   // ข้อมูลสำหรับกราฟแยกตามแผนก
-  Map<String, int> get departmentStats {
+  Map<String, int> get currentLocationStats {
     Map<String, int> result = {};
     for (var asset in _assets) {
-      result[asset.department] = (result[asset.department] ?? 0) + 1;
+      result[asset.currentLocation] = (result[asset.currentLocation] ?? 0) + 1;
     }
     return result;
   }

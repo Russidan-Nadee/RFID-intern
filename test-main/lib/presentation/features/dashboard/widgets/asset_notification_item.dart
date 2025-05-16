@@ -92,7 +92,7 @@ class AssetNotificationItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    TimeFormatter.timeAgo(asset.date),
+                    TimeFormatter.timeAgo(asset.lastScanTime),
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 4),

@@ -20,18 +20,21 @@ class AssetTile extends StatelessWidget {
         onTap: () {
           // แทนที่จะใช้เมธอด _navigateToDetail ให้ใส่โค้ดการนำทางตรงนี้
           // เพื่อให้แน่ใจว่าจะทำงานได้
-          if (asset.uid.isEmpty) {
+          if (asset.tagId.isEmpty) {
+            // แก้จาก uid เป็น tagId
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('ไม่พบ GUID ของสินทรัพย์นี้')),
+              const SnackBar(
+                content: Text('ไม่พบ Tag ID ของสินทรัพย์นี้'),
+              ), // แก้จาก GUID เป็น Tag ID
             );
             return;
           }
 
-          // นำทางไปยังหน้ารายละเอียด โดยส่ง uid แต่ใช้ชื่อคีย์เป็น 'guid'
+          // นำทางไปยังหน้ารายละเอียด โดยส่ง tagId แต่ใช้ชื่อคีย์เป็น 'guid'
           Navigator.pushNamed(
             context,
             '/assetDetail',
-            arguments: {'guid': asset.uid},
+            arguments: {'guid': asset.tagId}, // แก้จาก uid เป็น tagId
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -62,13 +65,21 @@ class AssetTile extends StatelessWidget {
             vertical: 8,
           ),
           children: [
-            // เปลี่ยนจาก UID เป็น GUID
-            _buildRow(Icons.qr_code, 'GUID: ${asset.uid}'),
-            _buildRow(Icons.business, 'Brand: ${asset.brand}'),
-            _buildRow(Icons.apartment, 'Department: ${asset.department}'),
+            // เปลี่ยนจาก UID/GUID เป็น Tag ID
+            _buildRow(Icons.qr_code, 'Tag ID: ${asset.tagId}'),
+            _buildRow(
+              Icons.business,
+              'Item Name: ${asset.itemName}',
+            ), // แก้จาก Brand เป็น Item Name
+            _buildRow(
+              Icons.apartment,
+              'Location: ${asset.currentLocation}',
+            ), // แก้จาก Department เป็น Current Location
             _buildRow(Icons.verified, 'Status: ${asset.status}'),
-            _buildRow(Icons.calendar_today, 'Date: ${asset.date}'),
-
+            _buildRow(
+              Icons.calendar_today,
+              'Last Scan: ${asset.lastScanTime}',
+            ), // แก้จาก Date เป็น Last Scan Time
             // เพิ่มปุ่มดูรายละเอียดเพิ่มเติม
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
@@ -78,20 +89,25 @@ class AssetTile extends StatelessWidget {
                   TextButton.icon(
                     onPressed: () {
                       // ใช้โค้ดเดียวกับ onTap ของ InkWell
-                      if (asset.uid.isEmpty) {
+                      if (asset.tagId.isEmpty) {
+                        // แก้จาก uid เป็น tagId
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('ไม่พบ GUID ของสินทรัพย์นี้'),
+                            content: Text(
+                              'ไม่พบ Tag ID ของสินทรัพย์นี้',
+                            ), // แก้จาก GUID เป็น Tag ID
                           ),
                         );
                         return;
                       }
 
-                      // นำทางไปยังหน้ารายละเอียด โดยส่ง uid แต่ใช้ชื่อคีย์เป็น 'guid'
+                      // นำทางไปยังหน้ารายละเอียด โดยส่ง tagId แต่ใช้ชื่อคีย์เป็น 'guid'
                       Navigator.pushNamed(
                         context,
                         '/assetDetail',
-                        arguments: {'guid': asset.uid},
+                        arguments: {
+                          'guid': asset.tagId,
+                        }, // แก้จาก uid เป็น tagId
                       );
                     },
                     icon: const Icon(Icons.visibility),
@@ -107,7 +123,10 @@ class AssetTile extends StatelessWidget {
                       Navigator.pushNamed(
                         context,
                         '/export',
-                        arguments: {'assetId': asset.id, 'assetUid': asset.uid},
+                        arguments: {
+                          'assetId': asset.id,
+                          'assetUid': asset.tagId,
+                        }, // แก้จาก uid เป็น tagId
                       );
                     },
                     icon: const Icon(Icons.file_download),

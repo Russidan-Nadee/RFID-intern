@@ -59,8 +59,8 @@ class DashboardBloc extends ChangeNotifier {
     // เรียงตามวันที่ล่าสุด
     sortedAssets.sort((a, b) {
       try {
-        final dateA = DateTime.parse(a.date);
-        final dateB = DateTime.parse(b.date);
+        final dateA = DateTime.parse(a.lastScanTime);
+        final dateB = DateTime.parse(b.lastScanTime);
         return dateB.compareTo(dateA);
       } catch (e) {
         return 0;
@@ -76,7 +76,7 @@ class DashboardBloc extends ChangeNotifier {
     Navigator.pushNamed(
       context,
       '/assetDetail',
-      arguments: {'guid': asset.uid},
+      arguments: {'guid': asset.tagId},
     );
   }
 
