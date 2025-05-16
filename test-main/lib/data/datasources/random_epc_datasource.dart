@@ -3,18 +3,34 @@ import '../../../domain/repositories/asset_repository.dart';
 
 /// Interface สำหรับการอ่านข้อมูล EPC
 abstract class EpcDatasource {
-  /// อ่าน EPC (Electronic Product Code)
-  Future<String?> getEpc();
+  /// อ่าน EPC หลายรายการ
+  Future<List<String>> getEpcs();
 }
 
-/// การจำลองโดยสุ่ม EPC จากฐานข้อมูล
 class RandomEpcDatasource implements EpcDatasource {
   final AssetRepository _assetRepository;
 
   RandomEpcDatasource(this._assetRepository);
 
+  /// สร้าง EPC แบบสุ่มในรูปแบบ SGTIN
+  String generateRandomEpc() {
+    final random = Random();
+
+    // สร้างเลขบริษัท (Company Prefix) 6 หลัก
+    final companyPrefix = random.nextInt(999999).toString().padLeft(6, '0');
+
+    // สร้างรหัสสินค้า (Item Reference) 3 หลัก
+    final itemReference = random.nextInt(999).toString().padLeft(3, '0');
+
+    // สร้างเลขซีเรียล (Serial Number) 7 หลัก
+    final serialNumber = random.nextInt(9999999).toString().padLeft(7, '0');
+
+    // สร้าง EPC ในรูปแบบ SGTIN
+    return 'urn:epc:id:sgtin:$companyPrefix.$itemReference.$serialNumber';
+  }
+
   @override
-  Future<String?> getEpc() async {
+  Future<List<String>> getEpcs() async {
     try {
       // จำลองความล่าช้าเหมือนการสแกนจริง
       await Future.delayed(const Duration(milliseconds: 800));
@@ -22,30 +38,38 @@ class RandomEpcDatasource implements EpcDatasource {
       // ดึงสินทรัพย์ทั้งหมดจาก repository
       final assets = await _assetRepository.getAssets();
 
-      // ตรวจสอบว่ามีข้อมูลหรือไม่
-      if (assets.isEmpty) {
-        return null;
+      // ใช้ Set เพื่อป้องกันข้อมูลซ้ำ
+      Set<String> epcSet = {};
+
+      // สุ่มจำนวน EPC ที่ต้องการ (2-4 รายการ)
+      final random = Random();
+      final totalItemCount = random.nextInt(3) + 2; // สุ่มจำนวน 2-4
+
+      // จำนวน EPC จากฐานข้อมูล (1-2 รายการ)
+      final dbItemCount = min(
+        assets.isEmpty ? 0 : random.nextInt(2) + 1,
+        assets.length,
+      );
+
+      // เพิ่ม EPC จากฐานข้อมูล
+      for (int i = 0; i < dbItemCount; i++) {
+        final randomIndex = random.nextInt(assets.length);
+        final randomAsset = assets[randomIndex];
+        if (randomAsset.epc.isNotEmpty) {
+          epcSet.add(randomAsset.epc);
+        }
       }
 
-      // สุ่มเลือกหนึ่งสินทรัพย์
-      final random = Random();
-      final randomAsset = assets[random.nextInt(assets.length)];
+      // เพิ่ม EPC สุ่มเพิ่มเติมให้ครบจำนวน
+      while (epcSet.length < totalItemCount) {
+        epcSet.add(generateRandomEpc());
+      }
 
-      // คืนค่า EPC ของสินทรัพย์นั้น
-      return randomAsset.epc;
+      // แปลงเป็น List และคืนค่า
+      return epcSet.toList();
     } catch (e) {
-      print('Error getting random EPC: $e');
-      return null;
+      print('Error getting random EPCs: $e');
+      return [];
     }
   }
 }
-
-// ในอนาคตเมื่อมีอุปกรณ์จริง:
-// 
-// class RealRfidScannerDatasource implements EpcDatasource {
-//   @override
-//   Future<String?> getEpc() async {
-//     // โค้ดเชื่อมต่อกับอุปกรณ์ RFID จริง
-//     // return rfidReader.readEpc();
-//   }
-// }

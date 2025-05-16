@@ -97,9 +97,9 @@ class ExportBloc extends ChangeNotifier {
     if (args == null) return;
 
     // ตรวจสอบว่ามาจากหน้ารายละเอียดสินทรัพย์
-    if (args.containsKey('assetId') && args.containsKey('assettagId')) {
+    if (args.containsKey('assetId') && args.containsKey('assetUid')) {
       _assetId = args['assetId'];
-      _assettagId = args['assettagId'];
+      _assettagId = args['assetUid'];
       _loadSingleAsset(clearExisting: false);
     }
     // ตรวจสอบว่ามาจากหน้าค้นหา

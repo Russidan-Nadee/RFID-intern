@@ -1,3 +1,4 @@
+// ใน lib/presentation/features/rfid/screens/scan_rfid_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
@@ -6,6 +7,10 @@ import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/rfid_scan_bloc.dart';
 import '../widgets/asset_info_card.dart';
 import '../widgets/asset_not_found_card.dart';
+import '../widgets/unknown_epc_card.dart';
+import '../../assets/screens/asset_creation_preview_screen.dart';
+import '../../../../domain/usecases/assets/generate_asset_from_epc_usecase.dart';
+import '../../../../core/di/dependency_injection.dart';
 
 class ScanRfidScreen extends StatefulWidget {
   const ScanRfidScreen({Key? key}) : super(key: key);
@@ -16,12 +21,39 @@ class ScanRfidScreen extends StatefulWidget {
 
 class _ScanRfidScreenState extends State<ScanRfidScreen> {
   int _selectedIndex = 2; // Index for the Scan tab
+  final _generateAssetUseCase =
+      DependencyInjection.get<GenerateAssetFromEpcUseCase>();
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
     Navigator.pushReplacementNamed(
       context,
       ['/', '/searchAssets', '/scanRfid', '/reports', '/export'][index],
+    );
+  }
+
+  void _showAssetPreview(BuildContext context, String epc) async {
+    // สร้างข้อมูลตัวอย่างจาก EPC แต่ยังไม่บันทึกลงฐานข้อมูล
+    final previewAsset = await _generateAssetUseCase.generatePreview(epc);
+
+    if (!mounted) return;
+
+    // นำทางไปยังหน้าตัวอย่างข้อมูล
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => AssetCreationPreviewScreen(
+              asset: previewAsset,
+              onCreatePressed: () {
+                // ตรงนี้ยังไม่ทำอะไร ตามคำสั่งให้เป็นปุ่มเปล่าๆ
+                print(
+                  'Create Asset button pressed - no action implemented yet',
+                );
+                Navigator.pop(context);
+              },
+            ),
+      ),
     );
   }
 
@@ -112,27 +144,52 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  // หน้าจอแสดงผลลัพธ์การสแกน
+  // แก้ไขส่วนที่แสดงผลลัพธ์การสแกน
+  // แก้ไขส่วนที่แสดงผลลัพธ์การสแกน
   Widget _buildScannedResultView(RfidScanBloc bloc, BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ส่วนแสดง EPC
-          _buildEpcCard(bloc),
-
+          // หัวข้อผลการสแกน
+          const Text(
+            'ผลการสแกน RFID',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
 
-          // ส่วนแสดงข้อมูลสินทรัพย์ (ถ้าพบ)
-          if (bloc.isAssetFound)
-            AssetInfoCard(
-              asset: bloc.scannedAsset!,
-              onViewDetails:
-                  () => bloc.navigateToAssetDetail(context, bloc.scannedAsset!),
-            )
+          // ตรงนี้จะแสดงผลการสแกนแต่ละรายการ
+          if (bloc.scanResults.isEmpty)
+            const AssetNotFoundCard()
           else
-            const AssetNotFoundCard(),
+            Column(
+              children:
+                  bloc.scanResults.map((result) {
+                    if (result.epc == null || result.epc!.isEmpty) {
+                      // กรณีไม่มี EPC
+                      return const AssetNotFoundCard();
+                    } else if (result.asset != null) {
+                      // กรณีมี EPC และพบข้อมูลในฐานข้อมูล
+                      return AssetInfoCard(
+                        asset: result.asset!,
+                        onViewDetails:
+                            () => Navigator.pushNamed(
+                              context,
+                              '/assetDetail',
+                              arguments: {'guid': result.asset!.tagId},
+                            ),
+                      );
+                    } else {
+                      // กรณีมี EPC แต่ไม่พบข้อมูลในฐานข้อมูล
+                      return UnknownEpcCard(
+                        epc: result.epc!,
+                        generatedAsset: null, // ยังไม่มีข้อมูลที่สร้าง
+                        onTap: () => _showAssetPreview(context, result.epc!),
+                      );
+                    }
+                  }).toList(),
+            ),
 
           const SizedBox(height: 24),
 
@@ -145,37 +202,6 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // การ์ดแสดง EPC
-  Widget _buildEpcCard(RfidScanBloc bloc) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.qr_code, color: Theme.of(context).primaryColor),
-                const SizedBox(width: 8),
-                const Text(
-                  'EPC ที่สแกนได้:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              bloc.scannedEpc ?? 'ไม่พบ EPC',
-              style: const TextStyle(fontSize: 14, fontFamily: 'monospace'),
-            ),
-          ],
-        ),
       ),
     );
   }

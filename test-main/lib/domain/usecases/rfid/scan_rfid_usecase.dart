@@ -3,37 +3,34 @@ import '../../../data/datasources/random_epc_datasource.dart';
 import '../../entities/epc_scan_result.dart';
 import '../assets/find_asset_by_epc_usecase.dart';
 
-/// UseCase สำหรับการสแกน RFID
+// ใน lib/domain/usecases/rfid/scan_rfid_usecase.dart
 class ScanRfidUseCase {
-  /// แหล่งข้อมูล EPC (จำลองหรือจริง)
   final EpcDatasource _epcDatasource;
-
-  /// UseCase สำหรับค้นหาสินทรัพย์จาก EPC
   final FindAssetByEpcUseCase _findAssetByEpcUseCase;
 
-  /// สร้าง ScanRfidUseCase
   ScanRfidUseCase(this._epcDatasource, this._findAssetByEpcUseCase);
 
-  /// ดำเนินการสแกน RFID
-  ///
-  /// [context] คือ BuildContext สำหรับการแสดงผล (ถ้าจำเป็น)
-  ///
-  /// คืนค่า EpcScanResult ที่มีข้อมูลการสแกนและสินทรัพย์ (ถ้ามี)
-  Future<EpcScanResult> execute(BuildContext context) async {
+  Future<List<EpcScanResult>> execute(BuildContext context) async {
     try {
-      // 1. อ่าน EPC จากแหล่งข้อมูล (จำลองหรือเครื่องสแกนจริง)
-      final epc = await _epcDatasource.getEpc();
+      // อ่าน EPCs จากแหล่งข้อมูล
+      final epcs = await _epcDatasource.getEpcs();
 
-      // ถ้าไม่ได้ EPC
-      if (epc == null || epc.isEmpty) {
-        return EpcScanResult.error('ไม่สามารถอ่าน EPC ได้');
+      // ถ้าไม่ได้ EPCs
+      if (epcs.isEmpty) {
+        return [EpcScanResult.error('ไม่สามารถอ่าน EPC ได้')];
       }
 
-      // 2. ค้นหาสินทรัพย์จาก EPC
-      return await _findAssetByEpcUseCase.execute(epc);
+      // ค้นหาสินทรัพย์จากแต่ละ EPC
+      List<EpcScanResult> results = [];
+      for (String epc in epcs) {
+        // ที่นี่คือจุดที่ต้องแก้ - ต้องเพิ่มผลลัพธ์เข้ารายการ
+        final result = await _findAssetByEpcUseCase.execute(epc);
+        results.add(result); // ใช้ add เพื่อเพิ่มเข้ารายการ
+      }
+
+      return results;
     } catch (e) {
-      // กรณีเกิดข้อผิดพลาด
-      return EpcScanResult.error('เกิดข้อผิดพลาดในการสแกน: ${e.toString()}');
+      return [EpcScanResult.error('เกิดข้อผิดพลาดในการสแกน: ${e.toString()}')];
     }
   }
 }
