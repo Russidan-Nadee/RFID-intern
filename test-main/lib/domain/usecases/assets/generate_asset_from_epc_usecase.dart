@@ -36,16 +36,8 @@ class GenerateAssetFromEpcUseCase {
     ];
     final category = categories[_random.nextInt(categories.length)];
 
-    // สถานะ
-    final statuses = [
-      'In Stock',
-      'Shipped',
-      'Returned',
-      'Damaged',
-      'In Use',
-      'Maintenance',
-      'Lost',
-    ];
+    // สถานะ - แก้ไขให้มีเพียง Available และ Checked
+    final statuses = ['Available', 'Checked'];
     final status = statuses[_random.nextInt(statuses.length)];
 
     // ประเภทแท็ก
@@ -164,7 +156,6 @@ class GenerateAssetFromEpcUseCase {
       'yyyy-MM-dd HH:mm:ss',
     ).format(DateTime(year, month, day, hour, minute, second));
   }
-  // ใน lib/domain/usecases/assets/generate_asset_from_epc_usecase.dart
 
   // เพิ่มเมธอดนี้เข้าไปในคลาส
   // เมธอดนี้จะสร้างข้อมูลตัวอย่างโดยไม่บันทึกลงฐานข้อมูล
@@ -198,16 +189,8 @@ class GenerateAssetFromEpcUseCase {
       ];
       final category = categories[_random.nextInt(categories.length)];
 
-      // สถานะ
-      final statuses = [
-        'In Stock',
-        'Shipped',
-        'Returned',
-        'Damaged',
-        'In Use',
-        'Maintenance',
-        'Lost',
-      ];
+      // สถานะ - แก้ไขให้มีเพียง Available และ Checked
+      final statuses = ['Available', 'Checked'];
       final status = statuses[_random.nextInt(statuses.length)];
 
       // ประเภทแท็ก
@@ -316,7 +299,7 @@ class GenerateAssetFromEpcUseCase {
         itemId: 'ITM0000',
         itemName: 'Unknown Item',
         category: 'Unknown',
-        status: 'Unknown',
+        status: 'Available', // เปลี่ยนจาก 'Unknown' เป็น 'Available'
         tagType: 'Unknown',
         saleDate: '',
         frequency: '',

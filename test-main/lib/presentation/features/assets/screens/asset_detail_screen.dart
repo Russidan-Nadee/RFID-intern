@@ -85,7 +85,6 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
         title: const Text('รายละเอียดสินทรัพย์'),
         centerTitle: true,
         elevation: 0,
-        automaticallyImplyLeading: false,
       ),
       child:
           _guid == null
@@ -349,12 +348,21 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     );
   }
 
-  // ส่วนแสดงสถานะ
+  // แก้ไขส่วนแสดงสถานะใน _buildStatusCard
   Widget _buildStatusCard(Map<String, dynamic> assetData, Color statusColor) {
     final status = assetData['status']?.toString() ?? 'Unknown';
     final location =
         assetData['currentLocation']?.toString() ?? 'ไม่ระบุตำแหน่ง';
     final lastScanTime = assetData['lastScanTime']?.toString() ?? 'ไม่ระบุเวลา';
+
+    // แปลงสถานะเดิมให้เป็นสถานะใหม่
+    String displayStatus;
+    if (status.toLowerCase() == 'available' ||
+        status.toLowerCase() == 'in stock') {
+      displayStatus = 'Available';
+    } else {
+      displayStatus = 'Checked';
+    }
 
     return Card(
       elevation: 2,
@@ -376,12 +384,12 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: statusColor.withAlpha(51),
+                    color: Colors.grey.shade200, // ใช้สีเทาอ่อนสำหรับทุกสถานะ
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    _getStatusIcon(status),
-                    color: statusColor,
+                    _getStatusIcon(displayStatus),
+                    color: Colors.grey.shade700, // ใช้สีเทาเข้มสำหรับไอคอน
                     size: 32,
                   ),
                 ),
@@ -391,11 +399,10 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        status,
-                        style: TextStyle(
+                        displayStatus, // แสดงสถานะที่แปลงแล้ว
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: statusColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -528,56 +535,25 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     }
   }
 
-  // ฟังก์ชันช่วยในการกำหนดไอคอนตามสถานะ
   IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'available':
-        return Icons.check_circle;
-      case 'checked in':
-        return Icons.login;
-      case 'in use':
-        return Icons.person;
-      case 'maintenance':
-        return Icons.build;
-      case 'in production':
-        return Icons.precision_manufacturing;
-      case 'repair':
-        return Icons.home_repair_service;
-      case 'reserved':
-        return Icons.bookmark;
-      case 'disposed':
-        return Icons.delete;
-      case 'lost':
-        return Icons.search_off;
-      default:
-        return Icons.info_outline;
+    if (status == 'Available') {
+      return Icons.check; // ไอคอนเครื่องหมายถูก (✓) สำหรับ Available
+    } else if (status == 'Checked') {
+      return Icons.close; // ไอคอนเครื่องหมายกากบาท (X) สำหรับ Checked
+    } else {
+      // แปลงสถานะเดิมให้เป็นสถานะใหม่
+      if (status.toLowerCase() == 'available' ||
+          status.toLowerCase() == 'in stock') {
+        return Icons.check; // ให้ใช้ไอคอน ✓ สำหรับ Available
+      } else {
+        return Icons.close; // ใช้ไอคอน X สำหรับสถานะอื่นๆ
+      }
     }
   }
 
-  // ฟังก์ชันช่วยในการกำหนดสีตามสถานะ
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'available':
-        return Colors.green;
-      case 'checked in':
-        return Colors.blue;
-      case 'in use':
-        return Colors.purple;
-      case 'maintenance':
-        return Colors.orange;
-      case 'in production':
-        return Colors.amber.shade800;
-      case 'repair':
-        return Colors.amber;
-      case 'reserved':
-        return Colors.teal;
-      case 'disposed':
-        return Colors.red.shade300;
-      case 'lost':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
+    // ใช้สีเดียวกันสำหรับทุกสถานะ (ไม่แยกสี)
+    return Colors.grey.shade700;
   }
 
   // ฟังก์ชันช่วยในการจัดรูปแบบวันที่

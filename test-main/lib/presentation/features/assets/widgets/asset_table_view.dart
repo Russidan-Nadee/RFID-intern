@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/entities/asset.dart';
 import '../blocs/asset_bloc.dart';
+import '../../../../core/constants/app_constants.dart'; // เพิ่มการนำเข้า
 
 class AssetTableView extends StatelessWidget {
   final List<Asset> assets;
@@ -127,8 +128,8 @@ class AssetTableView extends StatelessWidget {
     final position = renderBox.localToGlobal(Offset.zero);
     final size = renderBox.size;
 
-    // ดึงสถานะทั้งหมดที่มีในข้อมูล
-    final List<String> allStatuses = bloc.getAllStatuses();
+    // ใช้เฉพาะสถานะ Available และ Checked
+    final List<String> allStatuses = ['Available', 'Checked'];
 
     showMenu<String>(
       context: context,
@@ -169,7 +170,7 @@ class AssetTableView extends StatelessWidget {
             ],
           ),
         ),
-        // เพิ่มรายการสถานะทั้งหมด
+        // เพิ่มรายการสถานะเฉพาะ Available และ Checked
         ...allStatuses.map((status) {
           final isSelected = bloc.selectedStatus == status;
           return PopupMenuItem<String>(
@@ -216,23 +217,9 @@ class AssetTableView extends StatelessWidget {
 
   // สร้างแถวสำหรับตาราง
   Widget _buildTableRow(BuildContext context, Asset asset, int index) {
-    // กำหนดสีพื้นหลังตามสถานะ
+    // ใช้สีพื้นหลังเดียวกันสำหรับทุกแถว
     Color bgColor = Colors.white;
     Color borderColor = Colors.grey.shade200;
-
-    if (asset.status == 'Checked In') {
-      bgColor = Colors.green.shade50;
-      borderColor = Colors.green.shade200;
-    } else if (asset.status == 'Available') {
-      bgColor = Colors.blue.shade50;
-      borderColor = Colors.blue.shade200;
-    } else if (asset.status == 'In Use') {
-      bgColor = Colors.orange.shade50;
-      borderColor = Colors.orange.shade200;
-    } else if (asset.status == 'Maintenance') {
-      bgColor = Colors.red.shade50;
-      borderColor = Colors.red.shade200;
-    }
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -256,7 +243,7 @@ class AssetTableView extends StatelessWidget {
             Navigator.pushNamed(
               context,
               '/assetDetail',
-              arguments: {'guid': asset.tagId}, // แก้จาก uid เป็น tagId
+              arguments: {'guid': asset.tagId},
             );
           },
           borderRadius: BorderRadius.circular(12),
@@ -275,7 +262,7 @@ class AssetTableView extends StatelessWidget {
                   _buildStatusCell(
                     context,
                     asset.status,
-                    asset.status == 'Checked In',
+                    asset.status == 'Checked',
                   ),
                 ],
               ),
@@ -300,18 +287,17 @@ class AssetTableView extends StatelessWidget {
     );
   }
 
-  // สร้างเซลล์สถานะ
+  // สร้างเซลล์สถานะ (ปรับปรุงใหม่)
   Widget _buildStatusCell(BuildContext context, String status, bool isChecked) {
-    Color statusColor = Colors.grey;
+    // แปลงสถานะให้เป็น Available หรือ Checked
+    String displayStatus = status;
+    IconData statusIcon;
 
-    if (status == 'Checked In') {
-      statusColor = Colors.green;
-    } else if (status == 'Available') {
-      statusColor = Colors.blue;
-    } else if (status == 'In Use') {
-      statusColor = Colors.orange;
-    } else if (status == 'Maintenance') {
-      statusColor = Colors.red;
+    if (status == 'Available') {
+      statusIcon = Icons.check;
+    } else {
+      displayStatus = 'Checked';
+      statusIcon = Icons.close;
     }
 
     return TableCell(
@@ -321,7 +307,7 @@ class AssetTableView extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
             decoration: BoxDecoration(
-              color: statusColor.withAlpha(50),
+              color: Colors.grey.shade200, // ใช้สีเดียวกันสำหรับทุกสถานะ
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -329,22 +315,17 @@ class AssetTableView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  status,
-                  style: TextStyle(
-                    color: statusColor,
+                  displayStatus,
+                  style: const TextStyle(
+                    color: Colors.black87,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
                 ),
-                if (isChecked)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      Icons.check_circle,
-                      color: statusColor,
-                      size: 16,
-                    ),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(statusIcon, color: Colors.black87, size: 16),
+                ),
               ],
             ),
           ),
