@@ -1,7 +1,8 @@
 import 'package:get_it/get_it.dart';
-import 'package:rfid_project/core/services/rfid_service.dart';
-import 'package:rfid_project/data/datasources/remote/real_rfid_service.dart';
+import 'package:rfid_project/data/datasources/random_epc_datasource.dart';
+import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import 'package:rfid_project/domain/usecases/assets/create_asset_usecase.dart';
+import 'package:rfid_project/domain/usecases/assets/find_asset_by_epc_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/search_asset_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/update_asset_usecase.dart';
@@ -15,26 +16,29 @@ class ServiceModule {
 
   // ฟังก์ชันลงทะเบียนบริการต่างๆ
   Future<void> register() async {
-    // ลงทะเบียน RFID Service จริง
-    _getIt.registerLazySingleton<RfidService>(() => RealRfidService());
-
-    // ลงทะเบียน UseCase ต่างๆ
-
-    // ลงทะเบียน UseCase สำหรับสแกน RFID
-    _getIt.registerLazySingleton(() => ScanRfidUseCase(_getIt(), _getIt()));
-
-    // ลงทะเบียน UseCase สำหรับดึงข้อมูลสินทรัพย์ทั้งหมด
     _getIt.registerLazySingleton(() => GetAssetsUseCase(_getIt()));
 
-    // ลงทะเบียน UseCase สำหรับค้นหาสินทรัพย์
     _getIt.registerLazySingleton(() => SearchAssetUseCase(_getIt()));
 
-    // ลงทะเบียน UseCase สำหรับอัปเดตข้อมูลสินทรัพย์
     _getIt.registerLazySingleton(() => UpdateAssetUseCase(_getIt()));
 
-    // ลงทะเบียน UseCase สำหรับสร้างสินทรัพย์ใหม่
     _getIt.registerLazySingleton(() => CreateAssetUseCase(_getIt()));
 
     _getIt.registerLazySingleton(() => PrepareExportColumnsUseCase());
+
+    _getIt.registerLazySingleton<EpcDatasource>(
+      () => RandomEpcDatasource(_getIt<AssetRepository>()),
+    );
+
+    _getIt.registerLazySingleton(
+      () => FindAssetByEpcUseCase(_getIt<AssetRepository>()),
+    );
+
+    _getIt.registerLazySingleton(
+      () => ScanRfidUseCase(
+        _getIt<EpcDatasource>(),
+        _getIt<FindAssetByEpcUseCase>(),
+      ),
+    );
   }
 }

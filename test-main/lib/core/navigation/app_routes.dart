@@ -8,8 +8,6 @@ import 'package:rfid_project/presentation/features/settings/screens/database_tes
 import '../../presentation/features/assets/screens/asset_detail_screen.dart';
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
 import '../../presentation/features/dashboard/screens/home_screen.dart';
-import '../../presentation/features/rfid/screens/found_screen.dart';
-import '../../presentation/features/rfid/screens/not_found_screen.dart';
 import '../../presentation/features/rfid/screens/scan_rfid_screen.dart';
 import '../../presentation/features/settings/screens/settings_screen.dart';
 import '../../presentation/features/reports/screens/reports_screen.dart';
@@ -83,22 +81,6 @@ class AppRoutes {
       case assetDetail:
         return _createRouteWithoutAnimation(
           const AssetDetailScreen(),
-          routeSettings,
-        );
-      case found:
-        if (args is Map<String, dynamic>) {
-          return _createRouteWithoutAnimation(
-            const FoundScreen(),
-            routeSettings,
-          );
-        }
-        return _createRouteWithoutAnimation(
-          const ScanRfidScreen(),
-          routeSettings,
-        );
-      case notFound:
-        return _createRouteWithoutAnimation(
-          const NotFoundScreen(),
           routeSettings,
         );
       case settings:

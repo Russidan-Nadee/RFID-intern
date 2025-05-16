@@ -270,4 +270,25 @@ class AssetRepositoryImpl implements AssetRepository {
       return null;
     }
   }
+
+  @override
+  Future<Asset?> findAssetByEpc(String epc) async {
+    try {
+      // ดึงสินทรัพย์ทั้งหมด
+      final assets = await getAssets();
+
+      // หาสินทรัพย์ที่มี EPC ตรงกับที่ต้องการ
+      for (var asset in assets) {
+        if (asset.epc.trim() == epc.trim()) {
+          return asset;
+        }
+      }
+
+      // ถ้าไม่พบ
+      return null;
+    } catch (e) {
+      print('Error finding asset by EPC: $e');
+      return null;
+    }
+  }
 }
