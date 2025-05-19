@@ -258,7 +258,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                     Navigator.pushNamed(
                       context,
                       '/export',
-                      arguments: {'assetId': itemId, 'assetTagId': tagId},
+                      arguments: {'assetId': itemId, 'assettagId': tagId},
                     );
                   },
                 ),
