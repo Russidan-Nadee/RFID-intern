@@ -25,6 +25,7 @@ class _AssetCreationPreviewScreenState
     extends State<AssetCreationPreviewScreen> {
   bool _isCreating = false;
   String? _errorMessage;
+  bool _isSuccess = false;
 
   @override
   Widget build(BuildContext context) {
@@ -35,80 +36,113 @@ class _AssetCreationPreviewScreenState
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ส่วนหัวแสดงรหัสและหมวดหมู่
-            _buildHeaderCard(context),
-
-            const SizedBox(height: 24),
-
-            // ส่วนแสดงสถานะปัจจุบัน
-            _buildStatusCard(context),
-
-            const SizedBox(height: 24),
-
-            // ส่วนแสดงข้อมูลทั้งหมด
-            _buildAllDataCard(context),
-
-            const SizedBox(height: 24),
-
-            // แสดงข้อความผิดพลาด (ถ้ามี)
-            if (_errorMessage != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Colors.red.shade800),
-                ),
-              ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  // ปุ่มกลับ (ด้านซ้าย)
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed:
-                          _isCreating
-                              ? null
-                              : () {
-                                Navigator.of(context).pop();
-                              },
-                      icon: const Icon(Icons.arrow_back, color: Colors.purple),
-                      label: const Text(
-                        'กลับ',
-                        style: TextStyle(color: Colors.purple),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple.shade50,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // แสดงข้อความสำเร็จ (ถ้ามี)
+                if (_isSuccess)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.green.shade600,
+                          size: 24,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                      ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'สร้างสินทรัพย์สำเร็จ!',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(width: 16),
+                // ส่วนหัวแสดงรหัสและหมวดหมู่
+                _buildHeaderCard(context),
 
-                  // ปุ่ม Create Asset (ด้านขวา)
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed:
-                          _isCreating
-                              ? null
-                              : widget.onCreatePressed ??
-                                  () async {
+                const SizedBox(height: 24),
+
+                // ส่วนแสดงสถานะปัจจุบัน
+                _buildStatusCard(context),
+
+                const SizedBox(height: 24),
+
+                // ส่วนแสดงข้อมูลทั้งหมด
+                _buildAllDataCard(context),
+
+                const SizedBox(height: 24),
+
+                // แสดงข้อความผิดพลาด (ถ้ามี)
+                if (_errorMessage != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Colors.red.shade800),
+                    ),
+                  ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      // ปุ่มกลับ (ด้านซ้าย)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              _isCreating
+                                  ? null
+                                  : () {
+                                    Navigator.of(context).pop();
+                                  },
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.purple,
+                          ),
+                          label: const Text(
+                            'กลับ',
+                            style: TextStyle(color: Colors.purple),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purple.shade50,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 16),
+
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              (_isCreating || _isSuccess)
+                                  ? null
+                                  : () async {
                                     setState(() {
                                       _isCreating = true;
                                       _errorMessage = null;
@@ -125,6 +159,11 @@ class _AssetCreationPreviewScreenState
                                       if (!mounted) return;
 
                                       if (success) {
+                                        setState(() {
+                                          _isCreating = false;
+                                          _isSuccess = true;
+                                        });
+
                                         ScaffoldMessenger.of(
                                           context,
                                         ).showSnackBar(
@@ -135,54 +174,155 @@ class _AssetCreationPreviewScreenState
                                             backgroundColor: Colors.green,
                                           ),
                                         );
-                                        Navigator.of(context).pop(true);
+
+                                        // รอสักครู่ก่อนกลับไปหน้าก่อนหน้า
+                                        Future.delayed(
+                                          const Duration(seconds: 2),
+                                          () {
+                                            if (mounted) {
+                                              Navigator.of(context).pop(true);
+                                            }
+                                          },
+                                        );
                                       } else {
                                         setState(() {
                                           _isCreating = false;
                                           _errorMessage =
                                               'ไม่สามารถสร้างสินทรัพย์ได้';
                                         });
+
+                                        // เพิ่ม dialog แสดงข้อผิดพลาด
+                                        showDialog(
+                                          context: context,
+                                          builder:
+                                              (context) => AlertDialog(
+                                                title: const Text(
+                                                  'ไม่สามารถสร้างสินทรัพย์ได้',
+                                                ),
+                                                content: const Text(
+                                                  'อาจเป็นเพราะ EPC นี้มีในระบบแล้ว หรือการเชื่อมต่อมีปัญหา',
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed:
+                                                        () => Navigator.pop(
+                                                          context,
+                                                        ),
+                                                    child: const Text('ตกลง'),
+                                                  ),
+                                                ],
+                                              ),
+                                        );
                                       }
                                     } catch (e) {
                                       setState(() {
                                         _isCreating = false;
                                         _errorMessage = e.toString();
                                       });
+
+                                      // เพิ่ม dialog แสดงข้อผิดพลาดจาก exception
+                                      showDialog(
+                                        context: context,
+                                        builder:
+                                            (context) => AlertDialog(
+                                              title: const Text(
+                                                'เกิดข้อผิดพลาด',
+                                              ),
+                                              content: Text(
+                                                'รายละเอียด: ${e.toString()}',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed:
+                                                      () => Navigator.pop(
+                                                        context,
+                                                      ),
+                                                  child: const Text('ตกลง'),
+                                                ),
+                                              ],
+                                            ),
+                                      );
                                     }
                                   },
-                      icon:
-                          _isCreating
-                              ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                              : const Icon(
-                                Icons.add_circle_outline,
-                                color: Colors.white,
-                              ),
-                      label: Text(
-                        _isCreating ? 'กำลังสร้าง...' : 'Create Asset',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          icon:
+                              _isCreating
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : _isSuccess
+                                  ? const Icon(Icons.check, color: Colors.white)
+                                  : const Icon(
+                                    Icons.add_circle_outline,
+                                    color: Colors.white,
+                                  ),
+                          label: Text(
+                            _isCreating
+                                ? 'กำลังสร้าง...'
+                                : _isSuccess
+                                ? 'สำเร็จแล้ว'
+                                : 'Create Asset',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                _isSuccess
+                                    ? Colors.green.shade700
+                                    : Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+
+          // Overlay ตอนกำลังโหลด
+          if (_isCreating)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        SizedBox(
+                          width: 50,
+                          height: 50,
+                          child: CircularProgressIndicator(),
+                        ),
+                        SizedBox(height: 24),
+                        Text(
+                          'กำลังสร้างสินทรัพย์...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -235,18 +235,24 @@ class ApiService {
     }
   }
 
-  // เพิ่มเมธอดสร้างสินทรัพย์ใหม่
   Future<bool> createAsset(Map<String, dynamic> assetData) async {
     try {
+      print('Sending data to API: ${json.encode(assetData)}');
+      print('API URL: $baseUrl/assets');
+
       final response = await http.post(
-        Uri.parse('$baseUrl/api/assets'),
+        Uri.parse('$baseUrl/assets'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(assetData),
       );
 
+      print('Status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
       return response.statusCode == 201 || response.statusCode == 200;
     } catch (e) {
-      throw DatabaseException('Error creating asset: $e');
+      print('Error in API: $e');
+      return false;
     }
   }
 }

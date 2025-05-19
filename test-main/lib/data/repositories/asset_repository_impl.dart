@@ -308,6 +308,17 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       final assetModel = asset as AssetModel;
       final assetData = assetModel.toMap();
+
+      // แก้ไขปัญหา batteryLevel ที่เป็นค่าว่าง
+      if (assetData['batteryLevel'] == '') {
+        assetData['batteryLevel'] = '0';
+      }
+
+      // แก้ไขปัญหา value ที่เป็นค่าว่าง
+      if (assetData['value'] == '') {
+        assetData['value'] = '0';
+      }
+
       return await _apiService.createAsset(assetData);
     } catch (e) {
       print('Error creating asset: $e');

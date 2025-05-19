@@ -13,7 +13,7 @@ class AssetDetailScreen extends StatefulWidget {
 }
 
 class _AssetDetailScreenState extends State<AssetDetailScreen> {
-  String? _guid;
+  String? _tagId;
   Map<String, dynamic>? _assetData;
   bool _isLoading = true;
   String? _errorMessage;
@@ -39,9 +39,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     if (arguments != null && arguments.containsKey('guid')) {
       final newGuid = arguments['guid'] as String?;
 
-      if (_guid != newGuid) {
+      if (_tagId != newGuid) {
         setState(() {
-          _guid = newGuid;
+          _tagId = newGuid;
           _isLoading = true;
           _errorMessage = null;
           _assetData = null;
@@ -55,7 +55,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
 
   // โหลดข้อมูลดิบทั้งหมดของสินทรัพย์ผ่าน Repository
   Future<void> _loadRawAssetDetails() async {
-    if (_guid == null) return;
+    if (_tagId == null) return;
 
     setState(() {
       _isLoading = true;
@@ -64,7 +64,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
 
     try {
       // ใช้ _assetRepository โดยตรงแทนการดึงจาก Provider
-      final data = await _assetRepository.getRawAssetData(_guid!);
+      final data = await _assetRepository.getRawAssetData(_tagId!);
 
       setState(() {
         _assetData = data;
@@ -88,7 +88,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
         automaticallyImplyLeading: false,
       ),
       child:
-          _guid == null
+          _tagId == null
               ? _buildNoGuidMessage()
               : _isLoading
               ? _buildLoadingView()
@@ -191,7 +191,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'ไม่พบข้อมูลสินทรัพย์สำหรับรหัส: $_guid',
+            'ไม่พบข้อมูลสินทรัพย์สำหรับรหัส: $_tagId',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
