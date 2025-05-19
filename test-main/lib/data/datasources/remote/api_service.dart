@@ -25,7 +25,7 @@ class ApiService {
   }
 
   // ดึงข้อมูลสินทรัพย์ตาม tagId (เปลี่ยนจาก uid)
-  Future<Map<String, dynamic>?> getAssetByUid(String uid) async {
+  Future<Map<String, dynamic>?> getAssetBytagId(String uid) async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/assets/$uid'));
 
@@ -201,7 +201,7 @@ class ApiService {
   }
 
   // สแกน RFID จากอุปกรณ์
-  Future<String?> scanRfidTag() async {
+  Future<String?> scanRfidtag() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/rfid/scan'));
 

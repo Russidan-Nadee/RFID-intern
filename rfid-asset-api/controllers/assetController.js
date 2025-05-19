@@ -37,14 +37,14 @@ exports.getAssets = async (req, res) => {
    }
 };
 
-exports.getAssetByUid = async (req, res) => {
+exports.getAssetBytagId = async (req, res) => {
    try {
-      const { uid } = req.params;
+      const { tagId } = req.params;
 
       // เพิ่ม log
       console.log('---- DEBUG ----');
       console.log(`Request params: ${JSON.stringify(req.params)}`);
-      console.log(`Searching for asset with UID: ${uid}`);
+      console.log(`Searching for asset with tagId: ${tagId}`);
 
       let columns = '*';
       if (req.query.columns) {
@@ -70,9 +70,9 @@ exports.getAssetByUid = async (req, res) => {
       // แก้ไขคำสั่ง SQL และเพิ่ม log
       const query = `SELECT ${columns} FROM rfid_assets_details.assets WHERE tagId = ? LIMIT 1`;
       console.log(`Executing SQL: ${query}`);
-      console.log(`With params: [${uid}]`);
+      console.log(`With params: [${tagId}]`);
 
-      const [rows] = await db.query(query, [uid]);
+      const [rows] = await db.query(query, [tagId]);
 
       // เพิ่ม log
       console.log(`Query results: Found ${rows.length} rows`);
@@ -81,10 +81,10 @@ exports.getAssetByUid = async (req, res) => {
       }
 
       if (rows.length === 0) {
-         console.log(`No asset found with tagId: ${uid}`);
+         console.log(`No asset found with tagId: ${tagId}`);
          return res.status(404).json({
             success: false,
-            message: `ไม่พบสินทรัพย์ที่มีรหัส: ${uid}`
+            message: `ไม่พบสินทรัพย์ที่มีรหัส: ${tagId}`
          });
       }
 

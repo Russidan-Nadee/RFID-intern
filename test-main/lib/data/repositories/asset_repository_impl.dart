@@ -12,8 +12,8 @@ class AssetRepositoryImpl implements AssetRepository {
   AssetRepositoryImpl(this._apiService);
 
   @override
-  Future<Asset?> findAssetByTagId(String tagId) async {
-    final assetData = await _apiService.getAssetByUid(
+  Future<Asset?> findAssetBytagId(String tagId) async {
+    final assetData = await _apiService.getAssetBytagId(
       tagId,
     ); // ใช้ API ที่มีอยู่แล้ว
     if (assetData == null) return null;
@@ -36,7 +36,7 @@ class AssetRepositoryImpl implements AssetRepository {
   @override
   Future<Map<String, dynamic>?> getRawAssetData(String uid) async {
     try {
-      return await _apiService.getAssetByUid(uid);
+      return await _apiService.getAssetBytagId(uid);
     } catch (e) {
       print('Error getting raw asset data: $e');
       rethrow;
@@ -45,7 +45,7 @@ class AssetRepositoryImpl implements AssetRepository {
 
   @override
   Future<Asset?> findAssetByUid(String uid) async {
-    final assetData = await _apiService.getAssetByUid(uid);
+    final assetData = await _apiService.getAssetBytagId(uid);
     if (assetData == null) return null;
 
     // ส่งข้อมูลทั้งหมดจาก API ไปยัง AssetModel

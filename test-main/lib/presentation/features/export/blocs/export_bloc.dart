@@ -124,7 +124,7 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final asset = await _assetRepository.findAssetByTagId(_assettagId!);
+      final asset = await _assetRepository.findAssetBytagId(_assettagId!);
 
       if (asset != null) {
         if (clearExisting) {
