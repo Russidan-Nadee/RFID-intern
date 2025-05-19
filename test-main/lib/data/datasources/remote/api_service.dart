@@ -216,4 +216,37 @@ class ApiService {
       return null;
     }
   }
+
+  // เพิ่มเมธอดตรวจสอบ EPC
+  Future<bool> checkEpcExists(String epc) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/assets/check-epc?epc=$epc'),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return jsonData['exists'] ?? false;
+      } else {
+        throw DatabaseException('ไม่สามารถตรวจสอบ EPC ได้');
+      }
+    } catch (e) {
+      throw DatabaseException('Network error: $e');
+    }
+  }
+
+  // เพิ่มเมธอดสร้างสินทรัพย์ใหม่
+  Future<bool> createAsset(Map<String, dynamic> assetData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/assets'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(assetData),
+      );
+
+      return response.statusCode == 201 || response.statusCode == 200;
+    } catch (e) {
+      throw DatabaseException('Error creating asset: $e');
+    }
+  }
 }

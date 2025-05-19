@@ -8,10 +8,16 @@ router.get('/', assetController.getAssets);
 // ค้นหาตามเงื่อนไข - ต้องวางก่อน /:uid
 router.get('/search', assetController.searchAssets);
 
+// ตรวจสอบว่า EPC มีอยู่แล้วหรือไม่ - ต้องวางก่อน /:uid
+router.get('/check-epc', assetController.checkEpcExists);
+
 // ดึงข้อมูลตาม ID - เพิ่มบรรทัดนี้
 router.get('/id/:id', assetController.getAssetById);
 
-// ดึงข้อมูลตาม UID/GUID - ต้องวางไว้หลัง /search และ /id/:id
-router.get('/:uid', assetController.getAssetByUid);
+// สร้างสินทรัพย์ใหม่
+router.post('/', assetController.createAsset);
+
+// ดึงข้อมูลตาม UID/GUID - ต้องวางไว้ท้ายสุด
+router.get('/:tagId', assetController.getAssetByUid);
 
 module.exports = router;

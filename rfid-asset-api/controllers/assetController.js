@@ -193,3 +193,132 @@ exports.getAssetById = async (req, res) => {
       });
    }
 };
+
+// สร้างสินทรัพย์ใหม่
+exports.createAsset = async (req, res) => {
+   try {
+      // รับข้อมูลจาก request body
+      const {
+         id, tagId, epc, itemId, itemName,
+         category, status, tagType, frequency, currentLocation,
+         zone, lastScanTime, lastScannedBy, batteryLevel, value, batchNumber
+      } = req.body;
+
+      // ตรวจสอบข้อมูลที่จำเป็น
+      if (!id || !tagId || !epc || !itemName || !category || !status) {
+         return res.status(400).json({
+            success: false,
+            message: 'กรุณาระบุข้อมูลที่จำเป็น (id, tagId, epc, itemName, category, status)'
+         });
+      }
+
+      // ตรวจสอบว่า EPC ซ้ำหรือไม่
+      const [existingEpc] = await db.query(
+         'SELECT id FROM rfid_assets_details.assets WHERE epc = ? LIMIT 1',
+         [epc]
+      );
+
+      if (existingEpc.length > 0) {
+         return res.status(409).json({
+            success: false,
+            message: 'EPC นี้มีอยู่ในระบบแล้ว',
+            existingId: existingEpc[0].id
+         });
+      }
+
+      // ตรวจสอบว่า tagId ซ้ำหรือไม่
+      const [existingTagId] = await db.query(
+         'SELECT id FROM rfid_assets_details.assets WHERE tagId = ? LIMIT 1',
+         [tagId]
+      );
+
+      if (existingTagId.length > 0) {
+         return res.status(409).json({
+            success: false,
+            message: 'Tag ID นี้มีอยู่ในระบบแล้ว',
+            existingId: existingTagId[0].id
+         });
+      }
+
+      // สร้างสินทรัพย์ใหม่
+      const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      const query = `
+         INSERT INTO rfid_assets_details.assets (
+            id, tagId, epc, itemId, itemName,
+            category, status, tagType, frequency, currentLocation,
+            zone, lastScanTime, lastScannedBy, batteryLevel, value, batchNumber,
+            createdAt, updatedAt
+         ) VALUES (
+            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?,
+            ?, ?
+         )
+      `;
+
+      const params = [
+         id, tagId, epc, itemId || '', itemName,
+         category, status, tagType || '', frequency || '', currentLocation || '',
+         zone || '', lastScanTime || currentTime, lastScannedBy || '', batteryLevel || '', value || '', batchNumber || '',
+         currentTime, currentTime
+      ];
+
+      const [result] = await db.query(query, params);
+
+      if (result.affectedRows === 1) {
+         res.status(201).json({
+            success: true,
+            message: 'สร้างสินทรัพย์สำเร็จ',
+            data: {
+               id,
+               tagId,
+               epc
+            }
+         });
+      } else {
+         throw new Error('ไม่สามารถบันทึกข้อมูลได้');
+      }
+   } catch (error) {
+      console.error('เกิดข้อผิดพลาดในการสร้างสินทรัพย์:', error);
+      res.status(500).json({
+         success: false,
+         message: 'เกิดข้อผิดพลาดในการสร้างสินทรัพย์',
+         error: error.message
+      });
+   }
+};
+
+// ตรวจสอบว่า EPC มีอยู่ในระบบแล้วหรือไม่
+exports.checkEpcExists = async (req, res) => {
+   try {
+      const { epc } = req.query;
+
+      if (!epc) {
+         return res.status(400).json({
+            success: false,
+            message: 'กรุณาระบุ EPC ที่ต้องการตรวจสอบ'
+         });
+      }
+
+      const [rows] = await db.query(
+         'SELECT id, tagId, epc FROM rfid_assets_details.assets WHERE epc = ? LIMIT 1',
+         [epc]
+      );
+
+      const exists = rows.length > 0;
+
+      res.status(200).json({
+         success: true,
+         exists,
+         data: exists ? rows[0] : null
+      });
+   } catch (error) {
+      console.error('เกิดข้อผิดพลาดในการตรวจสอบ EPC:', error);
+      res.status(500).json({
+         success: false,
+         message: 'เกิดข้อผิดพลาดในการตรวจสอบ EPC',
+         error: error.message
+      });
+   }
+};

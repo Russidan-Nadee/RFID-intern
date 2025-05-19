@@ -22,4 +22,6 @@ abstract class AssetRepository {
   Future<void> updateDepartment(String oldName, String newName);
   Future<void> deleteDepartment(String name);
   Future<Asset?> findAssetByEpc(String epc);
+  Future<bool> checkEpcExists(String epc);
+  Future<bool> createAsset(Asset asset);
 }

@@ -166,8 +166,21 @@ class GenerateAssetFromEpcUseCase {
       final lastScanTime =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-      // สร้าง ID ตัวอย่าง
-      final nextId = (_random.nextInt(900) + 100).toString(); // สุ่มเลข 3 หลัก
+      // ดึงข้อมูลสินทรัพย์ทั้งหมดเพื่อหา ID ล่าสุด
+      final assets = await repository.getAssets();
+
+      // หาค่า ID สูงสุดที่มีอยู่
+      int maxId = 0;
+      for (var asset in assets) {
+        // แปลง id จาก String เป็น int โดยเอาเฉพาะตัวเลข
+        int? assetId = int.tryParse(asset.id.replaceAll(RegExp(r'[^0-9]'), ''));
+        if (assetId != null && assetId > maxId) {
+          maxId = assetId;
+        }
+      }
+
+      // กำหนด ID ใหม่เป็นค่าถัดไป
+      final nextId = (maxId + 1).toString();
 
       // สร้าง tagId
       final tagId = 'TAG${nextId.padLeft(4, '0')}';
@@ -178,7 +191,7 @@ class GenerateAssetFromEpcUseCase {
       // สร้าง itemName
       final itemName = 'Item $nextId';
 
-      // หมวดหมู่
+      // ส่วนที่เหลือคงเดิม...
       final categories = [
         'Finished Good',
         'Equipment',

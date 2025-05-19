@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/entities/asset.dart';
 import '../blocs/asset_bloc.dart';
-import '../../../../core/constants/app_constants.dart'; // เพิ่มการนำเข้า
 
 class AssetTableView extends StatelessWidget {
   final List<Asset> assets;

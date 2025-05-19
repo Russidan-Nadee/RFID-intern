@@ -1,9 +1,10 @@
-/* Path: lib/presentation/features/assets/screens/asset_creation_preview_screen.dart */
 import 'package:flutter/material.dart';
 import 'package:rfid_project/domain/entities/asset.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
+import '../../../../core/di/dependency_injection.dart';
+import '../../../../domain/repositories/asset_repository.dart';
 
-class AssetCreationPreviewScreen extends StatelessWidget {
+class AssetCreationPreviewScreen extends StatefulWidget {
   final Asset asset;
   final VoidCallback? onCreatePressed;
   final bool isLoading;
@@ -16,13 +17,23 @@ class AssetCreationPreviewScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<AssetCreationPreviewScreen> createState() =>
+      _AssetCreationPreviewScreenState();
+}
+
+class _AssetCreationPreviewScreenState
+    extends State<AssetCreationPreviewScreen> {
+  bool _isCreating = false;
+  String? _errorMessage;
+
+  @override
   Widget build(BuildContext context) {
     return ScreenContainer(
       appBar: AppBar(
         title: const Text('รายละเอียดสินทรัพย์'),
         centerTitle: true,
         elevation: 0,
-        automaticallyImplyLeading: false, // ซ่อนปุ่มกลับบน AppBar
+        automaticallyImplyLeading: false,
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -44,6 +55,22 @@ class AssetCreationPreviewScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
+            // แสดงข้อความผิดพลาด (ถ้ามี)
+            if (_errorMessage != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Colors.red.shade800),
+                ),
+              ),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -51,9 +78,12 @@ class AssetCreationPreviewScreen extends StatelessWidget {
                   // ปุ่มกลับ (ด้านซ้าย)
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
+                      onPressed:
+                          _isCreating
+                              ? null
+                              : () {
+                                Navigator.of(context).pop();
+                              },
                       icon: const Icon(Icons.arrow_back, color: Colors.purple),
                       label: const Text(
                         'กลับ',
@@ -71,23 +101,72 @@ class AssetCreationPreviewScreen extends StatelessWidget {
 
                   const SizedBox(width: 16),
 
-                  // ปุ่ม Create Asset (ด้านขวา) - เปลี่ยนกลับเป็น Create Asset
+                  // ปุ่ม Create Asset (ด้านขวา)
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed:
-                          onCreatePressed ??
-                          () {
-                            print(
-                              'Create Asset button pressed - no action implemented yet',
-                            );
-                          },
-                      icon: const Icon(
-                        Icons.add_circle_outline,
-                        color: Colors.white,
-                      ),
-                      label: const Text(
-                        'Create Asset',
-                        style: TextStyle(color: Colors.white),
+                          _isCreating
+                              ? null
+                              : widget.onCreatePressed ??
+                                  () async {
+                                    setState(() {
+                                      _isCreating = true;
+                                      _errorMessage = null;
+                                    });
+
+                                    try {
+                                      final repository =
+                                          DependencyInjection.get<
+                                            AssetRepository
+                                          >();
+                                      final success = await repository
+                                          .createAsset(widget.asset);
+
+                                      if (!mounted) return;
+
+                                      if (success) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'สร้างสินทรัพย์สำเร็จ',
+                                            ),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                        Navigator.of(context).pop(true);
+                                      } else {
+                                        setState(() {
+                                          _isCreating = false;
+                                          _errorMessage =
+                                              'ไม่สามารถสร้างสินทรัพย์ได้';
+                                        });
+                                      }
+                                    } catch (e) {
+                                      setState(() {
+                                        _isCreating = false;
+                                        _errorMessage = e.toString();
+                                      });
+                                    }
+                                  },
+                      icon:
+                          _isCreating
+                              ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const Icon(
+                                Icons.add_circle_outline,
+                                color: Colors.white,
+                              ),
+                      label: Text(
+                        _isCreating ? 'กำลังสร้าง...' : 'Create Asset',
+                        style: const TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -133,7 +212,7 @@ class AssetCreationPreviewScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              _getCategoryIcon(asset.category),
+              _getCategoryIcon(widget.asset.category),
               size: 24,
               color: Colors.blue,
             ),
@@ -146,7 +225,7 @@ class AssetCreationPreviewScreen extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '#${asset.id}',
+                      '#${widget.asset.id}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -164,7 +243,7 @@ class AssetCreationPreviewScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        asset.category,
+                        widget.asset.category,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -175,7 +254,10 @@ class AssetCreationPreviewScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(asset.itemName, style: const TextStyle(fontSize: 16)),
+                Text(
+                  widget.asset.itemName,
+                  style: const TextStyle(fontSize: 16),
+                ),
               ],
             ),
           ),
@@ -186,7 +268,7 @@ class AssetCreationPreviewScreen extends StatelessWidget {
 
   // ส่วนแสดงสถานะ
   Widget _buildStatusCard(BuildContext context) {
-    final Color statusColor = _getStatusColor(asset.status);
+    final Color statusColor = _getStatusColor(widget.asset.status);
 
     return Container(
       decoration: BoxDecoration(
@@ -226,7 +308,7 @@ class AssetCreationPreviewScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      asset.status,
+                      widget.asset.status,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -235,11 +317,11 @@ class AssetCreationPreviewScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'ตำแหน่ง: ${asset.currentLocation}',
+                      'ตำแหน่ง: ${widget.asset.currentLocation}',
                       style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                     Text(
-                      'อัปเดตล่าสุด: ${asset.lastScanTime}',
+                      'อัปเดตล่าสุด: ${widget.asset.lastScanTime}',
                       style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                     ),
                   ],
@@ -256,22 +338,22 @@ class AssetCreationPreviewScreen extends StatelessWidget {
   Widget _buildAllDataCard(BuildContext context) {
     // สร้างรายการข้อมูลที่ต้องการแสดง
     final dataMap = {
-      'batchNumber': asset.batchNumber,
-      'batteryLevel': asset.batteryLevel,
-      'category': asset.category,
-      'currentLocation': asset.currentLocation,
-      'epc': asset.epc,
-      'frequency': asset.frequency,
-      'id': asset.id,
-      'itemId': asset.itemId,
-      'itemName': asset.itemName,
-      'lastScanTime': asset.lastScanTime,
-      'lastScannedBy': asset.lastScannedBy,
-      'status': asset.status,
-      'tagId': asset.tagId,
-      'tagType': asset.tagType,
-      'value': asset.value,
-      'zone': asset.zone,
+      'batchNumber': widget.asset.batchNumber,
+      'batteryLevel': widget.asset.batteryLevel,
+      'category': widget.asset.category,
+      'currentLocation': widget.asset.currentLocation,
+      'epc': widget.asset.epc,
+      'frequency': widget.asset.frequency,
+      'id': widget.asset.id,
+      'itemId': widget.asset.itemId,
+      'itemName': widget.asset.itemName,
+      'lastScanTime': widget.asset.lastScanTime,
+      'lastScannedBy': widget.asset.lastScannedBy,
+      'status': widget.asset.status,
+      'tagId': widget.asset.tagId,
+      'tagType': widget.asset.tagType,
+      'value': widget.asset.value,
+      'zone': widget.asset.zone,
     };
 
     return Container(

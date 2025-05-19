@@ -291,4 +291,27 @@ class AssetRepositoryImpl implements AssetRepository {
       return null;
     }
   }
+
+  @override
+  Future<bool> checkEpcExists(String epc) async {
+    try {
+      final asset = await findAssetByEpc(epc);
+      return asset != null;
+    } catch (e) {
+      print('Error checking EPC existence: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> createAsset(Asset asset) async {
+    try {
+      final assetModel = asset as AssetModel;
+      final assetData = assetModel.toMap();
+      return await _apiService.createAsset(assetData);
+    } catch (e) {
+      print('Error creating asset: $e');
+      return false;
+    }
+  }
 }
