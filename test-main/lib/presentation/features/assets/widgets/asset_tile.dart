@@ -25,16 +25,16 @@ class AssetTile extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('ไม่พบ Tag ID ของสินทรัพย์นี้'),
-              ), // แก้จาก GUID เป็น Tag ID
+              ), // แก้จาก tagId เป็น Tag ID
             );
             return;
           }
 
-          // นำทางไปยังหน้ารายละเอียด โดยส่ง tagId แต่ใช้ชื่อคีย์เป็น 'guid'
+          // นำทางไปยังหน้ารายละเอียด โดยส่ง tagId แต่ใช้ชื่อคีย์เป็น 'tagId'
           Navigator.pushNamed(
             context,
             '/assetDetail',
-            arguments: {'guid': asset.tagId}, // แก้จาก uid เป็น tagId
+            arguments: {'tagId': asset.tagId}, // แก้จาก uid เป็น tagId
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -65,7 +65,7 @@ class AssetTile extends StatelessWidget {
             vertical: 8,
           ),
           children: [
-            // เปลี่ยนจาก UID/GUID เป็น Tag ID
+            // เปลี่ยนจาก UID/tagId เป็น Tag ID
             _buildRow(Icons.qr_code, 'Tag ID: ${asset.tagId}'),
             _buildRow(
               Icons.business,
@@ -95,18 +95,18 @@ class AssetTile extends StatelessWidget {
                           const SnackBar(
                             content: Text(
                               'ไม่พบ Tag ID ของสินทรัพย์นี้',
-                            ), // แก้จาก GUID เป็น Tag ID
+                            ), // แก้จาก tagId เป็น Tag ID
                           ),
                         );
                         return;
                       }
 
-                      // นำทางไปยังหน้ารายละเอียด โดยส่ง tagId แต่ใช้ชื่อคีย์เป็น 'guid'
+                      // นำทางไปยังหน้ารายละเอียด โดยส่ง tagId แต่ใช้ชื่อคีย์เป็น 'tagId'
                       Navigator.pushNamed(
                         context,
                         '/assetDetail',
                         arguments: {
-                          'guid': asset.tagId,
+                          'tagId': asset.tagId,
                         }, // แก้จาก uid เป็น tagId
                       );
                     },

@@ -1,10 +1,8 @@
-import 'dart:io';
+// data/repositories/asset_repository_impl.dart
 import '../../domain/entities/asset.dart';
 import '../../domain/repositories/asset_repository.dart';
 import '../datasources/remote/api_service.dart';
 import '../models/asset_model.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:csv/csv.dart';
 
 class AssetRepositoryImpl implements AssetRepository {
   final ApiService _apiService;
@@ -13,30 +11,22 @@ class AssetRepositoryImpl implements AssetRepository {
 
   @override
   Future<Asset?> findAssetBytagId(String tagId) async {
-    final assetData = await _apiService.getAssetBytagId(
-      tagId,
-    ); // ใช้ API ที่มีอยู่แล้ว
+    final assetData = await _apiService.getAssetBytagId(tagId);
     if (assetData == null) return null;
-
-    // ส่งข้อมูลทั้งหมดจาก API ไปยัง AssetModel
     return AssetModel.fromMap(assetData);
   }
 
-  // จัดการสินทรัพย์
   @override
   Future<List<Asset>> getAssets() async {
     final assetsData = await _apiService.getAssets();
-    return assetsData.map((map) {
-      // ส่งข้อมูลทั้งหมดจาก API ไปยัง AssetModel
-      return AssetModel.fromMap(map);
-    }).toList();
+    return assetsData.map((map) => AssetModel.fromMap(map)).toList();
   }
 
-  // เพิ่มเมธอดใหม่เพื่อดึงข้อมูลดิบทั้งหมด
   @override
-  Future<Map<String, dynamic>?> getRawAssetData(String uid) async {
+  Future<Map<String, dynamic>?> getRawAssetData(String tagId) async {
     try {
-      return await _apiService.getAssetBytagId(uid);
+      print('AssetRepositoryImpl - getRawAssetData with tagId: $tagId');
+      return await _apiService.getAssetBytagId(tagId);
     } catch (e) {
       print('Error getting raw asset data: $e');
       rethrow;
@@ -44,49 +34,9 @@ class AssetRepositoryImpl implements AssetRepository {
   }
 
   @override
-  Future<Asset?> findAssetByUid(String uid) async {
-    final assetData = await _apiService.getAssetBytagId(uid);
-    if (assetData == null) return null;
-
-    // ส่งข้อมูลทั้งหมดจาก API ไปยัง AssetModel
-    return AssetModel.fromMap(assetData);
-  }
-
-  @override
-  Future<Asset?> getAssetByUid(String uid) async {
-    return findAssetByUid(uid);
-  }
-
-  @override
-  Future<bool> updateAssetStatus(String uid, String status) async {
-    return await _apiService.updateAssetStatus(uid, status);
-  }
-
-  @override
-  Future<Asset?> updateAsset(Asset asset) async {
-    final assetModel = asset as AssetModel;
-    // แก้ไขการเรียกใช้ uid และ status เป็น tagId และ status
-    final success = await _apiService.updateAssetStatus(
-      assetModel.tagId,
-      assetModel.status,
-    );
-
-    if (success) {
-      return asset;
-    }
-    return null;
-  }
-
-  @override
   Future<void> insertAsset(Asset asset) async {
     final assetModel = asset as AssetModel;
-    final assetData = assetModel.toMap();
-    await _apiService.insertAsset(assetData);
-  }
-
-  @override
-  Future<void> deleteAsset(String uid) async {
-    await _apiService.deleteAsset(uid);
+    await _apiService.insertAsset(assetModel.toMap());
   }
 
   @override
@@ -119,7 +69,7 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       return await _apiService.getDepartments();
     } catch (e) {
-      return ['Production', 'Warehouse', 'Office']; // ค่าเริ่มต้น
+      return ['Production', 'Warehouse', 'Office'];
     }
   }
 
@@ -151,140 +101,14 @@ class AssetRepositoryImpl implements AssetRepository {
   }
 
   @override
-  Future<String?> getRandomUid() async {
-    try {
-      final assets = await getAssets();
-      if (assets.isEmpty) return null;
-      final random =
-          assets[(DateTime.now().millisecondsSinceEpoch % assets.length)];
-      // แก้ไขการเรียกใช้ uid เป็น tagId
-      return random.tagId;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  @override
-  Future<String?> exportAssetsToCSV(
-    List<Asset> assets,
-    List<String> columns,
-  ) async {
-    try {
-      // สร้างข้อมูล CSV
-      List<List<dynamic>> rows = [];
-      rows.add(columns);
-      for (var asset in assets) {
-        List<dynamic> row = [];
-
-        // ใช้ for loop แทนเพื่อรองรับทุกคอลัมน์ที่อาจถูกเลือก
-        for (var column in columns) {
-          var value;
-
-          // แมปคอลัมน์ในตาราง MySQL
-          switch (column) {
-            case 'ID':
-              value = asset.id;
-              break;
-            case 'Item ID':
-              value = asset.itemId;
-              break;
-            case 'Tag ID':
-              value = asset.tagId;
-              break;
-            case 'EPC':
-              value = asset.epc;
-              break;
-            case 'Item Name':
-              value = asset.itemName;
-              break;
-            case 'Category':
-              value = asset.category;
-              break;
-            case 'Status':
-              value = asset.status;
-              break;
-            case 'Tag Type':
-              value = asset.tagType;
-              break;
-            case 'Sale Date':
-              value = asset.saleDate;
-              break;
-            case 'Frequency':
-              value = asset.frequency;
-              break;
-            case 'Current Location':
-              value = asset.currentLocation;
-              break;
-            case 'Zone':
-              value = asset.zone;
-              break;
-            case 'Last Scan Time':
-              value = asset.lastScanTime;
-              break;
-            case 'Last Scanned By':
-              value = asset.lastScannedBy;
-              break;
-            case 'Battery Level':
-              value = asset.batteryLevel;
-              break;
-            case 'Batch Number':
-              value = asset.batchNumber;
-              break;
-            case 'Manufacturing Date':
-              value = asset.manufacturingDate;
-              break;
-            case 'Expiry Date':
-              value = asset.expiryDate;
-              break;
-            case 'Value':
-              value = asset.value;
-              break;
-            default:
-              value = '';
-              break;
-          }
-
-          row.add(value);
-        }
-
-        rows.add(row);
-      }
-
-      String csv = const ListToCsvConverter().convert(rows);
-
-      // สร้างชื่อไฟล์
-      final now = DateTime.now();
-      final timestamp =
-          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour}${now.minute}';
-      final filename = 'assets_export_$timestamp.csv';
-
-      // บันทึกไฟล์ในพื้นที่แคชของแอพ
-      final directory = await getTemporaryDirectory();
-      final path = '${directory.path}/$filename';
-      final file = File(path);
-      await file.writeAsString(csv);
-
-      return path;
-    } catch (e) {
-      print('Error exporting to CSV: $e');
-      return null;
-    }
-  }
-
-  @override
   Future<Asset?> findAssetByEpc(String epc) async {
     try {
-      // ดึงสินทรัพย์ทั้งหมด
       final assets = await getAssets();
-
-      // หาสินทรัพย์ที่มี EPC ตรงกับที่ต้องการ
       for (var asset in assets) {
         if (asset.epc.trim() == epc.trim()) {
           return asset;
         }
       }
-
-      // ถ้าไม่พบ
       return null;
     } catch (e) {
       print('Error finding asset by EPC: $e');
@@ -309,12 +133,10 @@ class AssetRepositoryImpl implements AssetRepository {
       final assetModel = asset as AssetModel;
       final assetData = assetModel.toMap();
 
-      // แก้ไขปัญหา batteryLevel ที่เป็นค่าว่าง
       if (assetData['batteryLevel'] == '') {
         assetData['batteryLevel'] = '0';
       }
 
-      // แก้ไขปัญหา value ที่เป็นค่าว่าง
       if (assetData['value'] == '') {
         assetData['value'] = '0';
       }
@@ -324,5 +146,20 @@ class AssetRepositoryImpl implements AssetRepository {
       print('Error creating asset: $e');
       return false;
     }
+  }
+
+  @override
+  Future<Asset?> updateAsset(Asset asset) async {
+    // Add implementation if needed
+    return null;
+  }
+
+  @override
+  Future<String?> exportAssetsToCSV(
+    List<Asset> assets,
+    List<String> columns,
+  ) async {
+    // Add implementation if needed
+    return null;
   }
 }

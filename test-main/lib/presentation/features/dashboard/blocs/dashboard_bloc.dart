@@ -76,7 +76,7 @@ class DashboardBloc extends ChangeNotifier {
     Navigator.pushNamed(
       context,
       '/assetDetail',
-      arguments: {'guid': asset.tagId},
+      arguments: {'tagId': asset.tagId},
     );
   }
 

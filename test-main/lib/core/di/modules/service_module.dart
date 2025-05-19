@@ -4,7 +4,6 @@ import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import 'package:rfid_project/domain/usecases/assets/find_asset_by_epc_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/generate_asset_from_epc_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
-import 'package:rfid_project/domain/usecases/assets/search_asset_usecase.dart';
 import 'package:rfid_project/domain/usecases/export/prepare_export_columns_usecase.dart';
 import 'package:rfid_project/domain/usecases/rfid/scan_rfid_usecase.dart';
 
@@ -16,8 +15,6 @@ class ServiceModule {
   // ฟังก์ชันลงทะเบียนบริการต่างๆ
   Future<void> register() async {
     _getIt.registerLazySingleton(() => GetAssetsUseCase(_getIt()));
-
-    _getIt.registerLazySingleton(() => SearchAssetUseCase(_getIt()));
 
     _getIt.registerLazySingleton(() => PrepareExportColumnsUseCase());
 

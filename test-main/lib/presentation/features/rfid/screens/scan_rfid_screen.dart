@@ -250,7 +250,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
                         () => Navigator.pushNamed(
                           context,
                           '/assetDetail',
-                          arguments: {'guid': result.asset!.tagId},
+                          arguments: {'tagId': result.asset!.tagId},
                         ),
                   );
                 } else {

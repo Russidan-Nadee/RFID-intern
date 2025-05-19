@@ -292,7 +292,7 @@ class _AssetCreationPreviewScreenState
           if (_isCreating)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withAlpha(51),
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.all(24),

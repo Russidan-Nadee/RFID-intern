@@ -1,18 +1,14 @@
+// domain/repositories/asset_repository.dart
 import '../entities/asset.dart';
 
 abstract class AssetRepository {
   Future<List<Asset>> getAssets();
-  Future<Asset?> getAssetByUid(String uid);
-  Future<bool> updateAssetStatus(String uid, String status);
+  Future<Map<String, dynamic>?> getRawAssetData(String tagId);
   Future<void> insertAsset(Asset asset);
-  Future<void> deleteAsset(String uid);
   Future<void> deleteAllAssets();
-  Future<Asset?> findAssetByUid(String uid);
   Future<Asset?> findAssetBytagId(String tagId);
   Future<Asset?> updateAsset(Asset asset);
-  Future<String?> getRandomUid();
   Future<String?> exportAssetsToCSV(List<Asset> assets, List<String> columns);
-  Future<Map<String, dynamic>?> getRawAssetData(String uid);
   Future<List<String>> getCategories();
   Future<void> addCategory(String name);
   Future<void> updateCategory(String oldName, String newName);

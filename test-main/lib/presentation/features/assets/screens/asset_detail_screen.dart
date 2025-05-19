@@ -32,16 +32,16 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // รับค่า guid จาก arguments
+    // รับค่า tagId จาก arguments
     final Map<String, dynamic>? arguments =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    if (arguments != null && arguments.containsKey('guid')) {
-      final newGuid = arguments['guid'] as String?;
+    if (arguments != null && arguments.containsKey('tagId')) {
+      final newtagId = arguments['tagId'] as String?;
 
-      if (_tagId != newGuid) {
+      if (_tagId != newtagId) {
         setState(() {
-          _tagId = newGuid;
+          _tagId = newtagId;
           _isLoading = true;
           _errorMessage = null;
           _assetData = null;
@@ -89,7 +89,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
       ),
       child:
           _tagId == null
-              ? _buildNoGuidMessage()
+              ? _buildNotagIdMessage()
               : _isLoading
               ? _buildLoadingView()
               : _errorMessage != null
@@ -100,8 +100,8 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     );
   }
 
-  // สร้างหน้าแสดงข้อความว่าไม่มี GUID
-  Widget _buildNoGuidMessage() {
+  // สร้างหน้าแสดงข้อความว่าไม่มี tagId
+  Widget _buildNotagIdMessage() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -109,7 +109,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
           const Icon(Icons.info_outline, size: 64, color: Colors.amber),
           const SizedBox(height: 16),
           const Text(
-            'ไม่พบข้อมูล GUID',
+            'ไม่พบข้อมูล tagId',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -258,7 +258,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                     Navigator.pushNamed(
                       context,
                       '/export',
-                      arguments: {'assetId': itemId, 'assetUid': tagId},
+                      arguments: {'assetId': itemId, 'assetTagId': tagId},
                     );
                   },
                 ),

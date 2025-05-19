@@ -73,7 +73,7 @@ class AssetBloc extends ChangeNotifier {
     Navigator.pushNamed(
       context,
       '/assetDetail',
-      arguments: {'guid': asset.tagId}, // แก้จาก uid เป็น tagId
+      arguments: {'tagId': asset.tagId}, // แก้จาก uid เป็น tagId
     );
   }
 

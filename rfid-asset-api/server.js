@@ -23,9 +23,9 @@ app.get('/', (req, res) => {
       message: 'ยินดีต้อนรับสู่ API ระบบจัดการสินทรัพย์ RFID',
       endpoints: {
          allAssets: '/api/assets',
-         assetsByColumns: '/api/assets?columns=id,guid,category',
+         assetsByColumns: '/api/assets?columns=id,tagId,category',
          searchAssets: '/api/assets/search?category=Storage&status=Available',
-         assetByUid: '/api/assets/your-guid-here'
+         assetByUid: '/api/assets/your-tagId-here'
       }
    });
 });

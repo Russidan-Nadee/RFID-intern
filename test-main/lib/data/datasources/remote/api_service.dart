@@ -25,9 +25,9 @@ class ApiService {
   }
 
   // ดึงข้อมูลสินทรัพย์ตาม tagId (เปลี่ยนจาก uid)
-  Future<Map<String, dynamic>?> getAssetBytagId(String uid) async {
+  Future<Map<String, dynamic>?> getAssetBytagId(String tagId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/assets/$uid'));
+      final response = await http.get(Uri.parse('$baseUrl/assets/$tagId'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
