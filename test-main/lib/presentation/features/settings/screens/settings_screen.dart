@@ -1,9 +1,45 @@
 // lib/presentation/features/settings/screens/settings_screen.dart
 import 'package:flutter/material.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/services/profile_service.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  // เพิ่ม ProfileService
+  final _profileService = ProfileService();
+
+  // ตัวแปรเก็บชื่อผู้ใช้
+  late String _userName;
+  // ตัวแปรเก็บอีเมล (ค่าคงที่)
+  final String _userEmail = 'example@email.com';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // อัปเดตข้อมูลเมื่อกลับมาที่หน้านี้
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    setState(() {
+      _userName = _profileService.getUserName();
+      if (_userName.isEmpty) {
+        _userName = 'Example User';
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,32 +74,35 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // รูปโปรไฟล์
+                // รูปโปรไฟล์ - ใช้ตัวอักษรแรกของอีเมลแบบไดนามิก
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: primaryColor,
-                  child: const Text(
-                    'R',
-                    style: TextStyle(fontSize: 30, color: Colors.white),
+                  child: Text(
+                    _userEmail.isNotEmpty ? _userEmail[0].toLowerCase() : '',
+                    style: const TextStyle(fontSize: 30, color: Colors.white),
                   ),
                 ),
                 const SizedBox(width: 16),
-                // ข้อมูลโปรไฟล์
+                // ข้อมูลโปรไฟล์ - ใช้ชื่อจาก ProfileService
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        'Russidan Nadee',
-                        style: TextStyle(
+                        _userName,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        'russidan.nadee@gmail.com',
-                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                        _userEmail,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -71,7 +110,14 @@ class SettingsScreen extends StatelessWidget {
                 // ปุ่มแก้ไขโปรไฟล์
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, RouteConstants.profile);
+                    Navigator.pushNamed(context, RouteConstants.profile).then((
+                      _,
+                    ) {
+                      // อัปเดตชื่อผู้ใช้เมื่อกลับมาจากหน้า Edit Profile
+                      setState(() {
+                        _loadUserData(); // เรียกใช้ฟังก์ชันโหลดข้อมูลใหม่
+                      });
+                    });
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,

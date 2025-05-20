@@ -13,14 +13,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // เพิ่ม ProfileService
   final _profileService = ProfileService();
 
-  // Controllers สำหรับช่องกรอกข้อมูล
+  // Controllers สำหรับช่องกรอกข้อมูล - เริ่มต้นเป็นค่าว่าง
   late final TextEditingController _nameController;
-  final _emailController = TextEditingController(
-    text: 'russidan.nadee@gmail.com',
-  );
-  final _usernameController = TextEditingController(text: 'russidan');
-  final _passwordController = TextEditingController(text: '••••••••');
-  final _phoneController = TextEditingController(text: '');
+  late final TextEditingController _emailController;
+  late final TextEditingController _usernameController;
+  late final TextEditingController _passwordController;
+  late final TextEditingController _phoneController;
 
   // ซ่อน/แสดงรหัสผ่าน
   bool _obscurePassword = true;
@@ -28,10 +26,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // ดึงข้อมูลจาก ProfileService มาแสดง
-    _nameController = TextEditingController(
-      text: _profileService.getUserName(),
-    );
+    // กำหนด controller เป็นค่าว่าง
+    _nameController = TextEditingController();
+    _emailController = TextEditingController(
+      text: 'example@email.com',
+    ); // เก็บอีเมลไว้เพื่อใช้ในการแสดง Avatar
+    _usernameController = TextEditingController();
+    _passwordController = TextEditingController();
+    _phoneController = TextEditingController();
   }
 
   @override
@@ -72,7 +74,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.check, color: Colors.white),
             onPressed: () {
               // บันทึกข้อมูลชื่อผู้ใช้
-              _profileService.saveUserName(_nameController.text);
+              _profileService.saveUserName(
+                _nameController.text.isNotEmpty
+                    ? _nameController.text
+                    : 'Example User',
+              );
 
               // แสดงข้อความแจ้งเตือน
               ScaffoldMessenger.of(context).showSnackBar(
@@ -98,9 +104,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     radius: 40,
                     backgroundColor: primaryColor,
                     child: Text(
-                      _nameController.text.isNotEmpty
-                          ? _nameController.text[0].toUpperCase()
-                          : 'U',
+                      _emailController.text.isNotEmpty
+                          ? _emailController.text[0].toLowerCase()
+                          : 'e',
                       style: const TextStyle(fontSize: 40, color: Colors.white),
                     ),
                   ),
@@ -124,7 +130,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 32),
 
             // ฟอร์มข้อมูลโปรไฟล์
-            _buildFormField(label: 'Name', controller: _nameController),
+            _buildFormField(
+              label: 'Name',
+              controller: _nameController,
+              hintText: 'Example User',
+            ),
 
             const SizedBox(height: 16),
 
@@ -132,6 +142,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: 'E-mail address',
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
+              hintText: 'example@email.com',
             ),
 
             const SizedBox(height: 16),
@@ -139,6 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildFormField(
               label: 'User name',
               controller: _usernameController,
+              hintText: 'example_user',
             ),
 
             const SizedBox(height: 16),
@@ -147,6 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: 'Password',
               controller: _passwordController,
               obscureText: _obscurePassword,
+              hintText: '••••••••',
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -166,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: 'Phone number',
               controller: _phoneController,
               keyboardType: TextInputType.phone,
-              hintText: '+66 ทำติดต่อ',
+              hintText: 'Example: +66 812345678',
             ),
           ],
         ),
@@ -197,14 +210,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           decoration: InputDecoration(
             hintText: hintText,
             suffixIcon: suffixIcon,
-            border: UnderlineInputBorder(
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: Colors.grey.shade300),
             ),
-            enabledBorder: UnderlineInputBorder(
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: Colors.grey.shade300),
             ),
-            focusedBorder: UnderlineInputBorder(
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: const Color(0xFF6A5ACD)),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
           ),
         ),

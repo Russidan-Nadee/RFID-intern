@@ -22,6 +22,6 @@ abstract class AssetRepository {
   Future<bool> createAsset(Asset asset);
   Future<bool> updateAssetStatusToChecked(
     String tagId, {
-    required String lastScannedBy,
+    String? lastScannedBy,
   });
 }
