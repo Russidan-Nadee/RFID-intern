@@ -1,5 +1,6 @@
 // lib/presentation/features/settings/screens/profile_screen.dart
 import 'package:flutter/material.dart';
+import '../../../../core/services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -9,8 +10,11 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // เพิ่ม ProfileService
+  final _profileService = ProfileService();
+
   // Controllers สำหรับช่องกรอกข้อมูล
-  final _nameController = TextEditingController(text: 'Russidan Nadee');
+  late final TextEditingController _nameController;
   final _emailController = TextEditingController(
     text: 'russidan.nadee@gmail.com',
   );
@@ -20,6 +24,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ซ่อน/แสดงรหัสผ่าน
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // ดึงข้อมูลจาก ProfileService มาแสดง
+    _nameController = TextEditingController(
+      text: _profileService.getUserName(),
+    );
+  }
 
   @override
   void dispose() {
@@ -58,10 +71,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.check, color: Colors.white),
             onPressed: () {
-              // บันทึกข้อมูลและย้อนกลับ
+              // บันทึกข้อมูลชื่อผู้ใช้
+              _profileService.saveUserName(_nameController.text);
+
+              // แสดงข้อความแจ้งเตือน
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('บันทึกข้อมูลสำเร็จ')),
               );
+
+              // กลับไปหน้าก่อนหน้า
               Navigator.pop(context);
             },
           ),
@@ -79,9 +97,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   CircleAvatar(
                     radius: 40,
                     backgroundColor: primaryColor,
-                    child: const Text(
-                      'R',
-                      style: TextStyle(fontSize: 40, color: Colors.white),
+                    child: Text(
+                      _nameController.text.isNotEmpty
+                          ? _nameController.text[0].toUpperCase()
+                          : 'U',
+                      style: const TextStyle(fontSize: 40, color: Colors.white),
                     ),
                   ),
                   Positioned(

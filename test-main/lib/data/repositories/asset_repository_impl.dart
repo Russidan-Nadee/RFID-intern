@@ -164,15 +164,21 @@ class AssetRepositoryImpl implements AssetRepository {
   }
 
   @override
-  Future<bool> updateAssetStatusToChecked(String tagId) async {
+  Future<bool> updateAssetStatusToChecked(
+    String tagId, {
+    String? lastScannedBy,
+  }) async {
     try {
       print(
-        'AssetRepositoryImpl - updateAssetStatusToChecked with tagId: $tagId',
+        'AssetRepositoryImpl - updateAssetStatusToChecked with tagId: $tagId, scanner: $lastScannedBy',
       );
-      return await _apiService.updateAssetStatusToChecked(tagId);
+      return await _apiService.updateAssetStatusToChecked(
+        tagId,
+        lastScannedBy: lastScannedBy,
+      );
     } catch (e) {
       print('Error updating asset status: $e');
-      return false; // คืนค่า false ในกรณีที่เกิดข้อผิดพลาด
+      return false;
     }
   }
 }

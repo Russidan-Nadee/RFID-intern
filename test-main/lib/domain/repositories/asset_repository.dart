@@ -20,5 +20,8 @@ abstract class AssetRepository {
   Future<Asset?> findAssetByEpc(String epc);
   Future<bool> checkEpcExists(String epc);
   Future<bool> createAsset(Asset asset);
-  Future<bool> updateAssetStatusToChecked(String tagId);
+  Future<bool> updateAssetStatusToChecked(
+    String tagId, {
+    required String lastScannedBy,
+  });
 }

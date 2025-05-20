@@ -1,5 +1,6 @@
 // lib/presentation/features/assets/screens/asset_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:rfid_project/core/services/profile_service.dart';
 import '../../../../domain/repositories/asset_repository.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
@@ -297,7 +298,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     );
   }
 
-  // เพิ่มเมธอดใหม่สำหรับอัปเดตสถานะ
+  // แก้ไขฟังก์ชัน _updateAssetStatusToChecked เป็น:
   Future<void> _updateAssetStatusToChecked(String tagId) async {
     // สร้างตัวแปรสำหรับติดตามสถานะการอัปเดต
     bool isUpdating = false;
@@ -308,8 +309,42 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     });
 
     try {
-      // เรียกใช้ repository เพื่ออัปเดตสถานะ
-      final success = await _assetRepository.updateAssetStatusToChecked(tagId);
+      // ดึงข้อมูลโปรไฟล์จาก ProfileService
+      final profileService = ProfileService();
+
+      // ตรวจสอบว่ามีการตั้งค่าโปรไฟล์แล้วหรือไม่
+      if (!profileService.isProfileSet()) {
+        // ถ้ายังไม่มีการตั้งค่าโปรไฟล์ ให้นำทางไปยังหน้าแก้ไขโปรไฟล์
+        setState(() {
+          isUpdating = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('กรุณาตั้งค่าชื่อผู้ใช้ก่อน'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+
+        // นำทางไปยังหน้าโปรไฟล์
+        Navigator.pushNamed(context, '/profile').then((_) {
+          // ทำการเรียกใช้ฟังก์ชันนี้อีกครั้งเมื่อกลับมาจากหน้าโปรไฟล์
+          if (profileService.isProfileSet()) {
+            _updateAssetStatusToChecked(tagId);
+          }
+        });
+
+        return;
+      }
+
+      // ดึงชื่อผู้ใช้จาก ProfileService
+      final userName = profileService.getUserName();
+
+      // เรียกใช้ repository เพื่ออัปเดตสถานะ พร้อมส่งชื่อผู้สแกน
+      final success = await _assetRepository.updateAssetStatusToChecked(
+        tagId,
+        lastScannedBy: userName,
+      );
 
       // เมื่ออัปเดตเสร็จสิ้น
       setState(() {

@@ -256,11 +256,21 @@ class ApiService {
     }
   }
 
-  Future<bool> updateAssetStatusToChecked(String tagId) async {
+  Future<bool> updateAssetStatusToChecked(
+    String tagId, {
+    String? lastScannedBy,
+  }) async {
     try {
+      // สร้าง request body ที่มี lastScannedBy
+      final Map<String, dynamic> requestBody = {};
+      if (lastScannedBy != null && lastScannedBy.isNotEmpty) {
+        requestBody['lastScannedBy'] = lastScannedBy;
+      }
+
       final response = await http.put(
         Uri.parse('$baseUrl/assets/$tagId/status/checked'),
         headers: {'Content-Type': 'application/json'},
+        body: json.encode(requestBody), // ส่ง body ที่มี lastScannedBy
       );
 
       if (response.statusCode == 200) {
