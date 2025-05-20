@@ -10,7 +10,6 @@ import 'presentation/features/export/blocs/export_bloc.dart';
 import 'presentation/features/main/blocs/navigation_bloc.dart';
 import 'presentation/features/rfid/blocs/rfid_scan_bloc.dart';
 import 'presentation/features/settings/blocs/settings_bloc.dart';
-import 'presentation/features/settings/blocs/category_bloc.dart';
 import 'presentation/features/reports/blocs/reports_bloc.dart';
 import 'package:provider/single_child_widget.dart';
 
@@ -89,12 +88,6 @@ class MyApp extends StatelessWidget {
         create: (_) => DependencyInjection.get<SettingsBloc>(),
       ),
 
-      // CategoryBloc - จัดการหมวดหมู่
-      ChangeNotifierProvider<CategoryBloc>(
-        create: (_) => DependencyInjection.get<CategoryBloc>(),
-      ),
-
-      // ReportsBloc - จัดการรายงาน
       ChangeNotifierProvider<ReportsBloc>(
         create: (_) => DependencyInjection.get<ReportsBloc>(),
       ),

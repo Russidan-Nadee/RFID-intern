@@ -293,10 +293,10 @@ class AssetTableView extends StatelessWidget {
     IconData statusIcon;
 
     if (status == 'Available') {
-      statusIcon = Icons.check;
+      statusIcon = Icons.close;
     } else {
       displayStatus = 'Checked';
-      statusIcon = Icons.close;
+      statusIcon = Icons.check;
     }
 
     return TableCell(

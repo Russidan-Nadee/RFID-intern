@@ -205,9 +205,10 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     );
   }
 
-  // สร้างหน้าแสดงรายละเอียดสินทรัพย์จากข้อมูลดิบทั้งหมด
+  // แก้ไขในส่วนของ _buildAssetDetailsView เพื่อเปลี่ยนลำดับปุ่มและเพิ่มปุ่มใหม่
+
   Widget _buildAssetDetailsView(Map<String, dynamic> assetData) {
-    // ดึงค่า status มาเพื่อใช้ในการกำหนดสี
+    // ดึงค่า status มาเพื่อใช้ในการกำหนดสีและตรวจสอบเงื่อนไข
     final status = assetData['status']?.toString() ?? 'Unknown';
     Color statusColor = _getStatusColor(status);
 
@@ -216,6 +217,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
         assetData['tagId']?.toString() ?? assetData['epc']?.toString() ?? '';
     final itemId =
         assetData['id']?.toString() ?? assetData['itemId']?.toString() ?? '';
+
+    // ตรวจสอบว่าสถานะเป็น Available หรือไม่
+    final bool canBeChecked = status == 'Available';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -237,37 +241,116 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
 
           const SizedBox(height: 24),
 
-          // ปุ่มดำเนินการและกลับ
-          Row(
-            children: [
-              Expanded(
-                child: PrimaryButton(
-                  text: 'กลับ',
-                  icon: Icons.arrow_back,
-                  onPressed: () => Navigator.pop(context),
+          // ปุ่มดำเนินการและกลับ - เปลี่ยนเป็นแนวตั้ง
+          Center(
+            child: Column(
+              children: [
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  child: PrimaryButton(
+                    text: 'Checked',
+                    icon: Icons.check_circle_outline,
+                    color:
+                        canBeChecked
+                            ? const Color.fromARGB(255, 170, 140, 255)
+                            : Colors.grey,
+                    onPressed:
+                        canBeChecked
+                            ? () => _updateAssetStatusToChecked(tagId)
+                            : () {},
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: PrimaryButton(
-                  text: 'Export',
-                  icon: Icons.file_download,
-                  color: Colors.green,
-                  onPressed: () {
-                    // ส่งทั้ง tagId และ itemId ไปยังหน้า Export
-                    Navigator.pushNamed(
-                      context,
-                      '/export',
-                      arguments: {'assetId': itemId, 'assettagId': tagId},
-                    );
-                  },
+
+                const SizedBox(height: 15),
+
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  child: PrimaryButton(
+                    text: 'Export',
+                    icon: Icons.file_download,
+                    color: Colors.green,
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/export',
+                        arguments: {'assetId': itemId, 'assettagId': tagId},
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 15),
+
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  child: PrimaryButton(
+                    text: 'กลับ',
+                    icon: Icons.arrow_back,
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
+
+  // เพิ่มเมธอดใหม่สำหรับอัปเดตสถานะ
+  Future<void> _updateAssetStatusToChecked(String tagId) async {
+    // สร้างตัวแปรสำหรับติดตามสถานะการอัปเดต
+    bool isUpdating = false;
+
+    // อัปเดต UI เพื่อแสดงการโหลด
+    setState(() {
+      isUpdating = true;
+    });
+
+    try {
+      // เรียกใช้ repository เพื่ออัปเดตสถานะ
+      final success = await _assetRepository.updateAssetStatusToChecked(tagId);
+
+      // เมื่ออัปเดตเสร็จสิ้น
+      setState(() {
+        isUpdating = false;
+      });
+
+      // แสดงข้อความแจ้งเตือนตามผลลัพธ์
+      if (success) {
+        // อัปเดตสำเร็จ - โหลดข้อมูลใหม่เพื่อแสดงสถานะล่าสุด
+        _loadRawAssetDetails();
+
+        // แสดงข้อความแจ้งเตือนว่าอัปเดตสำเร็จ
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('อัปเดตสถานะเป็น Checked สำเร็จ'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        // อัปเดตล้มเหลว
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Update fail'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // มีข้อผิดพลาดระหว่างการอัปเดต
+      setState(() {
+        isUpdating = false;
+      });
+
+      // แสดงข้อความแจ้งเตือนข้อผิดพลาด
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาด: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // ส่วนหัวแสดงรหัสและหมวดหมู่
@@ -538,23 +621,23 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
 
   IconData _getStatusIcon(String status) {
     if (status == 'Available') {
-      return Icons.check; // ไอคอนเครื่องหมายถูก (✓) สำหรับ Available
+      return Icons.close; // ไอคอนเครื่องหมายถูก (✓) สำหรับ Available
     } else if (status == 'Checked') {
-      return Icons.close; // ไอคอนเครื่องหมายกากบาท (X) สำหรับ Checked
+      return Icons.check; // ไอคอนเครื่องหมายกากบาท (X) สำหรับ Checked
     } else {
       // แปลงสถานะเดิมให้เป็นสถานะใหม่
       if (status.toLowerCase() == 'available' ||
           status.toLowerCase() == 'in stock') {
-        return Icons.check; // ให้ใช้ไอคอน ✓ สำหรับ Available
+        return Icons.close; // ให้ใช้ไอคอน ✓ สำหรับ Available
       } else {
-        return Icons.close; // ใช้ไอคอน X สำหรับสถานะอื่นๆ
+        return Icons.check; // ใช้ไอคอน X สำหรับสถานะอื่นๆ
       }
     }
   }
 
   Color _getStatusColor(String status) {
     // ใช้สีเดียวกันสำหรับทุกสถานะ (ไม่แยกสี)
-    return Colors.grey.shade700;
+    return Colors.deepPurple;
   }
 
   // ฟังก์ชันช่วยในการจัดรูปแบบวันที่

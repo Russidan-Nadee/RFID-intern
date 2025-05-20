@@ -9,14 +9,14 @@ import '../../../common_widgets/status/loading_error_widget.dart';
 import '../widgets/asset_notification_item.dart';
 import '../blocs/dashboard_bloc.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  _DashboardScreenState createState() => _DashboardScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
   @override

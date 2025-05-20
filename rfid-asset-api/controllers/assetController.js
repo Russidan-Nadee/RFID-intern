@@ -322,3 +322,70 @@ exports.checkEpcExists = async (req, res) => {
       });
    }
 };
+
+
+exports.updateAssetStatusToChecked = async (req, res) => {
+   try {
+      const { tagId } = req.params;
+
+      if (!tagId) {
+         return res.status(400).json({
+            success: false,
+            message: 'กรุณาระบุ tagId ที่ต้องการอัปเดต'
+         });
+      }
+
+      const [currentAsset] = await db.query(
+         'SELECT * FROM rfid_assets_details.assets WHERE tagId = ? LIMIT 1',
+         [tagId]
+      );
+
+      if (currentAsset.length === 0) {
+         return res.status(404).json({
+            success: false,
+            message: `ไม่พบสินทรัพย์ที่ต้องการอัปเดต: ${tagId}`
+         });
+      }
+
+      if (currentAsset[0].status !== 'Available') {
+         return res.status(400).json({
+            success: false,
+            message: 'Can update only Available status'
+         });
+      }
+
+      const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      const query = `
+         UPDATE rfid_assets_details.assets
+         SET status = 'Checked', lastScanTime = ?, lastScannedBy = 'System'
+         WHERE tagId = ? LIMIT 1
+      `;
+
+      const [result] = await db.query(query, [currentTime, tagId]);
+
+      if (result.affectedRows === 0) {
+         return res.status(404).json({
+            success: false,
+            message: `cannot update status: ${tagId}`
+         });
+      }
+
+      res.status(200).json({
+         success: true,
+         message: 'Update status successfully',
+         data: {
+            tagId,
+            status: 'Checked',
+            lastScanTime: currentTime,
+         }
+      });
+   } catch (error) {
+      console.error('error in update status:', error);
+      res.status(500).json({
+         success: false,
+         message: 'have error in update status',
+         error: error.message
+      });
+   }
+};

@@ -255,4 +255,26 @@ class ApiService {
       return false;
     }
   }
+
+  Future<bool> updateAssetStatusToChecked(String tagId) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/assets/$tagId/status/checked'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return jsonData['success'] ?? false;
+      } else {
+        // ถ้ามีข้อผิดพลาด เช่น 404 หรือ 400
+        print('Error updating status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Network error in updateAssetStatusToChecked: $e');
+      throw DatabaseException('Error updating status: $e');
+    }
+  }
 }

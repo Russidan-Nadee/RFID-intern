@@ -162,4 +162,17 @@ class AssetRepositoryImpl implements AssetRepository {
     // Add implementation if needed
     return null;
   }
+
+  @override
+  Future<bool> updateAssetStatusToChecked(String tagId) async {
+    try {
+      print(
+        'AssetRepositoryImpl - updateAssetStatusToChecked with tagId: $tagId',
+      );
+      return await _apiService.updateAssetStatusToChecked(tagId);
+    } catch (e) {
+      print('Error updating asset status: $e');
+      return false; // คืนค่า false ในกรณีที่เกิดข้อผิดพลาด
+    }
+  }
 }

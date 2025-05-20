@@ -17,6 +17,15 @@ router.get('/id/:id', assetController.getAssetById);
 // สร้างสินทรัพย์ใหม่
 router.post('/', assetController.createAsset);
 
+// อัปเดตสินทรัพย์
+console.log('Function exists:', typeof assetController.updateAssetStatusToChecked === 'function');
+if (typeof assetController.updateAssetStatusToChecked === 'function') {
+   router.put('/:tagId/status/checked', assetController.updateAssetStatusToChecked);
+} else {
+   console.error('ERROR: updateAssetStatusToChecked is not a function!');
+   console.log('Available functions:', Object.keys(assetController));
+}
+
 // ดึงข้อมูลตาม tagId/GtagId - ต้องวางไว้ท้ายสุด
 router.get('/:tagId', assetController.getAssetBytagId);
 
