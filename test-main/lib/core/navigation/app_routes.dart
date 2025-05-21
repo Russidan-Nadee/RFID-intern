@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:rfid_project/domain/repositories/asset_repository.dart';
+import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
 import 'package:rfid_project/presentation/features/export/screens/export_confirmation_screen.dart'
     show ExportConfirmationScreen;
 import 'package:rfid_project/presentation/features/export/screens/export_screen.dart'
     show ExportScreen;
+import '../../domain/usecases/assets/generate_asset_from_epc_usecase.dart';
 import '../../presentation/features/assets/screens/asset_detail_screen.dart';
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
 import '../../presentation/features/dashboard/screens/dashboard_screen.dart';
 import '../../presentation/features/rfid/screens/scan_rfid_screen.dart';
-import '../../presentation/features/settings/screens/settings_screen.dart'; // เพิ่มการนำเข้า SettingsScreen
+import '../../presentation/features/settings/screens/settings_screen.dart';
 import '../../presentation/features/settings/screens/profile_screen.dart';
 import '../../presentation/features/reports/screens/reports_screen.dart';
 import '../constants/route_constants.dart';
+import '../di/dependency_injection.dart';
 
 class AppRoutes {
   // ประกาศชื่อเส้นทางต่างๆ โดยใช้ค่าจาก RouteConstants
@@ -38,10 +42,6 @@ class AppRoutes {
   }
 
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
-    // รับ arguments ที่ส่งมาพร้อมกับการนำทาง
-    final args = routeSettings.arguments;
-
-    // ตรวจสอบชื่อเส้นทางและสร้างหน้าจอที่เหมาะสม
     switch (routeSettings.name) {
       case home:
         return _createRouteWithoutAnimation(
@@ -55,12 +55,18 @@ class AppRoutes {
         );
       case scanRfid:
         return _createRouteWithoutAnimation(
-          const ScanRfidScreen(),
+          ScanRfidScreen(
+            generateAssetUseCase:
+                DependencyInjection.get<GenerateAssetFromEpcUseCase>(),
+            assetRepository: DependencyInjection.get<AssetRepository>(),
+          ),
           routeSettings,
         );
       case reports:
         return _createRouteWithoutAnimation(
-          const ReportsScreen(),
+          ReportsScreen(
+            getAssetsUseCase: DependencyInjection.get<GetAssetsUseCase>(),
+          ),
           routeSettings,
         );
       case export:
@@ -70,7 +76,9 @@ class AppRoutes {
         );
       case assetDetail:
         return _createRouteWithoutAnimation(
-          const AssetDetailScreen(),
+          AssetDetailScreen(
+            assetRepository: DependencyInjection.get<AssetRepository>(),
+          ),
           routeSettings,
         );
       case settings:

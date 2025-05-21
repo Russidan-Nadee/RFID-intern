@@ -172,9 +172,6 @@ class GenerateAssetFromEpcUseCase {
   Future<Asset> generatePreview(String epc) async {
     try {
       // สร้างวันที่ปัจจุบัน
-      final now = DateTime.now();
-      final lastScanTime =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
       // ดึงข้อมูลสินทรัพย์ทั้งหมดเพื่อหา ID ล่าสุด
       final assets = await repository.getAssets();

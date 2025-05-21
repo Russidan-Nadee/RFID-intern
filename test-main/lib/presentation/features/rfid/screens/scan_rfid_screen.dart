@@ -1,6 +1,7 @@
 /* Path: lib/presentation/features/rfid/screens/scan_rfid_screen.dart */
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
@@ -10,10 +11,16 @@ import '../widgets/asset_not_found_card.dart';
 import '../widgets/unknown_epc_card.dart';
 import '../../assets/screens/asset_creation_preview_screen.dart';
 import '../../../../domain/usecases/assets/generate_asset_from_epc_usecase.dart';
-import '../../../../core/di/dependency_injection.dart';
 
 class ScanRfidScreen extends StatefulWidget {
-  const ScanRfidScreen({Key? key}) : super(key: key);
+  final GenerateAssetFromEpcUseCase generateAssetUseCase;
+  final AssetRepository assetRepository;
+
+  const ScanRfidScreen({
+    Key? key,
+    required this.generateAssetUseCase,
+    required this.assetRepository,
+  }) : super(key: key);
 
   @override
   State<ScanRfidScreen> createState() => _ScanRfidScreenState();
@@ -21,8 +28,6 @@ class ScanRfidScreen extends StatefulWidget {
 
 class _ScanRfidScreenState extends State<ScanRfidScreen> {
   int _selectedIndex = 2; // Index for the Scan tab
-  final _generateAssetUseCase =
-      DependencyInjection.get<GenerateAssetFromEpcUseCase>();
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
@@ -34,7 +39,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
 
   void _showAssetPreview(BuildContext context, String epc) async {
     // สร้างข้อมูลตัวอย่างจาก EPC แต่ยังไม่บันทึกลงฐานข้อมูล
-    final previewAsset = await _generateAssetUseCase.generatePreview(epc);
+    final previewAsset = await widget.generateAssetUseCase.generatePreview(epc);
 
     if (!mounted) return;
 
@@ -45,8 +50,8 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
         builder:
             (context) => AssetCreationPreviewScreen(
               asset: previewAsset,
+              assetRepository: widget.assetRepository,
               onCreatePressed: () {
-                // ตรงนี้ยังไม่ทำอะไร ตามคำสั่งให้เป็นปุ่มเปล่าๆ
                 print(
                   'Create Asset button pressed - no action implemented yet',
                 );

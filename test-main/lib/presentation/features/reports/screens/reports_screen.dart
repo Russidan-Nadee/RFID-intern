@@ -5,10 +5,12 @@ import '../../../common_widgets/layouts/screen_container.dart';
 import '../blocs/reports_bloc.dart';
 import '../widgets/report_chart.dart';
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
-import 'package:rfid_project/core/di/dependency_injection.dart';
 
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({Key? key}) : super(key: key);
+  final GetAssetsUseCase getAssetsUseCase;
+
+  const ReportsScreen({Key? key, required this.getAssetsUseCase})
+    : super(key: key);
 
   @override
   _ReportsScreenState createState() => _ReportsScreenState();
@@ -21,8 +23,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   void initState() {
     super.initState();
-    // สร้าง ReportsBloc ในกรณีที่ยังไม่ได้ลงทะเบียนใน DI
-    _reportsBloc = ReportsBloc(DependencyInjection.get<GetAssetsUseCase>());
+    // ใช้ GetAssetsUseCase ที่ส่งผ่าน constructor แทนการเรียก DI โดยตรง
+    _reportsBloc = ReportsBloc(widget.getAssetsUseCase);
 
     // โหลดข้อมูลรายงาน
     WidgetsBinding.instance.addPostFrameCallback((_) {

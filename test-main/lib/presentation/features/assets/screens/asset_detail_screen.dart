@@ -4,10 +4,12 @@ import 'package:rfid_project/core/services/profile_service.dart';
 import '../../../../domain/repositories/asset_repository.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
-import '../../../../core/di/dependency_injection.dart';
 
 class AssetDetailScreen extends StatefulWidget {
-  const AssetDetailScreen({Key? key}) : super(key: key);
+  final AssetRepository assetRepository;
+
+  const AssetDetailScreen({Key? key, required this.assetRepository})
+    : super(key: key);
 
   @override
   State<AssetDetailScreen> createState() => _AssetDetailScreenState();
@@ -19,14 +21,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // เพิ่มตัวแปรนี้เพื่อดึง repository จาก DI โดยตรง
-  late final AssetRepository _assetRepository;
-
   @override
   void initState() {
     super.initState();
-    // ดึง repository จาก DI โดยตรงแทนการใช้ Provider
-    _assetRepository = DependencyInjection.get<AssetRepository>();
   }
 
   @override
@@ -64,8 +61,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     });
 
     try {
-      // ใช้ _assetRepository โดยตรงแทนการดึงจาก Provider
-      final data = await _assetRepository.getRawAssetData(_tagId!);
+      // เปลี่ยนจาก _assetRepository เป็น widget.assetRepository
+      // เพื่อใช้ repository ที่ถูกส่งเข้ามาผ่าน constructor
+      final data = await widget.assetRepository.getRawAssetData(_tagId!);
 
       setState(() {
         _assetData = data;
@@ -341,8 +339,8 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
       final userName = profileService.getUserName();
       print('DEBUG - Username from ProfileService: $userName');
 
-      // เรียกใช้ repository เพื่ออัปเดตสถานะ พร้อมส่งชื่อผู้สแกน
-      final success = await _assetRepository.updateAssetStatusToChecked(
+      // เปลี่ยนจาก _assetRepository เป็น widget.assetRepository
+      final success = await widget.assetRepository.updateAssetStatusToChecked(
         tagId,
         lastScannedBy: userName,
       );

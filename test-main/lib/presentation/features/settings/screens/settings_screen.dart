@@ -43,7 +43,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // กำหนดโทนสีหลักเหมือน Dashboard
     final primaryColor = const Color(0xFF6A5ACD); // สีม่วงสไลวันเดอร์
     final backgroundColor = Colors.white;
-    final lightPrimaryColor = const Color(0xFFE6E4F4); // สีม่วงอ่อน
 
     return Scaffold(
       backgroundColor: backgroundColor,

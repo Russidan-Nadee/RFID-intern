@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:rfid_project/domain/entities/asset.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
-import '../../../../core/di/dependency_injection.dart';
 import '../../../../domain/repositories/asset_repository.dart';
 
 class AssetCreationPreviewScreen extends StatefulWidget {
   final Asset asset;
   final VoidCallback? onCreatePressed;
   final bool isLoading;
+  final AssetRepository assetRepository;
 
   const AssetCreationPreviewScreen({
     Key? key,
     required this.asset,
     this.onCreatePressed,
     this.isLoading = false,
+    required this.assetRepository,
   }) : super(key: key);
 
   @override
@@ -149,11 +150,8 @@ class _AssetCreationPreviewScreenState
                                     });
 
                                     try {
-                                      final repository =
-                                          DependencyInjection.get<
-                                            AssetRepository
-                                          >();
-                                      final success = await repository
+                                      final success = await widget
+                                          .assetRepository
                                           .createAsset(widget.asset);
 
                                       if (!mounted) return;
