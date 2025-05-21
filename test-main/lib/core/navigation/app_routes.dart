@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
+import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
 import 'package:rfid_project/presentation/features/export/screens/export_confirmation_screen.dart'
     show ExportConfirmationScreen;
 import 'package:rfid_project/presentation/features/export/screens/export_screen.dart'
     show ExportScreen;
-import '../../domain/usecases/assets/generate_asset_from_epc_usecase.dart';
 import '../../presentation/features/assets/screens/asset_detail_screen.dart';
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
 import '../../presentation/features/dashboard/screens/dashboard_screen.dart';
@@ -57,7 +57,7 @@ class AppRoutes {
         return _createRouteWithoutAnimation(
           ScanRfidScreen(
             generateAssetUseCase:
-                DependencyInjection.get<GenerateAssetFromEpcUseCase>(),
+                DependencyInjection.get<GenerateMockAssetUseCase>(),
             assetRepository: DependencyInjection.get<AssetRepository>(),
           ),
           routeSettings,

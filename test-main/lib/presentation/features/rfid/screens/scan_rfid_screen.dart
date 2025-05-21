@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
+import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
@@ -10,10 +11,9 @@ import '../widgets/asset_info_card.dart';
 import '../widgets/asset_not_found_card.dart';
 import '../widgets/unknown_epc_card.dart';
 import '../../assets/screens/asset_creation_preview_screen.dart';
-import '../../../../domain/usecases/assets/generate_asset_from_epc_usecase.dart';
 
 class ScanRfidScreen extends StatefulWidget {
-  final GenerateAssetFromEpcUseCase generateAssetUseCase;
+  final GenerateMockAssetUseCase generateAssetUseCase;
   final AssetRepository assetRepository;
 
   const ScanRfidScreen({
