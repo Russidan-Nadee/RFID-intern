@@ -1,76 +1,66 @@
-// test-main/lib/data/datasources/remote/api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
 import '../../../core/exceptions/app_exceptions.dart';
+import '../../../core/services/error_handler.dart';
 
 class ApiService {
   final String baseUrl = AppConfig.apiBaseUrl;
 
   // ดึงข้อมูลสินทรัพย์ทั้งหมด
   Future<List<Map<String, dynamic>>> getAssets() async {
+    final url = '$baseUrl/assets';
     try {
-      final response = await http.get(Uri.parse('$baseUrl/assets'));
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return List<Map<String, dynamic>>.from(jsonData['data']);
       } else {
-        throw NetworkException(
-          message: 'Failed to load assets: ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/assets',
-          requestMethod: 'GET',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      // ตรวจสอบว่าเป็น NetworkException อยู่แล้วหรือไม่
-      if (e is NetworkException) {
-        throw e;
-      }
-      // ถ้าเป็น Exception อื่นๆ ให้ห่อด้วย NetworkException
-      throw NetworkException(
-        message: 'Network error: $e',
-        url: '$baseUrl/assets',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Network error: $e', url);
     }
   }
 
-  // ดึงข้อมูลสินทรัพย์ตาม tagId (เปลี่ยนจาก uid)
+  // ดึงข้อมูลสินทรัพย์ตาม tagId
   Future<Map<String, dynamic>?> getAssetBytagId(String tagId) async {
+    final url = '$baseUrl/assets/$tagId';
     try {
-      final response = await http.get(Uri.parse('$baseUrl/assets/$tagId'));
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return jsonData['data'];
       } else if (response.statusCode == 404) {
-        // ส่งคืน null เมื่อไม่พบสินทรัพย์เหมือนเดิมเพื่อคงการทำงานเดิม
-        return null;
+        return null; // ไม่พบสินทรัพย์ คืนค่า null
       } else {
-        throw NetworkException(
-          message: 'Error: ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/assets/$tagId',
-          requestMethod: 'GET',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Network error: $e',
-        url: '$baseUrl/assets/$tagId',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error getting asset by tagId: $e', url);
     }
   }
 
-  // อัพเดตสถานะของสินทรัพย์
+  // อัพเดตสถานะสินทรัพย์
   Future<bool> updateAssetStatus(String uid, String status) async {
+    final url = '$baseUrl/assets/status/$uid';
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/assets/status/$uid'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'status': status}),
       );
@@ -78,107 +68,88 @@ class ApiService {
       if (response.statusCode == 200) {
         return true;
       } else {
-        throw NetworkException(
-          message: 'Error updating status: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/assets/status/$uid',
-          requestMethod: 'PUT',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      // คงการทำงานเดิมโดยส่งคืน false แต่ยัง throw exception ด้วย
-      print('DEBUG - Error updating status: $e');
-      throw NetworkException(
-        message: 'Error updating status: $e',
-        url: '$baseUrl/assets/status/$uid',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error updating status: $e', url);
     }
   }
 
   // เพิ่มสินทรัพย์ใหม่
   Future<void> insertAsset(Map<String, dynamic> assetData) async {
+    final url = '$baseUrl/assets';
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/assets'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(assetData),
       );
 
       if (response.statusCode != 201 && response.statusCode != 200) {
-        throw NetworkException(
-          message: 'Error adding asset: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/assets',
-          requestMethod: 'POST',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error adding asset: $e',
-        url: '$baseUrl/assets',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error adding asset: $e', url);
     }
   }
 
   // ลบสินทรัพย์
   Future<void> deleteAsset(String uid) async {
+    final url = '$baseUrl/assets/$uid';
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/assets/$uid'));
+      final response = await http.delete(Uri.parse(url));
 
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw NetworkException(
-          message: 'Error deleting asset: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/assets/$uid',
-          requestMethod: 'DELETE',
-        );
+      if (response.statusCode != 200) {
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error deleting asset: $e',
-        url: '$baseUrl/assets/$uid',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error deleting asset: $e', url);
     }
   }
 
   // ลบสินทรัพย์ทั้งหมด
   Future<void> deleteAllAssets() async {
+    final url = '$baseUrl/assets/all';
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/assets/all'));
+      final response = await http.delete(Uri.parse(url));
 
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw NetworkException(
-          message:
-              'Error deleting all assets: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/assets/all',
-          requestMethod: 'DELETE',
-        );
+      if (response.statusCode != 200) {
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error deleting all assets: $e',
-        url: '$baseUrl/assets/all',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error deleting all assets: $e', url);
     }
   }
 
   // ดึงข้อมูลหมวดหมู่ทั้งหมด
   Future<List<String>> getCategories() async {
+    final url = '$baseUrl/categories';
     try {
-      final response = await http.get(Uri.parse('$baseUrl/categories'));
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -187,307 +158,251 @@ class ApiService {
             .map((category) => category['name'].toString())
             .toList();
       } else {
-        throw NetworkException(
-          message: 'Failed to load categories: ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/categories',
-          requestMethod: 'GET',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Network error: $e',
-        url: '$baseUrl/categories',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error loading categories: $e', url);
     }
   }
 
   // เพิ่มหมวดหมู่ใหม่
   Future<void> addCategory(String name) async {
+    final url = '$baseUrl/categories';
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/categories'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name}),
       );
 
       if (response.statusCode != 201 && response.statusCode != 200) {
-        throw NetworkException(
-          message: 'Error adding category: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/categories',
-          requestMethod: 'POST',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error adding category: $e',
-        url: '$baseUrl/categories',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error adding category: $e', url);
     }
   }
 
   // อัพเดตหมวดหมู่
   Future<void> updateCategory(String oldName, String newName) async {
+    final url = '$baseUrl/categories/$oldName';
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/categories/$oldName'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': newName}),
       );
 
       if (response.statusCode != 200) {
-        throw NetworkException(
-          message:
-              'Error updating category: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/categories/$oldName',
-          requestMethod: 'PUT',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error updating category: $e',
-        url: '$baseUrl/categories/$oldName',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error updating category: $e', url);
     }
   }
 
   // ลบหมวดหมู่
   Future<void> deleteCategory(String name) async {
+    final url = '$baseUrl/categories/$name';
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/categories/$name'),
-      );
+      final response = await http.delete(Uri.parse(url));
 
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw NetworkException(
-          message:
-              'Error deleting category: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/categories/$name',
-          requestMethod: 'DELETE',
-        );
+      if (response.statusCode != 200) {
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error deleting category: $e',
-        url: '$baseUrl/categories/$name',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error deleting category: $e', url);
     }
   }
 
   // ดึงข้อมูลแผนกทั้งหมด
   Future<List<String>> getDepartments() async {
+    final url = '$baseUrl/departments';
     try {
-      final response = await http.get(Uri.parse('$baseUrl/departments'));
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         final List<dynamic> departmentsData = jsonData['data'];
         return departmentsData.map((dept) => dept['name'].toString()).toList();
       } else {
-        throw NetworkException(
-          message: 'Failed to load departments: ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/departments',
-          requestMethod: 'GET',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Network error: $e',
-        url: '$baseUrl/departments',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error loading departments: $e', url);
     }
   }
 
   // เพิ่มแผนกใหม่
   Future<void> addDepartment(String name) async {
+    final url = '$baseUrl/departments';
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/departments'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name}),
       );
 
       if (response.statusCode != 201 && response.statusCode != 200) {
-        throw NetworkException(
-          message:
-              'Error adding department: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/departments',
-          requestMethod: 'POST',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error adding department: $e',
-        url: '$baseUrl/departments',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error adding department: $e', url);
     }
   }
 
   // อัพเดตแผนก
   Future<void> updateDepartment(String oldName, String newName) async {
+    final url = '$baseUrl/departments/$oldName';
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/departments/$oldName'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': newName}),
       );
 
       if (response.statusCode != 200) {
-        throw NetworkException(
-          message:
-              'Error updating department: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/departments/$oldName',
-          requestMethod: 'PUT',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error updating department: $e',
-        url: '$baseUrl/departments/$oldName',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error updating department: $e', url);
     }
   }
 
   // ลบแผนก
   Future<void> deleteDepartment(String name) async {
+    final url = '$baseUrl/departments/$name';
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/departments/$name'),
-      );
+      final response = await http.delete(Uri.parse(url));
 
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw NetworkException(
-          message:
-              'Error deleting department: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/departments/$name',
-          requestMethod: 'DELETE',
-        );
+      if (response.statusCode != 200) {
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Error deleting department: $e',
-        url: '$baseUrl/departments/$name',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error deleting department: $e', url);
     }
   }
 
   // สแกน RFID จากอุปกรณ์
   Future<String?> scanRfidtag() async {
+    final url = '$baseUrl/rfid/scan';
     try {
-      final response = await http.get(Uri.parse('$baseUrl/rfid/scan'));
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return jsonData['tagId'];
       } else {
-        throw NetworkException(
-          message: 'Error scanning RFID: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/rfid/scan',
-          requestMethod: 'GET',
-        );
+        return null;
       }
     } catch (e) {
-      print('DEBUG - Error scanning RFID: $e');
-      // ยังคงส่งคืน null เพื่อคงการทำงานเดิม
+      // ในกรณีนี้เราแค่ return null เพื่อให้ทำงานเหมือนเดิม
+      // แต่ยังคงบันทึก error เพื่อประโยชน์ในการตรวจสอบ
+      ErrorHandler.logError('Error scanning RFID: $e');
       return null;
     }
   }
 
   // เพิ่มเมธอดตรวจสอบ EPC
   Future<bool> checkEpcExists(String epc) async {
+    final url = '$baseUrl/assets/check-epc?epc=$epc';
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/assets/check-epc?epc=$epc'),
-      );
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return jsonData['exists'] ?? false;
       } else {
-        throw NetworkException(
-          message:
-              'ไม่สามารถตรวจสอบ EPC ได้: Status code ${response.statusCode}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/api/assets/check-epc?epc=$epc',
-          requestMethod: 'GET',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      if (e is NetworkException) {
-        throw e;
-      }
-      throw NetworkException(
-        message: 'Network error: $e',
-        url: '$baseUrl/api/assets/check-epc',
-      );
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error checking EPC: $e', url);
     }
   }
 
   Future<bool> createAsset(Map<String, dynamic> assetData) async {
+    final url = '$baseUrl/assets';
     try {
-      print('DEBUG - Sending data to API: ${json.encode(assetData)}');
-      print('DEBUG - API URL: $baseUrl/assets');
+      ErrorHandler.logError('Sending data to API: ${json.encode(assetData)}');
+      ErrorHandler.logError('API URL: $url');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/assets'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(assetData),
       );
 
-      print('DEBUG - Status code: ${response.statusCode}');
-      print('DEBUG - Response body: ${response.body}');
+      ErrorHandler.logError('Status code: ${response.statusCode}');
+      ErrorHandler.logError('Response body: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         return true;
       } else {
-        throw NetworkException(
-          message:
-              'Error creating asset: Status code ${response.statusCode}, Body: ${response.body}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/assets',
-          requestMethod: 'POST',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      print('DEBUG - Error in API: $e');
-      if (e is NetworkException) {
-        // คงการทำงานเดิมโดยส่งคืน false
-        return false;
-      }
-      // คงการทำงานเดิมโดยส่งคืน false เมื่อเกิดข้อผิดพลาด
-      return false;
+      if (e is AppException) rethrow;
+      ErrorHandler.logError('Error in API: $e');
+      throw FetchDataException('Error creating asset: $e', url);
     }
   }
 
@@ -495,53 +410,48 @@ class ApiService {
     String tagId, {
     String? lastScannedBy,
   }) async {
+    final url = '$baseUrl/assets/$tagId/status/checked';
     try {
       // สร้าง request body และตรวจสอบ lastScannedBy อย่างรัดกุม
       final Map<String, dynamic> requestBody = {};
 
       // เพิ่ม lastScannedBy เข้าไปในคำขอเสมอ
-      // ถ้าเป็น null หรือว่าง ให้ใช้ค่า 'User' แทน (หรือค่าอื่นที่คุณต้องการ)
       requestBody['lastScannedBy'] =
           (lastScannedBy != null && lastScannedBy.isNotEmpty)
               ? lastScannedBy
               : 'User';
 
       // บันทึก log สำหรับตรวจสอบ
-      print(
-        'DEBUG - Sending request with lastScannedBy: ${requestBody['lastScannedBy']}',
+      ErrorHandler.logError(
+        'Sending request with lastScannedBy: ${requestBody['lastScannedBy']}',
       );
 
       final response = await http.put(
-        Uri.parse('$baseUrl/assets/$tagId/status/checked'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(requestBody),
       );
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        print('DEBUG - Update successful: ${jsonData['data']}');
+        ErrorHandler.logError('Update successful: ${jsonData['data']}');
         return jsonData['success'] ?? false;
       } else {
         // บันทึก log แสดงข้อผิดพลาดอย่างละเอียด
-        print('DEBUG - Error updating status: ${response.statusCode}');
-        print('DEBUG - Response body: ${response.body}');
+        ErrorHandler.logError('Error updating status: ${response.statusCode}');
+        ErrorHandler.logError('Response body: ${response.body}');
 
-        throw NetworkException(
-          message:
-              'Error updating asset status: Status code ${response.statusCode}, Body: ${response.body}',
-          statusCode: response.statusCode,
-          url: '$baseUrl/assets/$tagId/status/checked',
-          requestMethod: 'PUT',
-        );
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
       }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
     } catch (e) {
-      print('DEBUG - Network error in updateAssetStatusToChecked: $e');
-      if (e is NetworkException) {
-        // คงการทำงานเดิมโดยส่งคืน false
-        return false;
-      }
-      // คงการทำงานเดิมโดยส่งคืน false
-      return false;
+      if (e is AppException) rethrow;
+      ErrorHandler.logError('Error in updateAssetStatusToChecked: $e');
+      throw DatabaseException('Error updating status: $e');
     }
   }
 }

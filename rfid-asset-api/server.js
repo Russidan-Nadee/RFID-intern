@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
+const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 
 // โหลดตัวแปรสภาพแวดล้อม
 dotenv.config();
@@ -11,6 +12,12 @@ const assetRoutes = require('./routes/assetRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Debug middleware - เพิ่มการ log request สำหรับ debugging
+app.use((req, res, next) => {
+   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+   next();
+});
 
 // Middleware
 app.use(cors());
@@ -33,7 +40,26 @@ app.get('/', (req, res) => {
 // กำหนดเส้นทาง API
 app.use('/api/assets', assetRoutes);
 
+// 404 Handler - ต้องวางหลังจากกำหนดเส้นทางทั้งหมด
+app.use(notFoundHandler);
+
+// Error Handler - ต้องวางหลังสุดเสมอ
+app.use(errorHandler);
+
 // เริ่มเซิร์ฟเวอร์
 app.listen(PORT, '0.0.0.0', () => {
    console.log(`Server running on port ${PORT}`);
+   console.log(`API available at http://localhost:${PORT}/api/assets`);
+});
+
+// จัดการข้อผิดพลาดที่ไม่ได้จัดการ (Uncaught exceptions)
+process.on('uncaughtException', (error) => {
+   console.error('Uncaught Exception:', error);
+   // ในสภาพแวดล้อมจริง อาจจะต้องปิดเซิร์ฟเวอร์อย่างปลอดภัยที่นี่
+});
+
+// จัดการ Promise rejection ที่ไม่ได้จัดการ
+process.on('unhandledRejection', (reason, promise) => {
+   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+   // ในสภาพแวดล้อมจริง อาจจะต้องปิดเซิร์ฟเวอร์อย่างปลอดภัยที่นี่
 });

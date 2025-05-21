@@ -1,9 +1,9 @@
-// data/repositories/asset_repository_impl.dart
 import '../../domain/entities/asset.dart';
 import '../../domain/repositories/asset_repository.dart';
 import '../datasources/remote/api_service.dart';
 import '../models/asset_model.dart';
 import '../../core/exceptions/app_exceptions.dart';
+import '../../core/services/error_handler.dart';
 
 class AssetRepositoryImpl implements AssetRepository {
   final ApiService _apiService;
@@ -17,9 +17,19 @@ class AssetRepositoryImpl implements AssetRepository {
       if (assetData == null) return null;
       return AssetModel.fromMap(assetData);
     } catch (e) {
-      // เพิ่ม log แต่ยัง throw exception
-      print('DEBUG - Error finding asset by tagId: $e');
-      throw DatabaseException('Error finding asset by tagId: $e');
+      // การแยกประเภทข้อผิดพลาดทำให้จัดการได้ตรงจุด
+      if (e is NotFoundException) {
+        // กรณีไม่พบสินทรัพย์ คืนค่า null เพื่อให้ทำงานเหมือนเดิม
+        return null;
+      } else if (e is AppException) {
+        // ส่งต่อ custom exceptions เพื่อให้ชั้นที่สูงกว่าจัดการ
+        ErrorHandler.logError('Error in findAssetBytagId: ${e.toString()}');
+        rethrow;
+      } else {
+        // แปลงข้อผิดพลาดอื่นๆ เป็น DatabaseException
+        ErrorHandler.logError('Error finding asset by tagId: $e');
+        throw DatabaseException('เกิดข้อผิดพลาดในการค้นหาสินทรัพย์: $e');
+      }
     }
   }
 
@@ -29,19 +39,30 @@ class AssetRepositoryImpl implements AssetRepository {
       final assetsData = await _apiService.getAssets();
       return assetsData.map((map) => AssetModel.fromMap(map)).toList();
     } catch (e) {
-      print('DEBUG - Error getting all assets: $e');
-      throw DatabaseException('Error getting all assets: $e');
+      // บันทึกข้อผิดพลาดก่อนส่งต่อ
+      ErrorHandler.logError('Error in getAssets: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการดึงข้อมูลสินทรัพย์: $e');
     }
   }
 
   @override
   Future<Map<String, dynamic>?> getRawAssetData(String tagId) async {
     try {
-      print('DEBUG - AssetRepositoryImpl - getRawAssetData with tagId: $tagId');
+      ErrorHandler.logError(
+        'AssetRepositoryImpl - getRawAssetData with tagId: $tagId',
+      );
       return await _apiService.getAssetBytagId(tagId);
     } catch (e) {
-      print('DEBUG - Error getting raw asset data: $e');
-      throw DatabaseException('Error getting raw asset data: $e');
+      ErrorHandler.logError('Error getting raw asset data: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException(
+        'เกิดข้อผิดพลาดในการดึงข้อมูลดิบของสินทรัพย์: $e',
+      );
     }
   }
 
@@ -51,8 +72,11 @@ class AssetRepositoryImpl implements AssetRepository {
       final assetModel = asset as AssetModel;
       await _apiService.insertAsset(assetModel.toMap());
     } catch (e) {
-      print('DEBUG - Error inserting asset: $e');
-      throw DatabaseException('Error inserting asset: $e');
+      ErrorHandler.logError('Error inserting asset: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการเพิ่มสินทรัพย์: $e');
     }
   }
 
@@ -61,8 +85,11 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       await _apiService.deleteAllAssets();
     } catch (e) {
-      print('DEBUG - Error deleting all assets: $e');
-      throw DatabaseException('Error deleting all assets: $e');
+      ErrorHandler.logError('Error deleting all assets: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการลบสินทรัพย์ทั้งหมด: $e');
     }
   }
 
@@ -71,8 +98,11 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       return await _apiService.getCategories();
     } catch (e) {
-      print('DEBUG - Error getting categories: $e');
-      throw DatabaseException('Error getting categories: $e');
+      ErrorHandler.logError('Error getting categories: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่: $e');
     }
   }
 
@@ -81,8 +111,11 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       await _apiService.addCategory(name);
     } catch (e) {
-      print('DEBUG - Error adding category: $e');
-      throw DatabaseException('Error adding category: $e');
+      ErrorHandler.logError('Error adding category: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการเพิ่มหมวดหมู่: $e');
     }
   }
 
@@ -91,8 +124,11 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       await _apiService.updateCategory(oldName, newName);
     } catch (e) {
-      print('DEBUG - Error updating category: $e');
-      throw DatabaseException('Error updating category: $e');
+      ErrorHandler.logError('Error updating category: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการอัปเดตหมวดหมู่: $e');
     }
   }
 
@@ -101,8 +137,11 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       await _apiService.deleteCategory(name);
     } catch (e) {
-      print('DEBUG - Error deleting category: $e');
-      throw DatabaseException('Error deleting category: $e');
+      ErrorHandler.logError('Error deleting category: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการลบหมวดหมู่: $e');
     }
   }
 
@@ -111,9 +150,17 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       return await _apiService.getDepartments();
     } catch (e) {
-      // ยังคง fallback ให้ทำงานได้เหมือนเดิม
-      print('DEBUG - Error getting departments, using fallback values: $e');
-      return ['Production', 'Warehouse', 'Office'];
+      ErrorHandler.logError('Error getting departments: $e');
+
+      // กรณีที่ API ยังไม่รองรับ - คืนค่าเริ่มต้นเพื่อให้แอปทำงานต่อได้
+      if (e is FetchDataException || e is DatabaseException) {
+        return ['Production', 'Warehouse', 'Office'];
+      }
+
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการดึงข้อมูลแผนก: $e');
     }
   }
 
@@ -122,8 +169,11 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       await _apiService.addDepartment(name);
     } catch (e) {
-      print('DEBUG - Error adding department: $e');
-      throw DatabaseException('Error adding department: $e');
+      ErrorHandler.logError('Error adding department: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการเพิ่มแผนก: $e');
     }
   }
 
@@ -132,8 +182,11 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       await _apiService.updateDepartment(oldName, newName);
     } catch (e) {
-      print('DEBUG - Error updating department: $e');
-      throw DatabaseException('Error updating department: $e');
+      ErrorHandler.logError('Error updating department: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการอัปเดตแผนก: $e');
     }
   }
 
@@ -142,8 +195,11 @@ class AssetRepositoryImpl implements AssetRepository {
     try {
       await _apiService.deleteDepartment(name);
     } catch (e) {
-      print('DEBUG - Error deleting department: $e');
-      throw DatabaseException('Error deleting department: $e');
+      ErrorHandler.logError('Error deleting department: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการลบแผนก: $e');
     }
   }
 
@@ -158,22 +214,31 @@ class AssetRepositoryImpl implements AssetRepository {
       }
       return null;
     } catch (e) {
-      print('DEBUG - Error finding asset by EPC: $e');
-      // ส่ง null กลับเหมือนเดิมเพื่อให้โค้ดทำงานได้แบบเดิม
-      // แต่ยัง throw exception เพื่อการจัดการที่ดีขึ้น
-      throw DatabaseException('Error finding asset by EPC: $e');
+      ErrorHandler.logError('Error finding asset by EPC: $e');
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการค้นหาสินทรัพย์ด้วย EPC: $e');
     }
   }
 
   @override
   Future<bool> checkEpcExists(String epc) async {
     try {
-      final asset = await findAssetByEpc(epc);
-      return asset != null;
+      return await _apiService.checkEpcExists(epc);
     } catch (e) {
-      print('DEBUG - Error checking EPC existence: $e');
-      // คืนค่า false เหมือนเดิม
-      return false;
+      ErrorHandler.logError('Error checking EPC existence: $e');
+
+      // กรณีที่ API ยังไม่รองรับ - ใช้วิธีค้นหาจากข้อมูลที่มีอยู่แทน
+      if (e is FetchDataException) {
+        final asset = await findAssetByEpc(epc);
+        return asset != null;
+      }
+
+      if (e is AppException) {
+        rethrow;
+      }
+      throw DatabaseException('เกิดข้อผิดพลาดในการตรวจสอบ EPC: $e');
     }
   }
 
@@ -183,6 +248,7 @@ class AssetRepositoryImpl implements AssetRepository {
       final assetModel = asset as AssetModel;
       final assetData = assetModel.toMap();
 
+      // ตรวจสอบและแก้ไขค่าที่เป็นค่าว่าให้เป็น '0'
       if (assetData['batteryLevel'] == '') {
         assetData['batteryLevel'] = '0';
       }
@@ -193,21 +259,31 @@ class AssetRepositoryImpl implements AssetRepository {
 
       return await _apiService.createAsset(assetData);
     } catch (e) {
-      print('DEBUG - Error creating asset: $e');
-      // คืนค่า false เพื่อให้โค้ดทำงานได้แบบเดิม
-      return false;
+      ErrorHandler.logError('Error creating asset: $e');
+
+      // แยกประเภทข้อผิดพลาดให้ชัดเจน
+      if (e is ConflictException) {
+        // แสดงข้อความเฉพาะสำหรับกรณีข้อมูลซ้ำ
+        throw ConflictException(
+          'มีสินทรัพย์นี้ในระบบแล้ว ไม่สามารถสร้างซ้ำได้',
+        );
+      } else if (e is ValidationException) {
+        // ส่งต่อข้อผิดพลาดเกี่ยวกับการตรวจสอบข้อมูล
+        rethrow;
+      } else if (e is AppException) {
+        // ส่งต่อ exceptions อื่นๆ
+        rethrow;
+      }
+
+      // แปลงข้อผิดพลาดทั่วไปเป็น DatabaseException
+      throw DatabaseException('เกิดข้อผิดพลาดในการสร้างสินทรัพย์: $e');
     }
   }
 
   @override
   Future<Asset?> updateAsset(Asset asset) async {
-    try {
-      // Add implementation if needed
-      return null;
-    } catch (e) {
-      print('DEBUG - Error updating asset: $e');
-      throw DatabaseException('Error updating asset: $e');
-    }
+    // ยังไม่ได้ implement - จะเพิ่มในอนาคต
+    throw UnimplementedError('Method not implemented yet');
   }
 
   @override
@@ -215,13 +291,8 @@ class AssetRepositoryImpl implements AssetRepository {
     List<Asset> assets,
     List<String> columns,
   ) async {
-    try {
-      // Add implementation if needed
-      return null;
-    } catch (e) {
-      print('DEBUG - Error exporting assets to CSV: $e');
-      throw DatabaseException('Error exporting assets to CSV: $e');
-    }
+    // ยังไม่ได้ implement - จะเพิ่มในอนาคต
+    throw UnimplementedError('Method not implemented yet');
   }
 
   @override
@@ -230,17 +301,32 @@ class AssetRepositoryImpl implements AssetRepository {
     String? lastScannedBy,
   }) async {
     try {
-      print(
-        'DEBUG - AssetRepositoryImpl - updateAssetStatusToChecked with tagId: $tagId, scanner: $lastScannedBy',
+      ErrorHandler.logError(
+        'AssetRepositoryImpl - updateAssetStatusToChecked with tagId: $tagId, scanner: $lastScannedBy',
       );
       return await _apiService.updateAssetStatusToChecked(
         tagId,
         lastScannedBy: lastScannedBy,
       );
     } catch (e) {
-      print('DEBUG - Error updating asset status: $e');
-      // คืนค่า false เพื่อให้โค้ดทำงานได้แบบเดิม
-      return false;
+      ErrorHandler.logError('Error updating asset status: $e');
+
+      // แยกประเภทข้อผิดพลาดเพื่อให้การจัดการเฉพาะทาง
+      if (e is ValidationException) {
+        // กรณีสถานะไม่ถูกต้อง
+        throw ValidationException(
+          'สถานะปัจจุบันไม่สามารถอัปเดตเป็น Checked ได้',
+        );
+      } else if (e is NotFoundException) {
+        // กรณีไม่พบสินทรัพย์
+        throw AssetNotFoundException('ไม่พบสินทรัพย์ที่มีรหัส: $tagId');
+      } else if (e is AppException) {
+        // ส่งต่อ custom exceptions อื่นๆ
+        rethrow;
+      }
+
+      // แปลงข้อผิดพลาดทั่วไปเป็น DatabaseException
+      throw DatabaseException('เกิดข้อผิดพลาดในการอัปเดตสถานะสินทรัพย์: $e');
     }
   }
 }
