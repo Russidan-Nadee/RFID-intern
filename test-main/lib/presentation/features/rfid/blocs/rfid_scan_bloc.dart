@@ -1,6 +1,8 @@
+// lib/presentation/features/rfid/blocs/rfid_scan_bloc.dart
 import 'package:flutter/material.dart';
 import 'package:rfid_project/domain/entities/epc_scan_result.dart';
 import '../../../../domain/usecases/rfid/scan_rfid_usecase.dart';
+import '../../../../core/exceptions/app_exceptions.dart';
 
 /// สถานะการสแกน RFID
 enum RfidScanStatus {
@@ -37,19 +39,30 @@ class RfidScanBloc extends ChangeNotifier {
       // บันทึกผลลัพธ์
       _scanResults = results;
 
-      if (_scanResults.isEmpty || _scanResults.first.success == false) {
-        _status = RfidScanStatus.error;
-        _errorMessage =
-            _scanResults.isEmpty
-                ? 'ไม่พบผลลัพธ์การสแกน'
-                : _scanResults.first.errorMessage ??
-                    'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
+      if (_scanResults.isEmpty) {
+        throw RfidScanException("ไม่พบผลลัพธ์การสแกน");
+      } else if (_scanResults.first.success == false) {
+        throw RfidScanException(_scanResults.first.errorMessage);
       } else {
         _status = RfidScanStatus.scanned;
       }
+    } on RfidScanException catch (e) {
+      _status = RfidScanStatus.error;
+      _errorMessage = e.getUserFriendlyMessage();
+      print('DEBUG - RfidScan error: ${e.toString()}');
+    } on NetworkException catch (e) {
+      _status = RfidScanStatus.error;
+      _errorMessage = e.getUserFriendlyMessage();
+      print('DEBUG - Network error in RFID scan: ${e.toString()}');
+    } on DatabaseException catch (e) {
+      _status = RfidScanStatus.error;
+      _errorMessage = e.getUserFriendlyMessage();
+      print('DEBUG - Database error in RFID scan: ${e.toString()}');
     } catch (e) {
       _status = RfidScanStatus.error;
-      _errorMessage = e.toString();
+      _errorMessage =
+          "เกิดข้อผิดพลาดที่ไม่คาดคิดในการสแกน กรุณาลองใหม่อีกครั้ง";
+      print('DEBUG - Unexpected error in RFID scan: $e');
     }
 
     notifyListeners();

@@ -1,3 +1,4 @@
+// test-main/lib/data/datasources/remote/api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
@@ -15,12 +16,23 @@ class ApiService {
         final jsonData = json.decode(response.body);
         return List<Map<String, dynamic>>.from(jsonData['data']);
       } else {
-        throw DatabaseException(
-          'Failed to load assets: ${response.statusCode}',
+        throw NetworkException(
+          message: 'Failed to load assets: ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/assets',
+          requestMethod: 'GET',
         );
       }
     } catch (e) {
-      throw DatabaseException('Network error: $e');
+      // ตรวจสอบว่าเป็น NetworkException อยู่แล้วหรือไม่
+      if (e is NetworkException) {
+        throw e;
+      }
+      // ถ้าเป็น Exception อื่นๆ ให้ห่อด้วย NetworkException
+      throw NetworkException(
+        message: 'Network error: $e',
+        url: '$baseUrl/assets',
+      );
     }
   }
 
@@ -33,12 +45,24 @@ class ApiService {
         final jsonData = json.decode(response.body);
         return jsonData['data'];
       } else if (response.statusCode == 404) {
-        return null; // ไม่พบสินทรัพย์
+        // ส่งคืน null เมื่อไม่พบสินทรัพย์เหมือนเดิมเพื่อคงการทำงานเดิม
+        return null;
       } else {
-        throw DatabaseException('Error: ${response.statusCode}');
+        throw NetworkException(
+          message: 'Error: ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/assets/$tagId',
+          requestMethod: 'GET',
+        );
       }
     } catch (e) {
-      throw DatabaseException('Network error: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Network error: $e',
+        url: '$baseUrl/assets/$tagId',
+      );
     }
   }
 
@@ -51,40 +75,103 @@ class ApiService {
         body: json.encode({'status': status}),
       );
 
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        throw NetworkException(
+          message: 'Error updating status: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/assets/status/$uid',
+          requestMethod: 'PUT',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error updating status: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      // คงการทำงานเดิมโดยส่งคืน false แต่ยัง throw exception ด้วย
+      print('DEBUG - Error updating status: $e');
+      throw NetworkException(
+        message: 'Error updating status: $e',
+        url: '$baseUrl/assets/status/$uid',
+      );
     }
   }
 
   // เพิ่มสินทรัพย์ใหม่
   Future<void> insertAsset(Map<String, dynamic> assetData) async {
     try {
-      await http.post(
+      final response = await http.post(
         Uri.parse('$baseUrl/assets'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(assetData),
       );
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw NetworkException(
+          message: 'Error adding asset: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/assets',
+          requestMethod: 'POST',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error adding asset: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error adding asset: $e',
+        url: '$baseUrl/assets',
+      );
     }
   }
 
   // ลบสินทรัพย์
   Future<void> deleteAsset(String uid) async {
     try {
-      await http.delete(Uri.parse('$baseUrl/assets/$uid'));
+      final response = await http.delete(Uri.parse('$baseUrl/assets/$uid'));
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw NetworkException(
+          message: 'Error deleting asset: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/assets/$uid',
+          requestMethod: 'DELETE',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error deleting asset: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error deleting asset: $e',
+        url: '$baseUrl/assets/$uid',
+      );
     }
   }
 
   // ลบสินทรัพย์ทั้งหมด
   Future<void> deleteAllAssets() async {
     try {
-      await http.delete(Uri.parse('$baseUrl/assets/all'));
+      final response = await http.delete(Uri.parse('$baseUrl/assets/all'));
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw NetworkException(
+          message:
+              'Error deleting all assets: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/assets/all',
+          requestMethod: 'DELETE',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error deleting all assets: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error deleting all assets: $e',
+        url: '$baseUrl/assets/all',
+      );
     }
   }
 
@@ -100,47 +187,105 @@ class ApiService {
             .map((category) => category['name'].toString())
             .toList();
       } else {
-        throw DatabaseException(
-          'Failed to load categories: ${response.statusCode}',
+        throw NetworkException(
+          message: 'Failed to load categories: ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/categories',
+          requestMethod: 'GET',
         );
       }
     } catch (e) {
-      throw DatabaseException('Network error: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Network error: $e',
+        url: '$baseUrl/categories',
+      );
     }
   }
 
   // เพิ่มหมวดหมู่ใหม่
   Future<void> addCategory(String name) async {
     try {
-      await http.post(
+      final response = await http.post(
         Uri.parse('$baseUrl/categories'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name}),
       );
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw NetworkException(
+          message: 'Error adding category: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/categories',
+          requestMethod: 'POST',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error adding category: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error adding category: $e',
+        url: '$baseUrl/categories',
+      );
     }
   }
 
   // อัพเดตหมวดหมู่
   Future<void> updateCategory(String oldName, String newName) async {
     try {
-      await http.put(
+      final response = await http.put(
         Uri.parse('$baseUrl/categories/$oldName'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': newName}),
       );
+
+      if (response.statusCode != 200) {
+        throw NetworkException(
+          message:
+              'Error updating category: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/categories/$oldName',
+          requestMethod: 'PUT',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error updating category: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error updating category: $e',
+        url: '$baseUrl/categories/$oldName',
+      );
     }
   }
 
   // ลบหมวดหมู่
   Future<void> deleteCategory(String name) async {
     try {
-      await http.delete(Uri.parse('$baseUrl/categories/$name'));
+      final response = await http.delete(
+        Uri.parse('$baseUrl/categories/$name'),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw NetworkException(
+          message:
+              'Error deleting category: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/categories/$name',
+          requestMethod: 'DELETE',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error deleting category: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error deleting category: $e',
+        url: '$baseUrl/categories/$name',
+      );
     }
   }
 
@@ -154,49 +299,106 @@ class ApiService {
         final List<dynamic> departmentsData = jsonData['data'];
         return departmentsData.map((dept) => dept['name'].toString()).toList();
       } else {
-        throw DatabaseException(
-          'Failed to load departments: ${response.statusCode}',
+        throw NetworkException(
+          message: 'Failed to load departments: ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/departments',
+          requestMethod: 'GET',
         );
       }
     } catch (e) {
-      throw DatabaseException('Network error: $e');
-      // ในกรณีที่ API ยังไม่รองรับ ให้ return ค่าเริ่มต้น
-      // return ['IT', 'HR', 'Admin', 'Finance'];
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Network error: $e',
+        url: '$baseUrl/departments',
+      );
     }
   }
 
   // เพิ่มแผนกใหม่
   Future<void> addDepartment(String name) async {
     try {
-      await http.post(
+      final response = await http.post(
         Uri.parse('$baseUrl/departments'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name}),
       );
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw NetworkException(
+          message:
+              'Error adding department: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/departments',
+          requestMethod: 'POST',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error adding department: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error adding department: $e',
+        url: '$baseUrl/departments',
+      );
     }
   }
 
   // อัพเดตแผนก
   Future<void> updateDepartment(String oldName, String newName) async {
     try {
-      await http.put(
+      final response = await http.put(
         Uri.parse('$baseUrl/departments/$oldName'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': newName}),
       );
+
+      if (response.statusCode != 200) {
+        throw NetworkException(
+          message:
+              'Error updating department: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/departments/$oldName',
+          requestMethod: 'PUT',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error updating department: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error updating department: $e',
+        url: '$baseUrl/departments/$oldName',
+      );
     }
   }
 
   // ลบแผนก
   Future<void> deleteDepartment(String name) async {
     try {
-      await http.delete(Uri.parse('$baseUrl/departments/$name'));
+      final response = await http.delete(
+        Uri.parse('$baseUrl/departments/$name'),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw NetworkException(
+          message:
+              'Error deleting department: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/departments/$name',
+          requestMethod: 'DELETE',
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Error deleting department: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Error deleting department: $e',
+        url: '$baseUrl/departments/$name',
+      );
     }
   }
 
@@ -209,10 +411,16 @@ class ApiService {
         final jsonData = json.decode(response.body);
         return jsonData['tagId'];
       } else {
-        return null;
+        throw NetworkException(
+          message: 'Error scanning RFID: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/rfid/scan',
+          requestMethod: 'GET',
+        );
       }
     } catch (e) {
-      print('Error scanning RFID: $e');
+      print('DEBUG - Error scanning RFID: $e');
+      // ยังคงส่งคืน null เพื่อคงการทำงานเดิม
       return null;
     }
   }
@@ -228,17 +436,29 @@ class ApiService {
         final jsonData = json.decode(response.body);
         return jsonData['exists'] ?? false;
       } else {
-        throw DatabaseException('ไม่สามารถตรวจสอบ EPC ได้');
+        throw NetworkException(
+          message:
+              'ไม่สามารถตรวจสอบ EPC ได้: Status code ${response.statusCode}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/api/assets/check-epc?epc=$epc',
+          requestMethod: 'GET',
+        );
       }
     } catch (e) {
-      throw DatabaseException('Network error: $e');
+      if (e is NetworkException) {
+        throw e;
+      }
+      throw NetworkException(
+        message: 'Network error: $e',
+        url: '$baseUrl/api/assets/check-epc',
+      );
     }
   }
 
   Future<bool> createAsset(Map<String, dynamic> assetData) async {
     try {
-      print('Sending data to API: ${json.encode(assetData)}');
-      print('API URL: $baseUrl/assets');
+      print('DEBUG - Sending data to API: ${json.encode(assetData)}');
+      print('DEBUG - API URL: $baseUrl/assets');
 
       final response = await http.post(
         Uri.parse('$baseUrl/assets'),
@@ -246,12 +466,27 @@ class ApiService {
         body: json.encode(assetData),
       );
 
-      print('Status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      print('DEBUG - Status code: ${response.statusCode}');
+      print('DEBUG - Response body: ${response.body}');
 
-      return response.statusCode == 201 || response.statusCode == 200;
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        throw NetworkException(
+          message:
+              'Error creating asset: Status code ${response.statusCode}, Body: ${response.body}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/assets',
+          requestMethod: 'POST',
+        );
+      }
     } catch (e) {
-      print('Error in API: $e');
+      print('DEBUG - Error in API: $e');
+      if (e is NetworkException) {
+        // คงการทำงานเดิมโดยส่งคืน false
+        return false;
+      }
+      // คงการทำงานเดิมโดยส่งคืน false เมื่อเกิดข้อผิดพลาด
       return false;
     }
   }
@@ -273,7 +508,7 @@ class ApiService {
 
       // บันทึก log สำหรับตรวจสอบ
       print(
-        'Sending request with lastScannedBy: ${requestBody['lastScannedBy']}',
+        'DEBUG - Sending request with lastScannedBy: ${requestBody['lastScannedBy']}',
       );
 
       final response = await http.put(
@@ -284,17 +519,29 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        print('Update successful: ${jsonData['data']}');
+        print('DEBUG - Update successful: ${jsonData['data']}');
         return jsonData['success'] ?? false;
       } else {
         // บันทึก log แสดงข้อผิดพลาดอย่างละเอียด
-        print('Error updating status: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        return false;
+        print('DEBUG - Error updating status: ${response.statusCode}');
+        print('DEBUG - Response body: ${response.body}');
+
+        throw NetworkException(
+          message:
+              'Error updating asset status: Status code ${response.statusCode}, Body: ${response.body}',
+          statusCode: response.statusCode,
+          url: '$baseUrl/assets/$tagId/status/checked',
+          requestMethod: 'PUT',
+        );
       }
     } catch (e) {
-      print('Network error in updateAssetStatusToChecked: $e');
-      throw DatabaseException('Error updating status: $e');
+      print('DEBUG - Network error in updateAssetStatusToChecked: $e');
+      if (e is NetworkException) {
+        // คงการทำงานเดิมโดยส่งคืน false
+        return false;
+      }
+      // คงการทำงานเดิมโดยส่งคืน false
+      return false;
     }
   }
 }

@@ -1,7 +1,9 @@
+// lib/presentation/features/assets/blocs/asset_bloc.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
 import '../../../../domain/entities/asset.dart';
+import '../../../../core/exceptions/app_exceptions.dart';
 
 enum AssetStatus { initial, loading, loaded, error }
 
@@ -37,9 +39,22 @@ class AssetBloc extends ChangeNotifier {
       _assets = assets;
       _applyFilters();
       _status = AssetStatus.loaded;
+    } on NetworkException catch (e) {
+      _status = AssetStatus.error;
+      _errorMessage = e.getUserFriendlyMessage();
+      print('DEBUG - Network error in loadAssets: ${e.toString()}');
+    } on DatabaseException catch (e) {
+      _status = AssetStatus.error;
+      _errorMessage = e.getUserFriendlyMessage();
+      print('DEBUG - Database error in loadAssets: ${e.toString()}');
+    } on AssetNotFoundException catch (e) {
+      _status = AssetStatus.error;
+      _errorMessage = e.getUserFriendlyMessage();
+      print('DEBUG - Asset not found in loadAssets: ${e.toString()}');
     } catch (e) {
       _status = AssetStatus.error;
-      _errorMessage = e.toString();
+      _errorMessage = "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง";
+      print('DEBUG - Unexpected error in loadAssets: $e');
     }
 
     notifyListeners();
@@ -70,11 +85,29 @@ class AssetBloc extends ChangeNotifier {
 
   // เพิ่มฟังก์ชันสำหรับการนำทางไปดูรายละเอียดสินทรัพย์
   void navigateToAssetDetail(BuildContext context, Asset asset) {
-    Navigator.pushNamed(
-      context,
-      '/assetDetail',
-      arguments: {'tagId': asset.tagId}, // แก้จาก uid เป็น tagId
-    );
+    try {
+      if (asset.tagId.isEmpty) {
+        throw AssetNotFoundException("ไม่พบรหัส Tag ID สำหรับสินทรัพย์นี้");
+      }
+
+      Navigator.pushNamed(
+        context,
+        '/assetDetail',
+        arguments: {'tagId': asset.tagId}, // แก้จาก uid เป็น tagId
+      );
+    } catch (e) {
+      // จัดการข้อผิดพลาดใน UI
+      if (e is AssetNotFoundException) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.getUserFriendlyMessage())));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาดในการนำทาง: $e')));
+      }
+      print('DEBUG - Error in navigateToAssetDetail: $e');
+    }
   }
 
   // เพิ่มฟังก์ชันสำหรับการนำทางไปส่งออกสินทรัพย์
@@ -83,15 +116,22 @@ class AssetBloc extends ChangeNotifier {
     Asset asset, {
     bool scrollToBottom = false,
   }) {
-    Navigator.pushNamed(
-      context,
-      '/export',
-      arguments: {
-        'assetId': asset.id,
-        'assetUid': asset.tagId, // แก้จาก uid เป็น tagId
-        'scrollToBottom': scrollToBottom,
-      },
-    );
+    try {
+      Navigator.pushNamed(
+        context,
+        '/export',
+        arguments: {
+          'assetId': asset.id,
+          'assetUid': asset.tagId, // แก้จาก uid เป็น tagId
+          'scrollToBottom': scrollToBottom,
+        },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เกิดข้อผิดพลาดในการนำทางไปยังการส่งออก: $e')),
+      );
+      print('DEBUG - Error in navigateToExport: $e');
+    }
   }
 
   void _applyFilters() {
