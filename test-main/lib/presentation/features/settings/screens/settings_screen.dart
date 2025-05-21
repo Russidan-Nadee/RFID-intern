@@ -14,10 +14,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // เพิ่ม ProfileService
   final _profileService = ProfileService();
 
-  // ตัวแปรเก็บชื่อผู้ใช้
+  // ตัวแปรเก็บชื่อผู้ใช้และอีเมล
   late String _userName;
-  // ตัวแปรเก็บอีเมล (ค่าคงที่)
-  final String _userEmail = 'example@email.com';
+  late String _userEmail;
 
   @override
   void initState() {
@@ -35,9 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _loadUserData() {
     setState(() {
       _userName = _profileService.getUserName();
-      if (_userName.isEmpty) {
-        _userName = 'Example User';
-      }
+      _userEmail = _profileService.getUserEmail();
     });
   }
 

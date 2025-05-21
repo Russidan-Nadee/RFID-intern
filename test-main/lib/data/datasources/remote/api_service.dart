@@ -261,23 +261,33 @@ class ApiService {
     String? lastScannedBy,
   }) async {
     try {
-      // สร้าง request body ที่มี lastScannedBy
+      // สร้าง request body และตรวจสอบ lastScannedBy อย่างรัดกุม
       final Map<String, dynamic> requestBody = {};
-      if (lastScannedBy != null && lastScannedBy.isNotEmpty) {
-        requestBody['lastScannedBy'] = lastScannedBy;
-      }
+
+      // เพิ่ม lastScannedBy เข้าไปในคำขอเสมอ
+      // ถ้าเป็น null หรือว่าง ให้ใช้ค่า 'User' แทน (หรือค่าอื่นที่คุณต้องการ)
+      requestBody['lastScannedBy'] =
+          (lastScannedBy != null && lastScannedBy.isNotEmpty)
+              ? lastScannedBy
+              : 'User';
+
+      // บันทึก log สำหรับตรวจสอบ
+      print(
+        'Sending request with lastScannedBy: ${requestBody['lastScannedBy']}',
+      );
 
       final response = await http.put(
         Uri.parse('$baseUrl/assets/$tagId/status/checked'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(requestBody), // ส่ง body ที่มี lastScannedBy
+        body: json.encode(requestBody),
       );
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
+        print('Update successful: ${jsonData['data']}');
         return jsonData['success'] ?? false;
       } else {
-        // ถ้ามีข้อผิดพลาด เช่น 404 หรือ 400
+        // บันทึก log แสดงข้อผิดพลาดอย่างละเอียด
         print('Error updating status: ${response.statusCode}');
         print('Response body: ${response.body}');
         return false;

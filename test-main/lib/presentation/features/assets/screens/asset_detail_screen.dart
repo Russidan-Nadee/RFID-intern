@@ -339,6 +339,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
 
       // ดึงชื่อผู้ใช้จาก ProfileService
       final userName = profileService.getUserName();
+      print('DEBUG - Username from ProfileService: $userName');
 
       // เรียกใช้ repository เพื่ออัปเดตสถานะ พร้อมส่งชื่อผู้สแกน
       final success = await _assetRepository.updateAssetStatusToChecked(

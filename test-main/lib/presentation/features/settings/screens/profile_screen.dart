@@ -13,36 +13,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // เพิ่ม ProfileService
   final _profileService = ProfileService();
 
-  // Controllers สำหรับช่องกรอกข้อมูล - เริ่มต้นเป็นค่าว่าง
+  // Controllers สำหรับช่องกรอกข้อมูล
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
-  late final TextEditingController _usernameController;
-  late final TextEditingController _passwordController;
-  late final TextEditingController _phoneController;
-
-  // ซ่อน/แสดงรหัสผ่าน
-  bool _obscurePassword = true;
 
   @override
   void initState() {
     super.initState();
-    // กำหนด controller เป็นค่าว่าง
-    _nameController = TextEditingController();
+    // กำหนด controller และโหลดข้อมูลจาก ProfileService
+    _nameController = TextEditingController(
+      text: _profileService.getUserName(),
+    );
     _emailController = TextEditingController(
-      text: 'example@email.com',
-    ); // เก็บอีเมลไว้เพื่อใช้ในการแสดง Avatar
-    _usernameController = TextEditingController();
-    _passwordController = TextEditingController();
-    _phoneController = TextEditingController();
+      text: _profileService.getUserEmail(),
+    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -73,11 +63,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.check, color: Colors.white),
             onPressed: () {
-              // บันทึกข้อมูลชื่อผู้ใช้
+              // บันทึกข้อมูลชื่อผู้ใช้และอีเมล
               _profileService.saveUserName(
                 _nameController.text.isNotEmpty
                     ? _nameController.text
                     : 'Example User',
+              );
+
+              _profileService.saveUserEmail(
+                _emailController.text.isNotEmpty
+                    ? _emailController.text
+                    : 'example@email.com',
               );
 
               // แสดงข้อความแจ้งเตือน
@@ -129,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 32),
 
-            // ฟอร์มข้อมูลโปรไฟล์
+            // ฟอร์มข้อมูลโปรไฟล์ - เหลือเพียง Name และ E-mail
             _buildFormField(
               label: 'Name',
               controller: _nameController,
@@ -143,43 +139,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               hintText: 'example@email.com',
-            ),
-
-            const SizedBox(height: 16),
-
-            _buildFormField(
-              label: 'User name',
-              controller: _usernameController,
-              hintText: 'example_user',
-            ),
-
-            const SizedBox(height: 16),
-
-            _buildFormField(
-              label: 'Password',
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              hintText: '••••••••',
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            _buildFormField(
-              label: 'Phone number',
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              hintText: 'Example: +66 812345678',
             ),
           ],
         ),
@@ -207,6 +166,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
+          showCursor: true,
+          onTap: () {
+            controller.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: controller.text.length,
+            );
+          },
           decoration: InputDecoration(
             hintText: hintText,
             suffixIcon: suffixIcon,

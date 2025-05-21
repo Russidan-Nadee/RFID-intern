@@ -326,8 +326,14 @@ exports.checkEpcExists = async (req, res) => {
 exports.updateAssetStatusToChecked = async (req, res) => {
    try {
       const { tagId } = req.params;
+
+      // เพิ่ม logging เพื่อตรวจสอบ request body
+      console.log('Full request body:', req.body);
+      console.log('Request headers:', req.headers);
+
       // รับค่า lastScannedBy จาก request body
       const { lastScannedBy } = req.body;
+      console.log('lastScannedBy extracted from body:', lastScannedBy);
 
       if (!tagId) {
          return res.status(400).json({
@@ -357,8 +363,12 @@ exports.updateAssetStatusToChecked = async (req, res) => {
 
       const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-      // ใช้ชื่อผู้สแกนจาก request หรือใช้ค่าเริ่มต้น 'System' ถ้าไม่มี
-      const scannerName = lastScannedBy || 'System';
+      // แก้ไขให้รับประกันว่าจะใช้ค่า lastScannedBy ถ้ามี
+      let scannerName = 'System'; // ค่าเริ่มต้น
+      if (typeof lastScannedBy === 'string' && lastScannedBy.trim() !== '') {
+         scannerName = lastScannedBy.trim();
+      }
+      console.log('Final scannerName value:', scannerName);
 
       const query = `
          UPDATE rfid_assets_details.assets
@@ -366,6 +376,7 @@ exports.updateAssetStatusToChecked = async (req, res) => {
          WHERE tagId = ? LIMIT 1
       `;
 
+      console.log('SQL parameters:', [currentTime, scannerName, tagId]);
       const [result] = await db.query(query, [currentTime, scannerName, tagId]);
 
       if (result.affectedRows === 0) {
@@ -393,4 +404,4 @@ exports.updateAssetStatusToChecked = async (req, res) => {
          error: error.message
       });
    }
-};
+}
