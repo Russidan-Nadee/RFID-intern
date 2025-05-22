@@ -5,6 +5,7 @@ const HTTP_STATUS = {
    OK: 200,
    CREATED: 201,
    BAD_REQUEST: 400,
+   UNAUTHORIZED: 401,
    NOT_FOUND: 404,
    CONFLICT: 409,
    INTERNAL_SERVER_ERROR: 500
@@ -21,7 +22,8 @@ const ERROR_MESSAGES = {
    DUPLICATE_TAG_ID: 'Tag ID นี้มีอยู่ในระบบแล้ว',
    UNKNOWN_ERROR: 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ',
    ASSET_UPDATE_ERROR: 'ไม่สามารถอัปเดตสินทรัพย์ได้',
-   INVALID_STATUS: 'Can update only Available status'
+   INVALID_STATUS: 'Can update only Available status',
+   UNAUTHORIZED: 'ไม่ได้รับอนุญาต',
 };
 
 // Custom Error Classes
@@ -60,6 +62,12 @@ class ConflictError extends AppError {
    }
 }
 
+class UnauthorisedException extends AppError {
+   constructor(message = ERROR_MESSAGES.INVALID_REQUEST) {
+      super(message, HTTP_STATUS.UNAUTHORIZED);
+   }
+}
+
 module.exports = {
    HTTP_STATUS,
    ERROR_MESSAGES,
@@ -67,5 +75,6 @@ module.exports = {
    DatabaseError,
    NotFoundError,
    ValidationError,
-   ConflictError
+   ConflictError,
+   UnauthorisedException,
 };

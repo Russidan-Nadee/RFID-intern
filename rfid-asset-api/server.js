@@ -9,6 +9,7 @@ dotenv.config();
 
 // กำหนดเส้นทาง
 const assetRoutes = require('./routes/assetRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,13 +33,18 @@ app.get('/', (req, res) => {
          allAssets: '/api/assets',
          assetsByColumns: '/api/assets?columns=id,tagId,category',
          searchAssets: '/api/assets/search?category=Storage&status=Available',
-         assetByUid: '/api/assets/your-tagId-here'
+         assetByUid: '/api/assets/your-tagId-here',
+         login: '/api/auth/login',
+         currentUser: '/api/auth/me',
+         allUsers: '/api/auth/users'
+
       }
    });
 });
 
 // กำหนดเส้นทาง API
 app.use('/api/assets', assetRoutes);
+app.use('/api/auth', authRoutes);
 
 // 404 Handler - ต้องวางหลังจากกำหนดเส้นทางทั้งหมด
 app.use(notFoundHandler);
@@ -50,6 +56,7 @@ app.use(errorHandler);
 app.listen(PORT, '0.0.0.0', () => {
    console.log(`Server running on port ${PORT}`);
    console.log(`API available at http://localhost:${PORT}/api/assets`);
+   console.log(`Auth API available at http://localhost:${PORT}/api/auth`);
 });
 
 // จัดการข้อผิดพลาดที่ไม่ได้จัดการ (Uncaught exceptions)
