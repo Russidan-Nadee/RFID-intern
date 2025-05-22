@@ -242,7 +242,7 @@ class AssetTableView extends StatelessWidget {
             Navigator.pushNamed(
               context,
               '/assetDetail',
-              arguments: {'guid': asset.tagId},
+              arguments: {'tagId': asset.tagId},
             );
           },
           borderRadius: BorderRadius.circular(12),
