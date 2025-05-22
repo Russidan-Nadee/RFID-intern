@@ -455,3 +455,197 @@ class ApiService {
     }
   }
 }
+
+// เพิ่มเมธอดเหล่านี้ลงใน ApiService class ที่มีอยู่
+
+// Authentication methods
+Future<Map<String, dynamic>?> login(String username, String password) async {
+  final url = '$baseUrl/auth/login';
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'username': username, 'password': password}),
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      // Store token for future requests
+      _authToken = jsonData['token'];
+      return jsonData['data'];
+    } else {
+      final responseBody = json.decode(response.body);
+      final message = responseBody['message'] ?? 'Login failed';
+      throw ErrorHandler.handleApiError(response.statusCode, message, url);
+    }
+  } on http.ClientException {
+    throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
+  } catch (e) {
+    if (e is AppException) rethrow;
+    throw FetchDataException('Error during login: $e', url);
+  }
+}
+
+Future<void> logout() async {
+  final url = '$baseUrl/auth/logout';
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: _getAuthHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      _authToken = null; // Clear stored token
+    } else {
+      final responseBody = json.decode(response.body);
+      final message = responseBody['message'] ?? 'Logout failed';
+      throw ErrorHandler.handleApiError(response.statusCode, message, url);
+    }
+  } catch (e) {
+    if (e is AppException) rethrow;
+    // For logout, we might want to clear token even if request fails
+    _authToken = null;
+    throw FetchDataException('Error during logout: $e', url);
+  }
+}
+
+Future<Map<String, dynamic>?> getCurrentUser() async {
+  final url = '$baseUrl/auth/me';
+  try {
+    final response = await http.get(Uri.parse(url), headers: _getAuthHeaders());
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      return jsonData['data'];
+    } else if (response.statusCode == 401) {
+      _authToken = null; // Clear invalid token
+      return null;
+    } else {
+      final responseBody = json.decode(response.body);
+      final message = responseBody['message'] ?? 'Failed to get user';
+      throw ErrorHandler.handleApiError(response.statusCode, message, url);
+    }
+  } catch (e) {
+    if (e is AppException) rethrow;
+    throw FetchDataException('Error getting current user: $e', url);
+  }
+}
+
+Future<List<Map<String, dynamic>>> getAllUsers() async {
+  final url = '$baseUrl/auth/users';
+  try {
+    final response = await http.get(Uri.parse(url), headers: _getAuthHeaders());
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      return List<Map<String, dynamic>>.from(jsonData['data']);
+    } else {
+      final responseBody = json.decode(response.body);
+      final message = responseBody['message'] ?? 'Failed to get users';
+      throw ErrorHandler.handleApiError(response.statusCode, message, url);
+    }
+  } catch (e) {
+    if (e is AppException) rethrow;
+    throw FetchDataException('Error getting users: $e', url);
+  }
+}
+
+Future<Map<String, dynamic>?> createUser(Map<String, dynamic> userData) async {
+  final url = '$baseUrl/auth/users';
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: _getAuthHeaders(),
+      body: json.encode(userData),
+    );
+
+    if (response.statusCode == 201) {
+      final jsonData = json.decode(response.body);
+      return jsonData['data'];
+    } else {
+      final responseBody = json.decode(response.body);
+      final message = responseBody['message'] ?? 'Failed to create user';
+      throw ErrorHandler.handleApiError(response.statusCode, message, url);
+    }
+  } catch (e) {
+    if (e is AppException) rethrow;
+    throw FetchDataException('Error creating user: $e', url);
+  }
+}
+
+Future<bool> updateUser(Map<String, dynamic> userData) async {
+  final url = '$baseUrl/auth/users/${userData['id']}';
+  try {
+    final response = await http.put(
+      Uri.parse(url),
+      headers: _getAuthHeaders(),
+      body: json.encode(userData),
+    );
+
+    return response.statusCode == 200;
+  } catch (e) {
+    if (e is AppException) rethrow;
+    throw FetchDataException('Error updating user: $e', url);
+  }
+}
+
+Future<bool> deleteUser(String userId) async {
+  final url = '$baseUrl/auth/users/$userId';
+  try {
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: _getAuthHeaders(),
+    );
+
+    return response.statusCode == 200;
+  } catch (e) {
+    if (e is AppException) rethrow;
+    throw FetchDataException('Error deleting user: $e', url);
+  }
+}
+
+Future<bool> changePassword(
+  String userId,
+  String oldPassword,
+  String newPassword,
+) async {
+  final url = '$baseUrl/auth/users/$userId/password';
+  try {
+    final response = await http.put(
+      Uri.parse(url),
+      headers: _getAuthHeaders(),
+      body: json.encode({
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+      }),
+    );
+
+    return response.statusCode == 200;
+  } catch (e) {
+    if (e is AppException) rethrow;
+    throw FetchDataException('Error changing password: $e', url);
+  }
+}
+
+// Private helper methods
+String? _authToken;
+
+Map<String, String> _getAuthHeaders() {
+  final headers = <String, String>{'Content-Type': 'application/json'};
+
+  if (_authToken != null) {
+    headers['Authorization'] = 'Bearer $_authToken';
+  }
+
+  return headers;
+}
+
+// Add method to set token (for session restoration)
+void setAuthToken(String? token) {
+  _authToken = token;
+}
+
+// Add method to get current token
+String? getAuthToken() {
+  return _authToken;
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
+import 'package:rfid_project/presentation/features/auth/screens/login_screen.dart';
 import 'package:rfid_project/presentation/features/export/screens/export_confirmation_screen.dart'
     show ExportConfirmationScreen;
 import 'package:rfid_project/presentation/features/export/screens/export_screen.dart'
@@ -27,6 +28,7 @@ class AppRoutes {
   static const String assetDetail = RouteConstants.assetDetail;
   static const String exportConfirmation = '/exportConfirmation';
   static const String profile = '/profile';
+  static const String login = '/login';
 
   // ฟังก์ชั่นสำหรับสร้าง Route ที่ไม่มีอนิเมชั่น
   static Route<dynamic> _createRouteWithoutAnimation(
@@ -96,6 +98,8 @@ class AppRoutes {
           ExportConfirmationScreen(),
           routeSettings,
         );
+      case login:
+        return _createRouteWithoutAnimation(const LoginScreen(), routeSettings);
       default:
         return _createRouteWithoutAnimation(
           const DashboardScreen(),

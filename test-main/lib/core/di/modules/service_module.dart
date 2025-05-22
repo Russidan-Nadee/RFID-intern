@@ -1,7 +1,9 @@
 import 'package:get_it/get_it.dart';
+import 'package:rfid_project/core/services/auth_service.dart';
 import 'package:rfid_project/core/validation/asset_validator.dart';
 import 'package:rfid_project/data/datasources/random_epc_datasource.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
+import 'package:rfid_project/domain/repositories/auth_repository.dart';
 import 'package:rfid_project/domain/usecases/assets/create_asset_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/find_asset_by_epc_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
@@ -43,5 +45,7 @@ class ServiceModule {
     _getIt.registerLazySingleton(
       () => CreateAssetUseCase(_getIt<AssetRepository>()),
     );
+    // เพิ่มบรรทัดเหล่านี้ใน register() method
+    _getIt.registerLazySingleton(() => AuthService(_getIt<AuthRepository>()));
   }
 }
