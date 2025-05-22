@@ -35,6 +35,13 @@ exports.login = async (req, res, next) => {
 
       const user = users[0];
       console.log('User found:', { username: user.username, hash: user.password_hash });
+      console.log('=== DEBUG INFO ===');
+      console.log('User object keys:', Object.keys(user));
+      console.log('Password hash field:', user.password_hash);
+      console.log('Hash length:', user.password_hash?.length);
+      console.log('Input password:', password);
+      console.log('bcrypt version:', require('bcryptjs/package.json').version);
+      console.log('==================')
 
       // Verify password
       console.log('Comparing passwords...');
