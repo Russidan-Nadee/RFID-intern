@@ -133,12 +133,15 @@ exports.getCurrentUser = async (req, res, next) => {
    }
 };
 
-// Get all users (Admin only)
+// Get all users (Manager+ can access)
 exports.getAllUsers = async (req, res, next) => {
    try {
-      // Check if user is admin
-      if (req.user.role !== 'admin') {
-         throw new UnauthorisedException('ไม่มีสิทธิ์เข้าถึงข้อมูลนี้');
+      // Check if user has permission (Manager+ can access)
+      const userRole = req.user.role;
+      const roleHierarchy = { 'viewer': 0, 'staff': 1, 'manager': 2, 'admin': 3 };
+
+      if ((roleHierarchy[userRole] || 0) < roleHierarchy['manager']) {
+         throw new UnauthorisedException('ไม่มีสิทธิ์เข้าถึงข้อมูลนี้ ต้องเป็น Manager ขึ้นไป');
       }
 
       const query = 'SELECT id, username, role, lastLoginTime, createdAt, updatedAt FROM rfid_assets_details.users ORDER BY createdAt DESC';
@@ -163,12 +166,15 @@ exports.getAllUsers = async (req, res, next) => {
    }
 };
 
-// Create new user (Admin only)
+// Create new user (Manager+ can create)
 exports.createUser = async (req, res, next) => {
    try {
-      // Check if user is admin
-      if (req.user.role !== 'admin') {
-         throw new UnauthorisedException('ไม่มีสิทธิ์สร้างผู้ใช้ใหม่');
+      // Check if user has permission (Manager+ can create)
+      const userRole = req.user.role;
+      const roleHierarchy = { 'viewer': 0, 'staff': 1, 'manager': 2, 'admin': 3 };
+
+      if ((roleHierarchy[userRole] || 0) < roleHierarchy['manager']) {
+         throw new UnauthorisedException('ไม่มีสิทธิ์สร้างผู้ใช้ใหม่ ต้องเป็น Manager ขึ้นไป');
       }
 
       const { username, password, role } = req.body;
@@ -181,6 +187,11 @@ exports.createUser = async (req, res, next) => {
       const validRoles = ['admin', 'manager', 'staff', 'viewer'];
       if (!validRoles.includes(role)) {
          throw new ValidationError(`role ต้องเป็นหนึ่งใน: ${validRoles.join(', ')}`);
+      }
+
+      // Manager can't create Admin users (only Admin can create Admin)
+      if (role === 'admin' && userRole !== 'admin') {
+         throw new UnauthorisedException('เฉพาะ Admin เท่านั้นที่สามารถสร้างผู้ใช้ Admin ได้');
       }
 
       // Check if username already exists
@@ -230,20 +241,30 @@ exports.createUser = async (req, res, next) => {
    }
 };
 
-// Update user (Admin or self)
+// Update user (Manager+ or self)
 exports.updateUser = async (req, res, next) => {
    try {
       const { userId } = req.params;
       const { username, role } = req.body;
+      const userRole = req.user.role;
+      const roleHierarchy = { 'viewer': 0, 'staff': 1, 'manager': 2, 'admin': 3 };
 
       // Check permissions
-      if (req.user.role !== 'admin' && req.user.userId !== parseInt(userId)) {
+      const isManager = (roleHierarchy[userRole] || 0) >= roleHierarchy['manager'];
+      const isSelf = req.user.userId === parseInt(userId);
+
+      if (!isManager && !isSelf) {
          throw new UnauthorisedException('ไม่มีสิทธิ์แก้ไขข้อมูลผู้ใช้นี้');
       }
 
-      // If not admin, can't change role
-      if (req.user.role !== 'admin' && role) {
+      // If not manager+, can't change role
+      if (!isManager && role) {
          throw new UnauthorisedException('ไม่มีสิทธิ์เปลี่ยนบทบาทผู้ใช้');
+      }
+
+      // Manager can't promote to Admin (only Admin can do that)
+      if (role === 'admin' && userRole !== 'admin') {
+         throw new UnauthorisedException('เฉพาะ Admin เท่านั้นที่สามารถกำหนดบทบาท Admin ได้');
       }
 
       let updateFields = [];
@@ -262,7 +283,7 @@ exports.updateUser = async (req, res, next) => {
          updateValues.push(username);
       }
 
-      if (role && req.user.role === 'admin') {
+      if (role && isManager) {
          const validRoles = ['admin', 'manager', 'staff', 'viewer'];
          if (!validRoles.includes(role)) {
             throw new ValidationError(`role ต้องเป็นหนึ่งใน: ${validRoles.join(', ')}`);
@@ -295,19 +316,34 @@ exports.updateUser = async (req, res, next) => {
    }
 };
 
-// Delete user (Admin only)
+// Delete user (Manager+ can delete, but not themselves)
 exports.deleteUser = async (req, res, next) => {
    try {
       const { userId } = req.params;
+      const userRole = req.user.role;
+      const roleHierarchy = { 'viewer': 0, 'staff': 1, 'manager': 2, 'admin': 3 };
 
-      // Check if user is admin
-      if (req.user.role !== 'admin') {
-         throw new UnauthorisedException('ไม่มีสิทธิ์ลบผู้ใช้');
+      // Check if user has permission (Manager+)
+      if ((roleHierarchy[userRole] || 0) < roleHierarchy['manager']) {
+         throw new UnauthorisedException('ไม่มีสิทธิ์ลบผู้ใช้ ต้องเป็น Manager ขึ้นไป');
       }
 
       // Can't delete self
       if (req.user.userId === parseInt(userId)) {
          throw new ValidationError('ไม่สามารถลบบัญชีตัวเองได้');
+      }
+
+      // Check if target user exists and get their role
+      const getUserQuery = 'SELECT role FROM rfid_assets_details.users WHERE id = ? LIMIT 1';
+      const targetUsers = await execute(getUserQuery, [userId]);
+
+      if (targetUsers.length === 0) {
+         throw new NotFoundError('ไม่พบผู้ใช้ที่ต้องการลบ');
+      }
+
+      // Manager can't delete Admin (only Admin can delete Admin)
+      if (targetUsers[0].role === 'admin' && userRole !== 'admin') {
+         throw new UnauthorisedException('เฉพาะ Admin เท่านั้นที่สามารถลบผู้ใช้ Admin ได้');
       }
 
       const deleteQuery = 'DELETE FROM rfid_assets_details.users WHERE id = ?';
@@ -326,14 +362,19 @@ exports.deleteUser = async (req, res, next) => {
    }
 };
 
-// Change password
+// Change password (Manager+ or self)
 exports.changePassword = async (req, res, next) => {
    try {
       const { userId } = req.params;
       const { oldPassword, newPassword } = req.body;
+      const userRole = req.user.role;
+      const roleHierarchy = { 'viewer': 0, 'staff': 1, 'manager': 2, 'admin': 3 };
 
-      // Check permissions (admin or self)
-      if (req.user.role !== 'admin' && req.user.userId !== parseInt(userId)) {
+      // Check permissions (manager+ or self)
+      const isManager = (roleHierarchy[userRole] || 0) >= roleHierarchy['manager'];
+      const isSelf = req.user.userId === parseInt(userId);
+
+      if (!isManager && !isSelf) {
          throw new UnauthorisedException('ไม่มีสิทธิ์เปลี่ยนรหัสผ่านของผู้ใช้นี้');
       }
 
@@ -351,8 +392,8 @@ exports.changePassword = async (req, res, next) => {
 
       const user = users[0];
 
-      // Verify old password (skip for admin changing other user's password)
-      if (req.user.userId === parseInt(userId)) {
+      // Verify old password (skip for manager+ changing other user's password)
+      if (isSelf) {
          const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password_hash);
          if (!isOldPasswordValid) {
             throw new ValidationError('รหัสผ่านเก่าไม่ถูกต้อง');
@@ -379,3 +420,149 @@ exports.changePassword = async (req, res, next) => {
       next(error);
    }
 };
+
+// Update user role (Admin only)
+exports.updateUserRole = async (req, res, next) => {
+   try {
+      // Only Admin can change roles
+      if (req.user.role !== 'admin') {
+         throw new UnauthorisedException('เฉพาะ Admin เท่านั้นที่สามารถเปลี่ยนบทบาทผู้ใช้ได้');
+      }
+
+      const { userId } = req.params;
+      const { role } = req.body;
+
+      if (!role) {
+         throw new ValidationError('กรุณาระบุบทบาทใหม่');
+      }
+
+      const validRoles = ['admin', 'manager', 'staff', 'viewer'];
+      if (!validRoles.includes(role)) {
+         throw new ValidationError(`role ต้องเป็นหนึ่งใน: ${validRoles.join(', ')}`);
+      }
+
+      // Can't change own role
+      if (req.user.userId === parseInt(userId)) {
+         throw new ValidationError('ไม่สามารถเปลี่ยนบทบาทตัวเองได้');
+      }
+
+      const updateQuery = 'UPDATE rfid_assets_details.users SET role = ?, updatedAt = NOW() WHERE id = ?';
+      const result = await execute(updateQuery, [role, userId]);
+
+      if (result.affectedRows === 0) {
+         throw new NotFoundError('ไม่พบผู้ใช้ที่ต้องการอัปเดต');
+      }
+
+      res.status(HTTP_STATUS.OK).json({
+         success: true,
+         message: 'เปลี่ยนบทบาทผู้ใช้สำเร็จ',
+         data: { userId, newRole: role }
+      });
+   } catch (error) {
+      next(error);
+   }
+};
+
+// Update user status (Admin only)
+exports.updateUserStatus = async (req, res, next) => {
+   try {
+      // Only Admin can change user status
+      if (req.user.role !== 'admin') {
+         throw new UnauthorisedException('เฉพาะ Admin เท่านั้นที่สามารถเปลี่ยนสถานะผู้ใช้ได้');
+      }
+
+      const { userId } = req.params;
+      const { isActive } = req.body;
+
+      if (typeof isActive !== 'boolean') {
+         throw new ValidationError('กรุณาระบุสถานะผู้ใช้ (true/false)');
+      }
+
+      // Can't change own status
+      if (req.user.userId === parseInt(userId)) {
+         throw new ValidationError('ไม่สามารถเปลี่ยนสถานะตัวเองได้');
+      }
+
+      // Note: This assumes you have an 'isActive' column in users table
+      // If not, you might want to add it or use a different approach
+      const updateQuery = 'UPDATE rfid_assets_details.users SET isActive = ?, updatedAt = NOW() WHERE id = ?';
+      const result = await execute(updateQuery, [isActive, userId]);
+
+      if (result.affectedRows === 0) {
+         throw new NotFoundError('ไม่พบผู้ใช้ที่ต้องการอัปเดต');
+      }
+
+      res.status(HTTP_STATUS.OK).json({
+         success: true,
+         message: 'เปลี่ยนสถานะผู้ใช้สำเร็จ',
+         data: { userId, isActive }
+      });
+   } catch (error) {
+      next(error);
+   }
+};
+
+// Get system settings (Admin only)
+exports.getSystemSettings = async (req, res, next) => {
+   try {
+      // Only Admin can access system settings
+      if (req.user.role !== 'admin') {
+         throw new UnauthorisedException('เฉพาะ Admin เท่านั้นที่สามารถเข้าถึงการตั้งค่าระบบ');
+      }
+
+      // This is a placeholder - implement based on your system settings structure
+      const settings = {
+         system: {
+            maxUsers: 100,
+            sessionTimeout: 24,
+            allowRegistration: false,
+            maintenanceMode: false
+         },
+         security: {
+            passwordMinLength: 8,
+            requireUppercase: true,
+            requireNumbers: true,
+            sessionTimeout: 24
+         },
+         features: {
+            enableExport: true,
+            enableReports: true,
+            enableUserManagement: true
+         }
+      };
+
+      res.status(HTTP_STATUS.OK).json({
+         success: true,
+         data: settings
+      });
+   } catch (error) {
+      next(error);
+   }
+};
+
+// Update system settings (Admin only)
+exports.updateSystemSettings = async (req, res, next) => {
+   try {
+      // Only Admin can update system settings
+      if (req.user.role !== 'admin') {
+         throw new UnauthorisedException('เฉพาะ Admin เท่านั้นที่สามารถแก้ไขการตั้งค่าระบบ');
+      }
+
+      const { settings } = req.body;
+
+      if (!settings) {
+         throw new ValidationError('กรุณาระบุการตั้งค่าที่ต้องการอัปเดต');
+      }
+
+      // This is a placeholder - implement based on your system settings storage
+      // You might want to store settings in a separate table or configuration file
+
+      res.status(HTTP_STATUS.OK).json({
+         success: true,
+         message: 'อัปเดตการตั้งค่าระบบสำเร็จ',
+         data: settings
+      });
+   } catch (error) {
+      next(error);
+   }
+}; 

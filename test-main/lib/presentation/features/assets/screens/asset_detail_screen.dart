@@ -1,4 +1,3 @@
-// lib/presentation/features/assets/screens/asset_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/services/auth_service.dart';
@@ -242,106 +241,134 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
           const SizedBox(height: 24),
 
           // ปุ่มดำเนินการและกลับ - เปลี่ยนเป็นแนวตั้ง
-          Center(
-            child: Column(
-              children: [
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: PrimaryButton(
-                    text: 'Checked',
-                    icon: Icons.check_circle_outline,
-                    color:
-                        canBeChecked
-                            ? const Color.fromARGB(255, 170, 140, 255)
-                            : Colors.grey,
-                    onPressed:
-                        canBeChecked
-                            ? () => _updateAssetStatusToChecked(tagId)
-                            : () {},
-                  ),
+          Consumer<AuthService>(
+            builder: (context, authService, child) {
+              return Center(
+                child: Column(
+                  children: [
+                    // ปุ่ม Checked - แสดงเฉพาะ Staff+
+                    if (authService.canUpdateAssetStatus)
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.6,
+                        child: PrimaryButton(
+                          text: 'Checked',
+                          icon: Icons.check_circle_outline,
+                          color:
+                              canBeChecked
+                                  ? const Color.fromARGB(255, 170, 140, 255)
+                                  : Colors.grey,
+                          onPressed:
+                              canBeChecked
+                                  ? () => _updateAssetStatusToChecked(tagId)
+                                  : () {},
+                        ),
+                      ),
+
+                    if (authService.canUpdateAssetStatus)
+                      const SizedBox(height: 15),
+
+                    // ปุ่ม Export - แสดงเฉพาะ Staff+
+                    if (authService.canExportData)
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.6,
+                        child: PrimaryButton(
+                          text: 'Export',
+                          icon: Icons.file_download,
+                          color: Colors.green,
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/export',
+                              arguments: {
+                                'assetId': itemId,
+                                'assettagId': tagId,
+                              },
+                            );
+                          },
+                        ),
+                      ),
+
+                    if (authService.canExportData) const SizedBox(height: 15),
+
+                    // ปุ่มกลับ - แสดงเสมอ
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.6,
+                      child: PrimaryButton(
+                        text: 'กลับ',
+                        icon: Icons.arrow_back,
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                  ],
                 ),
-
-                const SizedBox(height: 15),
-
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: PrimaryButton(
-                    text: 'Export',
-                    icon: Icons.file_download,
-                    color: Colors.green,
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/export',
-                        arguments: {'assetId': itemId, 'assettagId': tagId},
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 15),
-
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: PrimaryButton(
-                    text: 'กลับ',
-                    icon: Icons.arrow_back,
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-Future<void> _updateAssetStatusToChecked(String tagId) async {
-  try {
-    // ดึงชื่อผู้ใช้จาก AuthService
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final userName = authService.currentUser?.username ?? 'System';
-    
-    print('DEBUG - Username from AuthService: $userName');
+  Future<void> _updateAssetStatusToChecked(String tagId) async {
+    try {
+      // ดึงชื่อผู้ใช้จาก AuthService
+      final authService = Provider.of<AuthService>(context, listen: false);
 
-    // เรียก API เพื่ออัปเดตสถานะ
-    final success = await widget.assetRepository.updateAssetStatusToChecked(
-      tagId,
-      lastScannedBy: userName,
-    );
+      // เช็ค permission ก่อนดำเนินการ
+      if (!authService.canUpdateAssetStatus) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              authService.getPermissionDeniedMessage('updateAsset') ??
+                  'ไม่มีสิทธิ์อัปเดตสถานะ',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
-    // แสดงข้อความแจ้งเตือนตามผลลัพธ์
-    if (success) {
-      // อัปเดตสำเร็จ - โหลดข้อมูลใหม่เพื่อแสดงสถานะล่าสุด
-      _loadRawAssetDetails();
+      final userName = authService.currentUser?.username ?? 'System';
 
-      // แสดงข้อความแจ้งเตือนว่าอัปเดตสำเร็จ
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('อัปเดตสถานะเป็น Checked สำเร็จ'),
-          backgroundColor: Colors.green,
-        ),
+      print('DEBUG - Username from AuthService: $userName');
+
+      // เรียก API เพื่ออัปเดตสถานะ
+      final success = await widget.assetRepository.updateAssetStatusToChecked(
+        tagId,
+        lastScannedBy: userName,
       );
-    } else {
-      // อัปเดตล้มเหลว
+
+      // แสดงข้อความแจ้งเตือนตามผลลัพธ์
+      if (success) {
+        // อัปเดตสำเร็จ - โหลดข้อมูลใหม่เพื่อแสดงสถานะล่าสุด
+        _loadRawAssetDetails();
+
+        // แสดงข้อความแจ้งเตือนว่าอัปเดตสำเร็จ
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('อัปเดตสถานะเป็น Checked สำเร็จ'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        // อัปเดตล้มเหลว
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Update fail'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // แสดงข้อความแจ้งเตือนข้อผิดพลาด
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Update fail'),
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาด: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
-  } catch (e) {
-    // แสดงข้อความแจ้งเตือนข้อผิดพลาด
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('เกิดข้อผิดพลาด: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
 
   // ส่วนหัวแสดงรหัสและหมวดหมู่
   Widget _buildHeaderCard(Map<String, dynamic> assetData) {

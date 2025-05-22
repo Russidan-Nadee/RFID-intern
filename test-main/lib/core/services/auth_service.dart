@@ -10,6 +10,14 @@ class AuthService extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Role hierarchy for permission checking (same as backend)
+  static const Map<String, int> _roleHierarchy = {
+    'viewer': 0,
+    'staff': 1,
+    'manager': 2,
+    'admin': 3,
+  };
+
   AuthService(this._authRepository);
 
   // Getters
@@ -75,17 +83,111 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Permission checks
+  // Permission checking methods based on role hierarchy
+  bool hasPermissionLevel(UserRole requiredLevel) {
+    if (_currentUser == null) return false;
+
+    final currentLevel = _roleHierarchy[_currentUser!.role.name] ?? 0;
+    final requiredLevelValue = _roleHierarchy[requiredLevel.name] ?? 0;
+
+    return currentLevel >= requiredLevelValue;
+  }
+
   bool hasPermission(UserRole requiredRole) {
     return _currentUser?.hasPermissionLevel(requiredRole) ?? false;
   }
 
-  bool get canManageUsers => _currentUser?.canManageUsers ?? false;
-  bool get canManageSystem => _currentUser?.canManageSystem ?? false;
-  bool get canBulkUpdate => _currentUser?.canBulkUpdate ?? false;
-  bool get canUpdateAssets => _currentUser?.canUpdateAssets ?? false;
-  bool get canViewReports => _currentUser?.canViewReports ?? true;
-  bool get canExportData => _currentUser?.canExportData ?? false;
+  // Feature-specific permission methods (matching backend)
+  bool get canViewAssets => true; // All roles can view
+
+  bool get canScanRfid => true; // All roles can scan
+
+  bool get canUpdateAssetStatus => hasPermissionLevel(UserRole.staff); // Staff+
+
+  bool get canCreateAssets => hasPermissionLevel(UserRole.manager); // Manager+
+
+  bool get canEditAssets => hasPermissionLevel(UserRole.manager); // Manager+
+
+  bool get canDeleteAssets =>
+      _currentUser?.role == UserRole.admin; // Admin only
+
+  bool get canExportData => hasPermissionLevel(UserRole.staff); // Staff+
+
+  bool get canViewBasicReports => true; // All roles can view basic reports
+
+  bool get canViewAdvancedReports =>
+      hasPermissionLevel(UserRole.manager); // Manager+
+
+  bool get canManageUsers => hasPermissionLevel(UserRole.manager); // Manager+
+
+  bool get canAccessSettings =>
+      hasPermissionLevel(UserRole.manager); // Manager+
+
+  bool get canManageSystem =>
+      _currentUser?.role == UserRole.admin; // Admin only
+
+  // Legacy permission methods (for backward compatibility)
+  bool get canBulkUpdate => hasPermissionLevel(UserRole.manager);
+  bool get canUpdateAssets => hasPermissionLevel(UserRole.staff);
+  bool get canViewReports => true;
+
+  // Role checking methods
+  bool get isViewer => _currentUser?.role == UserRole.viewer;
+  bool get isStaff => _currentUser?.role == UserRole.staff;
+  bool get isManager => _currentUser?.role == UserRole.manager;
+  bool get isAdmin => _currentUser?.role == UserRole.admin;
+
+  // Utility methods for UI
+  bool get canSeeExportButton => canExportData;
+  bool get canSeeUpdateButton => canUpdateAssetStatus;
+  bool get canSeeCreateButton => canCreateAssets;
+  bool get canSeeDeleteButton => canDeleteAssets;
+  bool get canSeeSettingsButton => canAccessSettings;
+
+  // Permission checking with specific error messages
+  String? getPermissionDeniedMessage(String feature) {
+    if (!isAuthenticated) {
+      return 'กรุณาเข้าสู่ระบบก่อนใช้งาน';
+    }
+
+    switch (feature) {
+      case 'updateAsset':
+        return canUpdateAssetStatus
+            ? null
+            : 'ต้องเป็น Staff ขึ้นไปจึงจะอัปเดตสถานะสินทรัพย์ได้';
+      case 'createAsset':
+        return canCreateAssets
+            ? null
+            : 'ต้องเป็น Manager ขึ้นไปจึงจะสร้างสินทรัพย์ได้';
+      case 'deleteAsset':
+        return canDeleteAssets ? null : 'ต้องเป็น Admin จึงจะลบสินทรัพย์ได้';
+      case 'exportData':
+        return canExportData
+            ? null
+            : 'ต้องเป็น Staff ขึ้นไปจึงจะส่งออกข้อมูลได้';
+      case 'advancedReports':
+        return canViewAdvancedReports
+            ? null
+            : 'ต้องเป็น Manager ขึ้นไปจึงจะดูรายงานขั้นสูงได้';
+      case 'manageUsers':
+        return canManageUsers
+            ? null
+            : 'ต้องเป็น Manager ขึ้นไปจึงจะจัดการผู้ใช้ได้';
+      case 'accessSettings':
+        return canAccessSettings
+            ? null
+            : 'ต้องเป็น Manager ขึ้นไปจึงจะเข้าถึงการตั้งค่าได้';
+      case 'manageSystem':
+        return canManageSystem ? null : 'ต้องเป็น Admin จึงจะจัดการระบบได้';
+      default:
+        return 'ไม่มีสิทธิ์เข้าถึงฟีเจอร์นี้';
+    }
+  }
+
+  // Navigation permission checking
+  bool canNavigateToExport() => canExportData;
+  bool canNavigateToSettings() => canAccessSettings;
+  bool canNavigateToUserManagement() => canManageUsers;
 
   // Session management
   Future<void> _saveUserSession() async {
@@ -117,8 +219,32 @@ class AuthService extends ChangeNotifier {
     return _currentUser?.username ?? 'Guest User';
   }
 
+  String getUserRole() {
+    return _currentUser?.role.displayName ?? 'Guest';
+  }
+
   // For backward compatibility with existing code
   bool isProfileSet() {
     return isAuthenticated;
+  }
+
+  // Debug information
+  void printUserInfo() {
+    if (kDebugMode) {
+      print('=== User Info ===');
+      print('Username: ${_currentUser?.username}');
+      print('Role: ${_currentUser?.role.displayName}');
+      print('Authenticated: $isAuthenticated');
+      print('Permissions:');
+      print('  - Update Assets: $canUpdateAssetStatus');
+      print('  - Create Assets: $canCreateAssets');
+      print('  - Delete Assets: $canDeleteAssets');
+      print('  - Export Data: $canExportData');
+      print('  - Advanced Reports: $canViewAdvancedReports');
+      print('  - Manage Users: $canManageUsers');
+      print('  - Access Settings: $canAccessSettings');
+      print('  - Manage System: $canManageSystem');
+      print('================');
+    }
   }
 }

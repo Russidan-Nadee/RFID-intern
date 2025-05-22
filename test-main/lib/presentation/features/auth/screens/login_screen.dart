@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'บัญชีทดสอบ (รหัสผ่าน: admin123)',
+                          'บัญชีทดสอบ (รหัสผ่าน: 1234)',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.blue.shade800,
@@ -223,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         _buildDemoAccount('admin', 'ผู้ดูแลระบบ'),
                         _buildDemoAccount('manager1', 'ผู้จัดการ'),
                         _buildDemoAccount('staff1', 'พนักงาน'),
-                        _buildDemoAccount('viewer1', 'ผู้ดู'),
+                        _buildDemoAccount('viewer1', 'ผู้เข้าชม'),
                       ],
                     ),
                   ),

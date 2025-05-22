@@ -115,6 +115,39 @@ const requirePermissionLevel = (requiredLevel) => {
    };
 };
 
+// Feature-Specific Permission Functions
+const requireAssetUpdatePermission = () => {
+   return requirePermissionLevel('staff');
+};
+
+const requireAssetCreatePermission = () => {
+   return requirePermissionLevel('manager');
+};
+
+const requireAssetDeletionPermission = () => {
+   return requireRole('admin');
+};
+
+const requireExportPermission = () => {
+   return requirePermissionLevel('staff');
+};
+
+const requireAdvancedReportsPermission = () => {
+   return requirePermissionLevel('manager');
+};
+
+const requireUserManagementPermission = () => {
+   return requirePermissionLevel('manager');
+};
+
+const requireSettingsAccessPermission = () => {
+   return requirePermissionLevel('manager');
+};
+
+const requireSystemManagementPermission = () => {
+   return requireRole('admin');
+};
+
 // Optional authentication (for routes that work with or without auth)
 const optionalAuth = async (req, res, next) => {
    try {
@@ -147,5 +180,13 @@ module.exports = {
    verifyToken,
    requireRole,
    requirePermissionLevel,
-   optionalAuth
+   optionalAuth,
+   requireAssetUpdatePermission,
+   requireAssetCreatePermission,
+   requireAssetDeletionPermission,
+   requireExportPermission,
+   requireAdvancedReportsPermission,
+   requireUserManagementPermission,
+   requireSettingsAccessPermission,
+   requireSystemManagementPermission
 };

@@ -1,6 +1,7 @@
 // lib/presentation/features/assets/screens/search_assets_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rfid_project/core/services/auth_service.dart';
 import '../../../common_widgets/layouts/app_bottom_navigation.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../common_widgets/status/loading_error_widget.dart';
@@ -84,29 +85,36 @@ class _SearchAssetsScreenState extends State<SearchAssetsScreen> {
     );
   }
 
-  // สร้าง action buttons สำหรับ AppBar
   List<Widget> _buildAppBarActions(Color primaryColor) {
     return [
-      // เพิ่มปุ่ม Export
-      Consumer<AssetBloc>(
-        builder:
-            (context, bloc, _) => IconButton(
-              icon: Icon(Icons.file_download, color: primaryColor),
-              onPressed: () {
-                // ส่งข้อมูลการค้นหาไปยังหน้า Export
-                Navigator.pushNamed(
-                  context,
-                  '/export',
-                  arguments: {
-                    'searchParams': {
-                      'status': bloc.selectedStatus,
-                      'query': _searchController.text,
-                    },
+      // เพิ่มปุ่ม Export - แสดงเฉพาะ Staff+
+      Consumer<AuthService>(
+        builder: (context, authService, _) {
+          if (!authService.canExportData) {
+            return const SizedBox.shrink(); // ซ่อนปุ่มสำหรับ Viewer
+          }
+
+          return Consumer<AssetBloc>(
+            builder:
+                (context, bloc, _) => IconButton(
+                  icon: Icon(Icons.file_download, color: primaryColor),
+                  onPressed: () {
+                    // ส่งข้อมูลการค้นหาไปยังหน้า Export
+                    Navigator.pushNamed(
+                      context,
+                      '/export',
+                      arguments: {
+                        'searchParams': {
+                          'status': bloc.selectedStatus,
+                          'query': _searchController.text,
+                        },
+                      },
+                    );
                   },
-                );
-              },
-              tooltip: 'Export Search Results',
-            ),
+                  tooltip: 'Export Search Results',
+                ),
+          );
+        },
       ),
       // ปุ่มสลับโหมดการแสดง
       Consumer<AssetBloc>(

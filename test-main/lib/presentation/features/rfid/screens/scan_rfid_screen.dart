@@ -1,4 +1,3 @@
-/* Path: lib/presentation/features/rfid/screens/scan_rfid_screen.dart */
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';

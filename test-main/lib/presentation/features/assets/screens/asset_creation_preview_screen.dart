@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:rfid_project/core/services/auth_service.dart';
 import 'package:rfid_project/domain/entities/asset.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../../domain/repositories/asset_repository.dart';
@@ -138,145 +140,162 @@ class _AssetCreationPreviewScreenState
 
                       const SizedBox(width: 16),
 
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed:
-                              (_isCreating || _isSuccess)
-                                  ? null
-                                  : () async {
-                                    setState(() {
-                                      _isCreating = true;
-                                      _errorMessage = null;
-                                    });
+                      Consumer<AuthService>(
+                        builder: (context, authService, child) {
+                          if (!authService.canCreateAssets) {
+                            return const SizedBox.shrink(); // ซ่อนปุ่มสำหรับ Viewer
+                          }
 
-                                    try {
-                                      final success = await widget
-                                          .assetRepository
-                                          .createAsset(widget.asset);
-
-                                      if (!mounted) return;
-
-                                      if (success) {
+                          return Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed:
+                                  (_isCreating || _isSuccess)
+                                      ? null
+                                      : () async {
                                         setState(() {
-                                          _isCreating = false;
-                                          _isSuccess = true;
+                                          _isCreating = true;
+                                          _errorMessage = null;
                                         });
 
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'สร้างสินทรัพย์สำเร็จ',
-                                            ),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
+                                        try {
+                                          final success = await widget
+                                              .assetRepository
+                                              .createAsset(widget.asset);
 
-                                        // รอสักครู่ก่อนกลับไปหน้าก่อนหน้า
-                                        Future.delayed(
-                                          const Duration(seconds: 2),
-                                          () {
-                                            if (mounted) {
-                                              Navigator.of(context).pop(true);
-                                            }
-                                          },
-                                        );
-                                      } else {
-                                        setState(() {
-                                          _isCreating = false;
-                                          _errorMessage =
-                                              'ไม่สามารถสร้างสินทรัพย์ได้';
-                                        });
+                                          if (!mounted) return;
 
-                                        // เพิ่ม dialog แสดงข้อผิดพลาด
-                                        showDialog(
-                                          context: context,
-                                          builder:
-                                              (context) => AlertDialog(
-                                                title: const Text(
-                                                  'ไม่สามารถสร้างสินทรัพย์ได้',
+                                          if (success) {
+                                            setState(() {
+                                              _isCreating = false;
+                                              _isSuccess = true;
+                                            });
+
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'สร้างสินทรัพย์สำเร็จ',
                                                 ),
-                                                content: const Text(
-                                                  'อาจเป็นเพราะ EPC นี้มีในระบบแล้ว หรือการเชื่อมต่อมีปัญหา',
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed:
-                                                        () => Navigator.pop(
-                                                          context,
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+
+                                            // รอสักครู่ก่อนกลับไปหน้าก่อนหน้า
+                                            Future.delayed(
+                                              const Duration(seconds: 2),
+                                              () {
+                                                if (mounted) {
+                                                  Navigator.of(
+                                                    context,
+                                                  ).pop(true);
+                                                }
+                                              },
+                                            );
+                                          } else {
+                                            setState(() {
+                                              _isCreating = false;
+                                              _errorMessage =
+                                                  'ไม่สามารถสร้างสินทรัพย์ได้';
+                                            });
+
+                                            // เพิ่ม dialog แสดงข้อผิดพลาด
+                                            showDialog(
+                                              context: context,
+                                              builder:
+                                                  (context) => AlertDialog(
+                                                    title: const Text(
+                                                      'ไม่สามารถสร้างสินทรัพย์ได้',
+                                                    ),
+                                                    content: const Text(
+                                                      'อาจเป็นเพราะ EPC นี้มีในระบบแล้ว หรือการเชื่อมต่อมีปัญหา',
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                            ),
+                                                        child: const Text(
+                                                          'ตกลง',
                                                         ),
-                                                    child: const Text('ตกลง'),
-                                                  ),
-                                                ],
-                                              ),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      setState(() {
-                                        _isCreating = false;
-                                        _errorMessage = e.toString();
-                                      });
-
-                                      // เพิ่ม dialog แสดงข้อผิดพลาดจาก exception
-                                      showDialog(
-                                        context: context,
-                                        builder:
-                                            (context) => AlertDialog(
-                                              title: const Text(
-                                                'เกิดข้อผิดพลาด',
-                                              ),
-                                              content: Text(
-                                                'รายละเอียด: ${e.toString()}',
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed:
-                                                      () => Navigator.pop(
-                                                        context,
                                                       ),
-                                                  child: const Text('ตกลง'),
+                                                    ],
+                                                  ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          setState(() {
+                                            _isCreating = false;
+                                            _errorMessage = e.toString();
+                                          });
+
+                                          // เพิ่ม dialog แสดงข้อผิดพลาดจาก exception
+                                          showDialog(
+                                            context: context,
+                                            builder:
+                                                (context) => AlertDialog(
+                                                  title: const Text(
+                                                    'เกิดข้อผิดพลาด',
+                                                  ),
+                                                  content: Text(
+                                                    'รายละเอียด: ${e.toString()}',
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                          ),
+                                                      child: const Text('ตกลง'),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
-                                            ),
-                                      );
-                                    }
-                                  },
-                          icon:
-                              _isCreating
-                                  ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                  : _isSuccess
-                                  ? const Icon(Icons.check, color: Colors.white)
-                                  : const Icon(
-                                    Icons.add_circle_outline,
-                                    color: Colors.white,
-                                  ),
-                          label: Text(
-                            _isCreating
-                                ? 'กำลังสร้าง...'
-                                : _isSuccess
-                                ? 'สำเร็จแล้ว'
-                                : 'Create Asset',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                _isSuccess
-                                    ? Colors.green.shade700
-                                    : Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                                          );
+                                        }
+                                      },
+                              icon:
+                                  _isCreating
+                                      ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : _isSuccess
+                                      ? const Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                      )
+                                      : const Icon(
+                                        Icons.add_circle_outline,
+                                        color: Colors.white,
+                                      ),
+                              label: Text(
+                                _isCreating
+                                    ? 'กำลังสร้าง...'
+                                    : _isSuccess
+                                    ? 'สำเร็จแล้ว'
+                                    : 'Create Asset',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    _isSuccess
+                                        ? Colors.green.shade700
+                                        : Colors.green,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 15,
+                                ),
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ],
                   ),
