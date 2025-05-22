@@ -1,5 +1,23 @@
 enum UserRole { admin, manager, staff, viewer }
 
+// *** เพิ่ม static method นี้นอก extension ***
+class UserRoleHelper {
+  static UserRole fromString(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return UserRole.admin;
+      case 'manager':
+        return UserRole.manager;
+      case 'staff':
+        return UserRole.staff;
+      case 'viewer':
+        return UserRole.viewer;
+      default:
+        return UserRole.viewer;
+    }
+  }
+}
+
 extension UserRoleExtension on UserRole {
   // แปลงเป็น string แสดงผล
   String get displayName {
@@ -43,21 +61,5 @@ extension UserRoleExtension on UserRole {
       UserRole.admin,
     ];
     return hierarchy.indexOf(this) >= hierarchy.indexOf(requiredLevel);
-  }
-
-  // แปลงจาก string
-  static UserRole fromString(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return UserRole.admin;
-      case 'manager':
-        return UserRole.manager;
-      case 'staff':
-        return UserRole.staff;
-      case 'viewer':
-        return UserRole.viewer;
-      default:
-        return UserRole.viewer; // default เป็น viewer
-    }
   }
 }

@@ -12,7 +12,6 @@ import '../../presentation/features/assets/screens/search_assets_screen.dart';
 import '../../presentation/features/dashboard/screens/dashboard_screen.dart';
 import '../../presentation/features/rfid/screens/scan_rfid_screen.dart';
 import '../../presentation/features/settings/screens/settings_screen.dart';
-import '../../presentation/features/settings/screens/profile_screen.dart';
 import '../../presentation/features/reports/screens/reports_screen.dart';
 import '../constants/route_constants.dart';
 import '../di/dependency_injection.dart';
@@ -88,11 +87,6 @@ class AppRoutes {
           const SettingsScreen(),
           routeSettings,
         );
-      case profile:
-        return _createRouteWithoutAnimation(
-          const ProfileScreen(),
-          routeSettings,
-        );
       case exportConfirmation:
         return _createRouteWithoutAnimation(
           ExportConfirmationScreen(),
@@ -100,6 +94,7 @@ class AppRoutes {
         );
       case login:
         return _createRouteWithoutAnimation(const LoginScreen(), routeSettings);
+
       default:
         return _createRouteWithoutAnimation(
           const DashboardScreen(),

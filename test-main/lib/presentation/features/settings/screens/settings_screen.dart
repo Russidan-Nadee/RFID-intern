@@ -1,7 +1,8 @@
-// lib/presentation/features/settings/screens/settings_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:rfid_project/domain/entities/user_role.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/services/profile_service.dart';
+import '../../../../core/services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -11,37 +12,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // เพิ่ม ProfileService
-  final _profileService = ProfileService();
-
-  // ตัวแปรเก็บชื่อผู้ใช้และอีเมล
-  late String _userName;
-  late String _userEmail;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // อัปเดตข้อมูลเมื่อกลับมาที่หน้านี้
-    _loadUserData();
-  }
-
-  void _loadUserData() {
-    setState(() {
-      _userName = _profileService.getUserName();
-      _userEmail = _profileService.getUserEmail();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    // กำหนดโทนสีหลักเหมือน Dashboard
-    final primaryColor = const Color(0xFF6A5ACD); // สีม่วงสไลวันเดอร์
+    final primaryColor = const Color(0xFF6A5ACD);
     final backgroundColor = Colors.white;
 
     return Scaffold(
@@ -62,127 +35,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      body: Consumer<AuthService>(
+        builder: (context, authService, child) {
+          final username = authService.currentUser?.username ?? 'Guest';
+          final role = authService.currentUser?.role.displayName ?? 'Unknown';
+          final email = '${username.toLowerCase()}@company.com';
 
-      body: ListView(
-        children: [
-          // ส่วนโปรไฟล์ด้านบน
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // รูปโปรไฟล์ - ใช้ตัวอักษรแรกของอีเมลแบบไดนามิก
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: primaryColor,
-                  child: Text(
-                    _userEmail.isNotEmpty ? _userEmail[0].toLowerCase() : '',
-                    style: const TextStyle(fontSize: 30, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // ข้อมูลโปรไฟล์ - ใช้ชื่อจาก ProfileService
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _userName,
+          return ListView(
+            children: [
+              // ส่วนโปรไฟล์ด้านบน
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    // รูปโปรไฟล์
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: primaryColor,
+                      child: Text(
+                        username.isNotEmpty ? username[0].toUpperCase() : 'G',
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 30,
+                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _userEmail,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // ปุ่มแก้ไขโปรไฟล์
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, RouteConstants.profile).then((
-                      _,
-                    ) {
-                      // อัปเดตชื่อผู้ใช้เมื่อกลับมาจากหน้า Edit Profile
-                      setState(() {
-                        _loadUserData(); // เรียกใช้ฟังก์ชันโหลดข้อมูลใหม่
-                      });
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  child: const Text(
-                    'Edit Profile',
-                    style: TextStyle(fontSize: 14, color: Colors.white),
-                  ),
+                    const SizedBox(width: 16),
+                    // ข้อมูลโปรไฟล์
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            username,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$role • $email',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // ปุ่ม Edit Profile
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, RouteConstants.profile);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Edit Profile',
+                        style: TextStyle(fontSize: 14, color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          const Divider(height: 1),
+              const Divider(height: 1),
 
-          // รายการเมนูตั้งค่า
-          _buildMenuItem(
-            icon: Icons.favorite_border,
-            title: 'Favourites',
-            onTap: () {},
-          ),
+              // รายการเมนูตั้งค่า
+              _buildMenuItem(
+                icon: Icons.favorite_border,
+                title: 'Favourites',
+                onTap: () {},
+              ),
+              _buildMenuItem(
+                icon: Icons.download_outlined,
+                title: 'Downloads',
+                onTap: () {},
+              ),
+              _buildMenuItem(
+                icon: Icons.language,
+                title: 'Language',
+                onTap: () {},
+              ),
+              _buildMenuItem(
+                icon: Icons.location_on_outlined,
+                title: 'Location',
+                onTap: () {},
+              ),
+              _buildMenuItem(
+                icon: Icons.subscriptions_outlined,
+                title: 'Subscription',
+                onTap: () {},
+              ),
+              _buildMenuItem(
+                icon: Icons.cached,
+                title: 'Clear cache',
+                onTap: () {},
+              ),
+              _buildMenuItem(
+                icon: Icons.history,
+                title: 'Clear history',
+                onTap: () {},
+              ),
 
-          _buildMenuItem(
-            icon: Icons.download_outlined,
-            title: 'Downloads',
-            onTap: () {},
-          ),
-
-          _buildMenuItem(icon: Icons.language, title: 'Language', onTap: () {}),
-
-          _buildMenuItem(
-            icon: Icons.location_on_outlined,
-            title: 'Location',
-            onTap: () {},
-          ),
-
-          _buildMenuItem(
-            icon: Icons.subscriptions_outlined,
-            title: 'Subscription',
-            onTap: () {},
-          ),
-
-          _buildMenuItem(
-            icon: Icons.cached,
-            title: 'Clear cache',
-            onTap: () {},
-          ),
-
-          _buildMenuItem(
-            icon: Icons.history,
-            title: 'Clear history',
-            onTap: () {},
-          ),
-
-          // ปุ่ม Logout
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: _buildMenuItem(
-              icon: Icons.logout,
-              title: 'Log out',
-              iconColor: Colors.red,
-              titleColor: Colors.red,
-              onTap: () {},
-            ),
-          ),
-        ],
+              // ปุ่ม Logout
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                child: _buildMenuItem(
+                  icon: Icons.logout,
+                  title: 'Log out',
+                  iconColor: Colors.red,
+                  titleColor: Colors.red,
+                  onTap: () async {
+                    await authService.logout();
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

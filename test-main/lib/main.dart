@@ -1,6 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rfid_project/core/services/auth_service.dart';
 import 'core/navigation/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'core/di/dependency_injection.dart';
@@ -47,7 +48,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'RFID Asset Management',
         theme: AppTheme.lightTheme,
-        initialRoute: AppRoutes.home,
+        initialRoute: AppRoutes.login,
         onGenerateRoute: AppRoutes.generateRoute,
         debugShowCheckedModeBanner: false,
       ),
@@ -90,6 +91,14 @@ class MyApp extends StatelessWidget {
 
       ChangeNotifierProvider<ReportsBloc>(
         create: (_) => DependencyInjection.get<ReportsBloc>(),
+      ),
+
+      ChangeNotifierProvider<NavigationBloc>(
+        create: (_) => DependencyInjection.get<NavigationBloc>(),
+      ),
+
+      ChangeNotifierProvider<AuthService>(
+        create: (_) => DependencyInjection.get<AuthService>(),
       ),
     ];
   }

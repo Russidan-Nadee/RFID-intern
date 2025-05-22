@@ -1,5 +1,4 @@
 import '../../domain/entities/user.dart';
-import '../../domain/entities/user_role.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/remote/api_service.dart';
 import '../../core/exceptions/app_exceptions.dart';

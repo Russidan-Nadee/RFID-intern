@@ -1,6 +1,7 @@
 // lib/presentation/features/assets/screens/asset_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:rfid_project/core/services/profile_service.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../../domain/repositories/asset_repository.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../common_widgets/buttons/primary_button.dart';
@@ -296,96 +297,51 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     );
   }
 
-  // แก้ไขฟังก์ชัน _updateAssetStatusToChecked เป็น:
-  Future<void> _updateAssetStatusToChecked(String tagId) async {
-    // สร้างตัวแปรสำหรับติดตามสถานะการอัปเดต
-    bool isUpdating = false;
+Future<void> _updateAssetStatusToChecked(String tagId) async {
+  try {
+    // ดึงชื่อผู้ใช้จาก AuthService
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final userName = authService.currentUser?.username ?? 'System';
+    
+    print('DEBUG - Username from AuthService: $userName');
 
-    // อัปเดต UI เพื่อแสดงการโหลด
-    setState(() {
-      isUpdating = true;
-    });
+    // เรียก API เพื่ออัปเดตสถานะ
+    final success = await widget.assetRepository.updateAssetStatusToChecked(
+      tagId,
+      lastScannedBy: userName,
+    );
 
-    try {
-      // ดึงข้อมูลโปรไฟล์จาก ProfileService
-      final profileService = ProfileService();
+    // แสดงข้อความแจ้งเตือนตามผลลัพธ์
+    if (success) {
+      // อัปเดตสำเร็จ - โหลดข้อมูลใหม่เพื่อแสดงสถานะล่าสุด
+      _loadRawAssetDetails();
 
-      // ตรวจสอบว่ามีการตั้งค่าโปรไฟล์แล้วหรือไม่
-      if (!profileService.isProfileSet()) {
-        // ถ้ายังไม่มีการตั้งค่าโปรไฟล์ ให้นำทางไปยังหน้าแก้ไขโปรไฟล์
-        setState(() {
-          isUpdating = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('กรุณาตั้งค่าชื่อผู้ใช้ก่อน'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-
-        // นำทางไปยังหน้าโปรไฟล์
-        Navigator.pushNamed(context, '/profile').then((_) {
-          // ทำการเรียกใช้ฟังก์ชันนี้อีกครั้งเมื่อกลับมาจากหน้าโปรไฟล์
-          if (profileService.isProfileSet()) {
-            _updateAssetStatusToChecked(tagId);
-          }
-        });
-
-        return;
-      }
-
-      // ดึงชื่อผู้ใช้จาก ProfileService
-      final userName = profileService.getUserName();
-      print('DEBUG - Username from ProfileService: $userName');
-
-      // เปลี่ยนจาก _assetRepository เป็น widget.assetRepository
-      final success = await widget.assetRepository.updateAssetStatusToChecked(
-        tagId,
-        lastScannedBy: userName,
-      );
-
-      // เมื่ออัปเดตเสร็จสิ้น
-      setState(() {
-        isUpdating = false;
-      });
-
-      // แสดงข้อความแจ้งเตือนตามผลลัพธ์
-      if (success) {
-        // อัปเดตสำเร็จ - โหลดข้อมูลใหม่เพื่อแสดงสถานะล่าสุด
-        _loadRawAssetDetails();
-
-        // แสดงข้อความแจ้งเตือนว่าอัปเดตสำเร็จ
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('อัปเดตสถานะเป็น Checked สำเร็จ'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        // อัปเดตล้มเหลว
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Update fail'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      // มีข้อผิดพลาดระหว่างการอัปเดต
-      setState(() {
-        isUpdating = false;
-      });
-
-      // แสดงข้อความแจ้งเตือนข้อผิดพลาด
+      // แสดงข้อความแจ้งเตือนว่าอัปเดตสำเร็จ
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e'),
+        const SnackBar(
+          content: Text('อัปเดตสถานะเป็น Checked สำเร็จ'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      // อัปเดตล้มเหลว
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Update fail'),
           backgroundColor: Colors.red,
         ),
       );
     }
+  } catch (e) {
+    // แสดงข้อความแจ้งเตือนข้อผิดพลาด
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('เกิดข้อผิดพลาด: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   // ส่วนหัวแสดงรหัสและหมวดหมู่
   Widget _buildHeaderCard(Map<String, dynamic> assetData) {

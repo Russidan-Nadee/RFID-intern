@@ -24,7 +24,7 @@ class User {
     return User(
       id: map['id']?.toString() ?? '',
       username: map['username']?.toString() ?? '',
-      role: UserRole.fromString(map['role']?.toString() ?? 'viewer'),
+      role: UserRoleHelper.fromString(map['role']?.toString() ?? 'viewer'),
       isAuthenticated: map['isAuthenticated'] ?? false,
       lastLoginTime:
           map['lastLoginTime'] != null

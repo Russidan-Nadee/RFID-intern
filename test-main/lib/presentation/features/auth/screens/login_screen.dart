@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../common_widgets/buttons/primary_button.dart';
 import '../../../common_widgets/inputs/text_input.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../../core/services/auth_service.dart';
@@ -170,12 +169,33 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Login Button
                   Consumer<AuthService>(
                     builder: (context, authService, child) {
-                      return PrimaryButton(
-                        text: 'เข้าสู่ระบบ',
-                        icon: Icons.login,
-                        onPressed: authService.isLoading ? null : _handleLogin,
-                        isLoading: authService.isLoading,
-                      );
+                      return authService.isLoading
+                          ? const Center(
+                            child: SizedBox(
+                              width: 50,
+                              height: 50,
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                          : SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _handleLogin(),
+                              icon: const Icon(Icons.login),
+                              label: const Text('เข้าสู่ระบบ'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 24,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          );
                     },
                   ),
 
