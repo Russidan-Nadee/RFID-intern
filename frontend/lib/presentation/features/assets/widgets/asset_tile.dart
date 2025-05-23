@@ -1,7 +1,5 @@
 // lib/presentation/features/assets/widgets/asset_tile.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // เพิ่มบรรทัดนี้
-import '../../../../core/services/auth_service.dart'; // เพิ่มบรรทัดนี้
 import '../../../../core/utils/icon_utils.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../../domain/entities/asset.dart';
@@ -117,34 +115,6 @@ class AssetTile extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: Theme.of(context).primaryColor,
                     ),
-                  ),
-
-                  // เพิ่มปุ่ม Export
-                  // ห่อด้วย Consumer<AuthService>
-                  Consumer<AuthService>(
-                    builder: (context, authService, child) {
-                      if (!authService.canExportData) {
-                        return const SizedBox.shrink(); // ซ่อนปุ่มสำหรับ Viewer
-                      }
-
-                      return TextButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/export',
-                            arguments: {
-                              'assetId': asset.id,
-                              'assetUid': asset.tagId,
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.file_download),
-                        label: const Text('Export CSV'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.green,
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),
