@@ -1,22 +1,22 @@
-RFID Asset Management System
-Project Overview
+# RFID Asset Management System
+## Project Overview
 RFID Asset Management System เป็นระบบจัดการสินทรัพย์ด้วยเทคโนโลยี RFID ที่พัฒนาด้วย Flutter สำหรับ Frontend และ Node.js Express สำหรับ Backend พร้อมฐานข้อมูล MySQL
-System Architecture
+## System Architecture
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Flutter App   │────│  Node.js API    │────│   MySQL DB      │
 │   (Frontend)    │    │   (Backend)     │    │   (Database)    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
-Features
-🔐 Authentication & Authorization
+## Features
+### 🔐 Authentication & Authorization
 
 Role-based Access Control: Admin, Manager, Staff, Viewer
 JWT Authentication: Secure token-based authentication
 User Management: Create, update, delete users (Manager+ only)
 Permission System: Hierarchical permission structure
 
-📱 Mobile Application (Flutter)
+### 📱 Mobile Application (Flutter)
 
 Dashboard: Overview of asset statistics and recent activities
 Asset Search: Search and filter assets by various criteria
@@ -26,7 +26,7 @@ Status Updates: Update asset status from Available to Checked (Staff+ only)
 Data Export: Export asset data to CSV format (Staff+ only)
 Reports: Visual charts and statistics by category, status, and location
 
-🖥️ Backend API (Node.js)
+### 🖥️ Backend API (Node.js)
 
 RESTful API: Complete CRUD operations for assets
 Authentication Endpoints: Login, logout, user management
@@ -35,8 +35,8 @@ Data Validation: Comprehensive input validation
 Error Handling: Structured error responses
 Database Integration: MySQL with connection pooling
 
-Technology Stack
-Frontend (Flutter)
+### Technology Stack
+#### Frontend (Flutter)
 
 Framework: Flutter 3.x
 State Management: Provider pattern with BLOCs
@@ -45,7 +45,7 @@ HTTP Client: Built-in http package
 Charts: fl_chart for data visualization
 File Operations: CSV export functionality
 
-Backend (Node.js)
+#### Backend (Node.js)
 
 Runtime: Node.js
 Framework: Express.js
@@ -55,13 +55,13 @@ Password Hashing: bcryptjs
 CORS: Enabled for cross-origin requests
 Environment: dotenv for configuration
 
-Database (MySQL)
+#### Database (MySQL)
 
 Assets Table: Complete asset information with RFID data
 Users Table: User accounts with role-based permissions
 Connection Pooling: Optimized database connections
 
-User Roles & Permissions
+## User Roles & Permissions
 ```
 | Permission            | Viewer   | Staff    | Manager   | Admin    |
 |-----------------------|----------|----------|-----------|----------|
@@ -76,15 +76,15 @@ User Roles & Permissions
 | System Management     | ❌       | ❌      | ❌        | ✅      |
 
 ```
-Installation & Setup
-Prerequisites
+## Installation & Setup
+### Prerequisites
 
 Node.js (v16+ recommended)
 Flutter SDK (3.x)
 MySQL Server
 Git
 
-Backend Setup
+### Backend Setup
 
 Clone the repository
 ```
@@ -162,10 +162,11 @@ LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewvUqDQpbgPCr7cC', 'viewer');
 Start the server
 ```
 npm start
-or for development
+//or for development
 npm run dev
-Frontend Setup
 ```
+## Frontend Setup
+
 Navigate to frontend directory
 ```
 cd ../frontend
@@ -174,8 +175,7 @@ Install Flutter dependencies
 ```
 flutter pub get
 ```
-Configure API endpoint
-Update lib/core/config/app_config.dart:
+Configure API endpoint Update ```lib/core/config/app_config.dart:```
 ```
 static const String apiBaseUrl = 'http://10.0.2.2:3000/api'; // For Android Emulator
 // or
@@ -185,8 +185,8 @@ Run the app
 ```
 flutter run
 ```
-API Documentation
-Authentication Endpoints
+## API Documentation
+### Authentication Endpoints
 ```
 | Method | Endpoint                 | Description      | Auth Required |
 | ------ | ------------------------ | ---------------- | ------------- |
@@ -199,7 +199,7 @@ Authentication Endpoints
 | DELETE | /api/auth/users/\:userId | Delete user      | Manager+      |
 
 ```
-Asset Endpoints
+### Asset Endpoints
 ```
 | Method | Endpoint                           | Description        | Auth Required |
 | ------ | ---------------------------------- | ------------------ | ------------- |
@@ -211,7 +211,7 @@ Asset Endpoints
 | DELETE | /api/assets/\:tagId                | Delete asset       | Admin         |
 | GET    | /api/assets/check-epc              | Check EPC exists   | No            |
 ```
-Default User Accounts
+### Default User Accounts
 ```
 | Username | Password | Role    | Permissions             |
 | -------- | -------- | ------- | ----------------------- |
@@ -220,8 +220,8 @@ Default User Accounts
 | staff1   | 1234     | Staff   | Asset operations        |
 | viewer1  | 1234     | Viewer  | Read-only access        |
 ```
-Project Structure
-Backend Structure
+## Project Structure
+### Backend Structure
 ```
 backend/
 ├── config/
@@ -241,7 +241,7 @@ backend/
 ├── server.js                 # Main server file
 └── package.json              # Dependencies
 ```
-Frontend Structure
+### Frontend Structure
 ```
 frontend/lib/
 ├── core/
@@ -272,52 +272,51 @@ frontend/lib/
 │       └── settings/         # App settings
 └── main.dart                 # App entry point
 ```
-Development Guidelines
-Code Style
+## Development Guidelines
+### Code Style
 
 Flutter: Follow Dart style guide with flutter_lints
 Node.js: Use ESLint with standard configuration
 Database: Use camelCase for column names
 API: RESTful conventions with clear endpoints
 
-Error Handling
+### Error Handling
 
 Backend: Structured error responses with appropriate HTTP status codes
 Frontend: User-friendly error messages with retry mechanisms
 Database: Connection pooling and query error handling
 
-Security
+### Security
 
 Authentication: JWT tokens with secure secret keys
 Password Hashing: bcrypt with salt rounds
 Input Validation: Server-side validation for all inputs
 SQL Injection: Parameterized queries with mysql2
 
-Troubleshooting
-Common Issues
+## Troubleshooting
+### Common Issues
 
-Database Connection Failed
+#### Database Connection Failed
 
 Verify MySQL server is running
 Check database credentials in .env
 Ensure database exists
 
 
-API Connection Error (Flutter)
+#### API Connection Error (Flutter)
 
 Check API endpoint in app_config.dart
 Verify backend server is running
 Use 10.0.2.2 for Android emulator
 
 
-Authentication Issues
+#### Authentication Issues
 
 Verify JWT secret key consistency
 Check token expiration settings
 Ensure proper password hashing
 
-
-Permission Denied
+#### Permission Denied
 
 Check user role assignments
 Verify middleware configuration
@@ -325,26 +324,26 @@ Review route protection
 
 
 
-Performance Optimization
-Database
+## Performance Optimization
+### Database
 
 Indexing: Primary keys on id, tagId, epc
 Connection Pooling: Max 10 concurrent connections
 Query Optimization: Limit results and use appropriate WHERE clauses
 
-Frontend
+### Frontend
 
 State Management: Provider pattern for efficient rebuilds
 Lazy Loading: Pagination for large datasets
 Caching: Repository pattern with in-memory caching
 
-Backend
+### Backend
 
 Error Logging: Structured logging for debugging
 Request Validation: Early validation to prevent unnecessary processing
 CORS Configuration: Optimized for development environment
 
-Future Enhancements
+## Future Enhancements
 
  Real RFID hardware integration
  Push notifications for asset alerts
@@ -357,7 +356,7 @@ Future Enhancements
  Barcode scanning integration
  Asset depreciation calculations
 
-Contributing
+## Contributing
 
 Fork the repository
 Create feature branch (git checkout -b feature/amazing-feature)
@@ -365,9 +364,9 @@ Commit changes (git commit -m 'Add amazing feature')
 Push to branch (git push origin feature/amazing-feature)
 Open Pull Request
 
-License
+## License
 This project is licensed under the MIT License - see the LICENSE file for details.
-Support
+## Support
 For support and questions:
 
 Create an issue in the repository
@@ -375,4 +374,4 @@ Contact the development team
 Check the troubleshooting section above
 
 
-Note: This is a development system designed for learning and demonstration purposes. For production use, additional security measures and optimizations should be implemented.
+Note : This is a development system designed for learning and demonstration purposes. For production use, additional security measures and optimizations should be implemented.
