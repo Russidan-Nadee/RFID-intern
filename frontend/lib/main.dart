@@ -5,7 +5,7 @@ import 'package:rfid_project/core/services/auth_service.dart';
 import 'core/navigation/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'core/di/dependency_injection.dart';
-import 'presentation/features/assets/blocs/asset_bloc.dart';
+import 'presentation/features/search/blocs/asset_bloc.dart';
 import 'presentation/features/dashboard/blocs/dashboard_bloc.dart';
 import 'presentation/features/export/blocs/export_bloc.dart';
 import 'presentation/features/main/blocs/navigation_bloc.dart';

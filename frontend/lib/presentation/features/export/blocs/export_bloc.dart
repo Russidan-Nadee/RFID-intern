@@ -13,61 +13,73 @@ import '../../../../domain/repositories/asset_repository.dart';
 enum ExportStatus { initial, loading, loaded, exporting, exportComplete, error }
 
 class ExportBloc extends ChangeNotifier {
+  // =================== Dependencies ===================
   final GetAssetsUseCase _getAssetsUseCase;
   final AssetRepository _assetRepository;
 
+  // =================== Core State Variables ===================
   ExportStatus _status = ExportStatus.initial;
-  List<Asset> _allAssets = [];
-  List<Asset> _previewAssets = [];
-  List<Asset> _selectedAssets = [];
-  List<Map<String, dynamic>> _exportHistory = [];
   ExportConfiguration _exportConfig;
-
   String _errorMessage = '';
   String? _lastExportedFilePath;
 
-  // ข้อมูลจากการค้นหา
+  // =================== Asset Data ===================
+  List<Asset> _allAssets = [];
+  List<Asset> _previewAssets = [];
+  List<Asset> _selectedAssets = [];
+
+  // =================== Export History ===================
+  List<Map<String, dynamic>> _exportHistory = [];
+
+  // =================== Search/Navigation Data ===================
   Map<String, dynamic>? _searchParams;
   bool _isFromSearch = false;
-
-  // ข้อมูลสินทรัพย์เฉพาะ
   String? _assetId;
   String? _assettagId;
 
-  ExportBloc(
-    this._getAssetsUseCase,
-    this._assetRepository,
-    // ลบพารามิเตอร์นี้ออก
-    // this._prepareExportColumnsUseCase,
-  ) : _exportConfig = ExportConfiguration(
-        // สร้างอินสแตนซ์ใหม่และเรียกใช้โดยตรง
+  // =================== Multi-Select State ===================
+  bool _isMultiSelectMode = false;
+  Set<String> _selectedAssetIds = {};
+
+  // =================== Constructor ===================
+  ExportBloc(this._getAssetsUseCase, this._assetRepository)
+    : _exportConfig = ExportConfiguration(
         columns: PrepareExportColumnsUseCase().execute(),
       ) {
     _initExportHistory();
   }
 
-  // Getters
+  // =================== Basic Getters ===================
   ExportStatus get status => _status;
+  String get errorMessage => _errorMessage;
+  String? get lastExportedFilePath => _lastExportedFilePath;
+  ExportConfiguration get exportConfig => _exportConfig;
+
+  // =================== Asset Getters ===================
   List<Asset> get allAssets => _allAssets;
   List<Asset> get previewAssets => _previewAssets;
   List<Asset> get selectedAssets => _selectedAssets;
-  List<Map<String, dynamic>> get exportHistory => _exportHistory;
+
+  // =================== Export Configuration Getters ===================
   String get selectedFormat => _exportConfig.format;
   List<ExportColumn> get availableColumns => _exportConfig.columns;
   List<ExportColumn> get selectedColumns => _exportConfig.selectedColumns;
-  String get errorMessage => _errorMessage;
-  String? get lastExportedFilePath => _lastExportedFilePath;
-  String? get assetId => _assetId;
-  String? get assettagId => _assettagId;
-  bool get isFromSearch => _isFromSearch;
-  Map<String, dynamic>? get searchParams => _searchParams;
-  ExportConfiguration get exportConfig => _exportConfig;
-
-  // ขนาดไฟล์โดยประมาณ (KB)
   int get estimatedFileSize =>
       _exportConfig.calculateEstimatedSize(_selectedAssets.length);
 
-  // กลุ่มของคอลัมน์
+  // =================== History & Search Getters ===================
+  List<Map<String, dynamic>> get exportHistory => _exportHistory;
+  bool get isFromSearch => _isFromSearch;
+  Map<String, dynamic>? get searchParams => _searchParams;
+  String? get assetId => _assetId;
+  String? get assettagId => _assettagId;
+
+  // =================== Multi-Select Getters ===================
+  bool get isMultiSelectMode => _isMultiSelectMode;
+  Set<String> get selectedAssetIds => _selectedAssetIds;
+  int get selectedCount => _selectedAssetIds.length;
+
+  // =================== Column Groups ===================
   Map<String, List<ExportColumn>> get columnGroups {
     Map<String, List<ExportColumn>> groups = {};
 
@@ -81,6 +93,7 @@ class ExportBloc extends ChangeNotifier {
     return groups;
   }
 
+  // =================== Initialization ===================
   void _initExportHistory() {
     _exportHistory = [
       {
@@ -92,31 +105,170 @@ class ExportBloc extends ChangeNotifier {
     ];
   }
 
-  // ตั้งค่า args จากหน้าอื่น
-  void setArguments(Map<String, dynamic>? args) {
-    if (args == null) return;
+  // =================== Multi-Select Methods ===================
+  void toggleMultiSelectMode() {
+    _isMultiSelectMode = !_isMultiSelectMode;
 
-    // ตรวจสอบว่ามาจากหน้ารายละเอียดสินทรัพย์
-    if (args.containsKey('assetId') && args.containsKey('assettagId')) {
-      _assetId = args['assetId'];
-      _assettagId = args['assettagId'];
-      _loadSingleAsset(clearExisting: false);
-    }
-    // ตรวจสอบว่ามาจากหน้าค้นหา
-    else if (args.containsKey('searchParams')) {
-      _isFromSearch = true;
-      _searchParams = args['searchParams'];
-      _loadSearchResults(clearExisting: false);
-    }
-    // ถ้าไม่มี args พิเศษ ให้โหลดข้อมูลทั้งหมด
-    else {
-      loadAllAssets();
+    if (!_isMultiSelectMode) {
+      _selectedAssetIds.clear();
     }
 
     notifyListeners();
   }
 
-  // โหลดข้อมูลสินทรัพย์เฉพาะจาก tagId
+  void toggleAssetSelectionById(String assetId) {
+    if (_selectedAssetIds.contains(assetId)) {
+      _selectedAssetIds.remove(assetId);
+    } else {
+      _selectedAssetIds.add(assetId);
+    }
+    notifyListeners();
+  }
+
+  void selectAllAssetIds() {
+    _selectedAssetIds.clear();
+    for (var asset in _allAssets) {
+      _selectedAssetIds.add(asset.id);
+    }
+    notifyListeners();
+  }
+
+  void clearAssetSelection() {
+    _selectedAssetIds.clear();
+    notifyListeners();
+  }
+
+  bool isAssetSelectedById(String assetId) {
+    return _selectedAssetIds.contains(assetId);
+  }
+
+  void exitMultiSelectMode() {
+    _isMultiSelectMode = false;
+    _selectedAssetIds.clear();
+    notifyListeners();
+  }
+
+  // =================== Arguments Processing ===================
+  void setArguments(Map<String, dynamic>? args) {
+    if (args == null) {
+      loadAllAssets();
+      return;
+    }
+
+    print('DEBUG - ExportBloc setArguments: $args');
+
+    // Multi-Select Export
+    if (args.containsKey('assets') && args.containsKey('isMultiExport')) {
+      _handleMultiSelectExport(args);
+      return;
+    }
+
+    // Single Asset Export
+    if (args.containsKey('assetId') && args.containsKey('assetUid')) {
+      _handleSingleAssetExport(args);
+      return;
+    }
+
+    // Search Results Export
+    if (args.containsKey('searchParams')) {
+      _handleSearchResultsExport(args);
+      return;
+    }
+
+    // Default: Load all assets
+    print('DEBUG - Loading all assets (default case)');
+    loadAllAssets();
+  }
+
+  void _handleMultiSelectExport(Map<String, dynamic> args) {
+    try {
+      final List<Asset> assets = args['assets'] as List<Asset>;
+
+      print('DEBUG - Multi-export with ${assets.length} assets');
+
+      _status = ExportStatus.loading;
+      notifyListeners();
+
+      _selectedAssets = List<Asset>.from(assets);
+      _previewAssets = _selectedAssets.take(5).toList();
+
+      loadAllAssets().then((_) {
+        _status = ExportStatus.loaded;
+        notifyListeners();
+        print(
+          'DEBUG - Multi-export setup complete: ${_selectedAssets.length} assets selected',
+        );
+      });
+    } catch (e) {
+      print('DEBUG - Error in multi-export setup: $e');
+      _status = ExportStatus.error;
+      _errorMessage = 'เกิดข้อผิดพลาดในการโหลดรายการที่เลือก: $e';
+      notifyListeners();
+    }
+  }
+
+  void _handleSingleAssetExport(Map<String, dynamic> args) {
+    try {
+      _assetId = args['assetId'] as String?;
+      _assettagId = args['assetUid'] as String?;
+
+      print(
+        'DEBUG - Single asset export: assetId=$_assetId, tagId=$_assettagId',
+      );
+
+      if (_assettagId != null) {
+        _loadSingleAsset(clearExisting: false);
+      } else {
+        throw Exception('ไม่พบ Tag ID ของรายการที่เลือก');
+      }
+    } catch (e) {
+      print('DEBUG - Error in single asset setup: $e');
+      _status = ExportStatus.error;
+      _errorMessage = 'เกิดข้อผิดพลาดในการโหลดรายการเดียว: $e';
+      notifyListeners();
+    }
+  }
+
+  void _handleSearchResultsExport(Map<String, dynamic> args) {
+    try {
+      _isFromSearch = true;
+      _searchParams = args['searchParams'] as Map<String, dynamic>?;
+
+      print('DEBUG - Search results export: $_searchParams');
+
+      _loadSearchResults(clearExisting: false);
+    } catch (e) {
+      print('DEBUG - Error in search results setup: $e');
+      _status = ExportStatus.error;
+      _errorMessage = 'เกิดข้อผิดพลาดในการโหลดผลการค้นหา: $e';
+      notifyListeners();
+    }
+  }
+
+  // =================== Data Loading Methods ===================
+  Future<void> loadAllAssets() async {
+    _status = ExportStatus.loading;
+    notifyListeners();
+
+    try {
+      final assets = await _getAssetsUseCase.execute();
+      _allAssets = List<Asset>.from(assets);
+
+      if (_selectedAssets.isEmpty) {
+        _previewAssets = assets.take(5).toList();
+      } else {
+        _previewAssets = _selectedAssets.take(5).toList();
+      }
+
+      _status = ExportStatus.loaded;
+    } catch (e) {
+      _status = ExportStatus.error;
+      _errorMessage = e.toString();
+    }
+
+    notifyListeners();
+  }
+
   Future<void> _loadSingleAsset({bool clearExisting = true}) async {
     if (_assettagId == null) return;
 
@@ -130,14 +282,13 @@ class ExportBloc extends ChangeNotifier {
         if (clearExisting) {
           _selectedAssets = [asset];
         } else {
-          // เช็คว่ามีในรายการเลือกอยู่แล้วหรือไม่
           if (!_selectedAssets.any((a) => a.tagId == asset.tagId)) {
             _selectedAssets.add(asset);
           }
         }
 
         _previewAssets = List<Asset>.from(_selectedAssets).take(5).toList();
-        await loadAllAssets(); // โหลดข้อมูลทั้งหมดไว้เผื่อผู้ใช้ต้องการเพิ่ม
+        await loadAllAssets();
         _status = ExportStatus.loaded;
       } else {
         _status = ExportStatus.error;
@@ -151,50 +302,19 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
   }
 
-  // โหลดข้อมูลจากผลการค้นหา
   Future<void> _loadSearchResults({bool clearExisting = true}) async {
     _status = ExportStatus.loading;
     notifyListeners();
 
     try {
-      // ในสถานการณ์จริง ควรใช้ repository ที่มีเมธอดสำหรับการค้นหาโดยเฉพาะ
       final allAssets = await _getAssetsUseCase.execute();
       _allAssets = allAssets;
 
-      List<Asset> searchResults = [];
-
-      // จำลองการกรองตาม searchParams
-      if (_searchParams != null && _searchParams!.containsKey('status')) {
-        searchResults =
-            allAssets
-                .where((asset) => asset.status == _searchParams!['status'])
-                .toList();
-      } else if (_searchParams != null &&
-          _searchParams!.containsKey('query') &&
-          _searchParams!['query'] != null) {
-        final query = _searchParams!['query'].toString().toLowerCase();
-        if (query.isNotEmpty) {
-          searchResults =
-              allAssets
-                  .where(
-                    (asset) =>
-                        asset.id.toLowerCase().contains(query) ||
-                        asset.itemName.toLowerCase().contains(query) ||
-                        asset.category.toLowerCase().contains(query) ||
-                        asset.currentLocation.toLowerCase().contains(query),
-                  )
-                  .toList();
-        } else {
-          searchResults = List<Asset>.from(allAssets);
-        }
-      } else {
-        searchResults = List<Asset>.from(allAssets);
-      }
+      List<Asset> searchResults = _processSearchResults(allAssets);
 
       if (clearExisting) {
         _selectedAssets = List<Asset>.from(searchResults);
       } else {
-        // เพิ่มเฉพาะรายการที่ยังไม่มี
         for (var asset in searchResults) {
           if (!_selectedAssets.any((a) => a.tagId == asset.tagId)) {
             _selectedAssets.add(asset);
@@ -212,38 +332,37 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
   }
 
-  // โหลดข้อมูลทั้งหมด
-  Future<void> loadAllAssets() async {
-    _status = ExportStatus.loading;
-    notifyListeners();
+  List<Asset> _processSearchResults(List<Asset> allAssets) {
+    if (_searchParams == null) return List<Asset>.from(allAssets);
 
-    try {
-      final assets = await _getAssetsUseCase.execute();
-      _allAssets = List<Asset>.from(assets);
-
-      // ถ้ายังไม่มีการเลือกรายการเฉพาะ ให้แสดงทั้งหมด
-      if (_selectedAssets.isEmpty) {
-        _previewAssets = assets.take(5).toList();
-      } else {
-        _previewAssets = _selectedAssets.take(5).toList();
-      }
-
-      _status = ExportStatus.loaded;
-    } catch (e) {
-      _status = ExportStatus.error;
-      _errorMessage = e.toString();
+    // Filter by status
+    if (_searchParams!.containsKey('status')) {
+      return allAssets
+          .where((asset) => asset.status == _searchParams!['status'])
+          .toList();
     }
 
-    notifyListeners();
+    // Filter by query
+    if (_searchParams!.containsKey('query') &&
+        _searchParams!['query'] != null) {
+      final query = _searchParams!['query'].toString().toLowerCase();
+      if (query.isNotEmpty) {
+        return allAssets
+            .where(
+              (asset) =>
+                  asset.id.toLowerCase().contains(query) ||
+                  asset.itemName.toLowerCase().contains(query) ||
+                  asset.category.toLowerCase().contains(query) ||
+                  asset.currentLocation.toLowerCase().contains(query),
+            )
+            .toList();
+      }
+    }
+
+    return List<Asset>.from(allAssets);
   }
 
-  // ตั้งค่ารูปแบบการส่งออก
-  void setSelectedFormat(String format) {
-    _exportConfig = _exportConfig.copyWith(format: format);
-    notifyListeners();
-  }
-
-  // เพิ่ม/ลบสินทรัพย์จากรายการที่เลือก
+  // =================== Asset Management Methods ===================
   void toggleAssetSelection(Asset asset) {
     final index = _selectedAssets.indexWhere((a) => a.tagId == asset.tagId);
 
@@ -256,12 +375,10 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
   }
 
-  // เช็คว่าสินทรัพย์ถูกเลือกหรือไม่
   bool isAssetSelected(Asset asset) {
     return _selectedAssets.any((a) => a.tagId == asset.tagId);
   }
 
-  // เพิ่มสินทรัพย์หลายรายการ
   void addAssets(List<Asset> assets) {
     for (var asset in assets) {
       if (!isAssetSelected(asset)) {
@@ -271,203 +388,14 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ลบสินทรัพย์
   void removeAsset(Asset asset) {
     _selectedAssets.removeWhere((a) => a.tagId == asset.tagId);
     notifyListeners();
   }
 
-  // ล้างรายการที่เลือก
   void clearSelectedAssets() {
     _selectedAssets.clear();
     notifyListeners();
-  }
-
-  // สลับการเลือกคอลัมน์
-  void toggleColumnSelection(String columnKey) {
-    final updatedColumns =
-        _exportConfig.columns.map((column) {
-          if (column.key == columnKey) {
-            return column.copyWith(isSelected: !column.isSelected);
-          }
-          return column;
-        }).toList();
-
-    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
-    notifyListeners();
-  }
-
-  // เช็คว่าคอลัมน์ถูกเลือกหรือไม่
-  bool isColumnSelected(String columnKey) {
-    return _exportConfig.selectedColumns.any((c) => c.key == columnKey);
-  }
-
-  // เลือกทุกคอลัมน์ในกลุ่ม
-  void selectAllColumnsInGroup(String groupName) {
-    final updatedColumns =
-        _exportConfig.columns.map((column) {
-          if (column.group == groupName) {
-            return column.copyWith(isSelected: true);
-          }
-          return column;
-        }).toList();
-
-    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
-    notifyListeners();
-  }
-
-  // ยกเลิกการเลือกทุกคอลัมน์ในกลุ่ม
-  void deselectAllColumnsInGroup(String groupName) {
-    final updatedColumns =
-        _exportConfig.columns.map((column) {
-          if (column.group == groupName) {
-            return column.copyWith(isSelected: false);
-          }
-          return column;
-        }).toList();
-
-    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
-    notifyListeners();
-  }
-
-  // เช็คว่าทุกคอลัมน์ในกลุ่มถูกเลือกหรือไม่
-  bool areAllColumnsInGroupSelected(String groupName) {
-    final groupColumns = _exportConfig.columns.where(
-      (c) => c.group == groupName,
-    );
-    return groupColumns.every((column) => column.isSelected);
-  }
-
-  // เลือกทุกคอลัมน์
-  void selectAllColumns() {
-    final updatedColumns =
-        _exportConfig.columns.map((column) {
-          return column.copyWith(isSelected: true);
-        }).toList();
-
-    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
-    notifyListeners();
-  }
-
-  // ยกเลิกการเลือกทุกคอลัมน์
-  void deselectAllColumns() {
-    final updatedColumns =
-        _exportConfig.columns.map((column) {
-          return column.copyWith(isSelected: false);
-        }).toList();
-
-    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
-    notifyListeners();
-  }
-
-  Future<void> shareExportedFile() async {
-    if (_lastExportedFilePath != null) {
-      try {
-        final file = XFile(_lastExportedFilePath!);
-        await Share.shareXFiles([file], subject: 'RFID Asset Data Export');
-      } catch (e) {
-        _errorMessage = 'Error sharing file: $e';
-        notifyListeners();
-      }
-    } else {
-      _errorMessage = 'No exported file available to share';
-      notifyListeners();
-    }
-  }
-
-  // ส่งออกเป็น CSV
-  Future<void> exportToCSV() async {
-    if (_selectedAssets.isEmpty) {
-      _errorMessage = 'กรุณาเลือกอย่างน้อย 1 รายการเพื่อส่งออก';
-      notifyListeners();
-      return;
-    }
-
-    if (_exportConfig.selectedColumns.isEmpty) {
-      _errorMessage = 'กรุณาเลือกอย่างน้อย 1 คอลัมน์เพื่อส่งออก';
-      notifyListeners();
-      return;
-    }
-
-    _status = ExportStatus.exporting;
-    notifyListeners();
-
-    try {
-      // สร้างข้อมูลสำหรับ CSV
-      List<List<dynamic>> rows = [];
-
-      // เพิ่มหัวคอลัมน์
-      List<String> headers = [];
-      for (var column in _exportConfig.selectedColumns) {
-        headers.add(column.displayName);
-      }
-
-      rows.add(headers);
-
-      // เพิ่มข้อมูลสินทรัพย์ที่เลือก
-      for (var asset in _selectedAssets) {
-        List<dynamic> row = [];
-
-        for (var column in _exportConfig.selectedColumns) {
-          // ดึงค่าตามชื่อคอลัมน์
-          var value = getAssetValueByColumnKey(asset, column.key);
-          row.add(value);
-        }
-
-        rows.add(row);
-      }
-
-      // แปลงเป็นสตริง CSV
-      String csv = const ListToCsvConverter().convert(rows);
-
-      // สร้างชื่อไฟล์ด้วยเวลาปัจจุบัน
-      final now = DateTime.now();
-      final timestamp =
-          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour}${now.minute}';
-
-      // ถ้ามีสินทรัพย์เฉพาะ ให้เพิ่ม ID ในชื่อไฟล์
-      String filename =
-          _selectedAssets.length == 1
-              ? 'asset_${_selectedAssets[0].id}_export_$timestamp.csv'
-              : 'assets_export_$timestamp.csv';
-
-      // บันทึกไฟล์ในพื้นที่เก็บไฟล์ชั่วคราว
-      final directory = await getTemporaryDirectory();
-      final path = '${directory.path}/$filename';
-      final file = File(path);
-      await file.writeAsString(csv);
-
-      // เก็บพาธไฟล์ล่าสุด
-      _lastExportedFilePath = path;
-
-      // บันทึกประวัติการส่งออก
-      _exportHistory.insert(0, {
-        'date': '${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute}',
-        'format': 'CSV',
-        'records': _selectedAssets.length,
-        'filename': filename,
-        'path': path, // เก็บพาธเพื่อใช้ในการแชร์ภายหลัง
-      });
-
-      _status = ExportStatus.exportComplete;
-    } catch (e) {
-      _status = ExportStatus.error;
-      _errorMessage = e.toString();
-    }
-
-    notifyListeners();
-  }
-
-  // ฟังก์ชันนี้จะถูกเรียกเมื่อต้องการส่งออกข้อมูล
-  Future<void> exportData() async {
-    if (_exportConfig.format == 'CSV') {
-      await exportToCSV();
-    } else {
-      // Excel format is not implemented yet
-      _status = ExportStatus.error;
-      _errorMessage = 'Excel export is not implemented yet';
-      notifyListeners();
-    }
   }
 
   Future<void> selectAllAssets() async {
@@ -487,9 +415,197 @@ class ExportBloc extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ดึงค่าจากสินทรัพย์ตามชื่อคอลัมน์
+  // =================== Column Management Methods ===================
+  void setSelectedFormat(String format) {
+    _exportConfig = _exportConfig.copyWith(format: format);
+    notifyListeners();
+  }
+
+  void toggleColumnSelection(String columnKey) {
+    final updatedColumns =
+        _exportConfig.columns.map((column) {
+          if (column.key == columnKey) {
+            return column.copyWith(isSelected: !column.isSelected);
+          }
+          return column;
+        }).toList();
+
+    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
+    notifyListeners();
+  }
+
+  bool isColumnSelected(String columnKey) {
+    return _exportConfig.selectedColumns.any((c) => c.key == columnKey);
+  }
+
+  void selectAllColumnsInGroup(String groupName) {
+    final updatedColumns =
+        _exportConfig.columns.map((column) {
+          if (column.group == groupName) {
+            return column.copyWith(isSelected: true);
+          }
+          return column;
+        }).toList();
+
+    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
+    notifyListeners();
+  }
+
+  void deselectAllColumnsInGroup(String groupName) {
+    final updatedColumns =
+        _exportConfig.columns.map((column) {
+          if (column.group == groupName) {
+            return column.copyWith(isSelected: false);
+          }
+          return column;
+        }).toList();
+
+    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
+    notifyListeners();
+  }
+
+  bool areAllColumnsInGroupSelected(String groupName) {
+    final groupColumns = _exportConfig.columns.where(
+      (c) => c.group == groupName,
+    );
+    return groupColumns.every((column) => column.isSelected);
+  }
+
+  void selectAllColumns() {
+    final updatedColumns =
+        _exportConfig.columns.map((column) {
+          return column.copyWith(isSelected: true);
+        }).toList();
+
+    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
+    notifyListeners();
+  }
+
+  void deselectAllColumns() {
+    final updatedColumns =
+        _exportConfig.columns.map((column) {
+          return column.copyWith(isSelected: false);
+        }).toList();
+
+    _exportConfig = _exportConfig.copyWith(columns: updatedColumns);
+    notifyListeners();
+  }
+
+  // =================== Export Methods ===================
+  Future<void> exportData() async {
+    if (_exportConfig.format == 'CSV') {
+      await exportToCSV();
+    } else {
+      _status = ExportStatus.error;
+      _errorMessage = 'Excel export is not implemented yet';
+      notifyListeners();
+    }
+  }
+
+  Future<void> exportToCSV() async {
+    if (_selectedAssets.isEmpty) {
+      _errorMessage = 'กรุณาเลือกอย่างน้อย 1 รายการเพื่อส่งออก';
+      notifyListeners();
+      return;
+    }
+
+    if (_exportConfig.selectedColumns.isEmpty) {
+      _errorMessage = 'กรุณาเลือกอย่างน้อย 1 คอลัมน์เพื่อส่งออก';
+      notifyListeners();
+      return;
+    }
+
+    _status = ExportStatus.exporting;
+    notifyListeners();
+
+    try {
+      final csvData = _generateCSVData();
+      final filePath = await _saveCSVFile(csvData);
+      _updateExportHistory(filePath);
+
+      _status = ExportStatus.exportComplete;
+    } catch (e) {
+      _status = ExportStatus.error;
+      _errorMessage = e.toString();
+    }
+
+    notifyListeners();
+  }
+
+  List<List<dynamic>> _generateCSVData() {
+    List<List<dynamic>> rows = [];
+
+    // Add headers
+    List<String> headers = [];
+    for (var column in _exportConfig.selectedColumns) {
+      headers.add(column.displayName);
+    }
+    rows.add(headers);
+
+    // Add asset data
+    for (var asset in _selectedAssets) {
+      List<dynamic> row = [];
+      for (var column in _exportConfig.selectedColumns) {
+        var value = getAssetValueByColumnKey(asset, column.key);
+        row.add(value);
+      }
+      rows.add(row);
+    }
+
+    return rows;
+  }
+
+  Future<String> _saveCSVFile(List<List<dynamic>> rows) async {
+    String csv = const ListToCsvConverter().convert(rows);
+
+    final now = DateTime.now();
+    final timestamp =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour}${now.minute}';
+
+    String filename =
+        _selectedAssets.length == 1
+            ? 'asset_${_selectedAssets[0].id}_export_$timestamp.csv'
+            : 'assets_export_$timestamp.csv';
+
+    final directory = await getTemporaryDirectory();
+    final path = '${directory.path}/$filename';
+    final file = File(path);
+    await file.writeAsString(csv);
+
+    _lastExportedFilePath = path;
+    return path;
+  }
+
+  void _updateExportHistory(String filePath) {
+    final now = DateTime.now();
+    final filename = filePath.split('/').last;
+
+    _exportHistory.insert(0, {
+      'date': '${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute}',
+      'format': 'CSV',
+      'records': _selectedAssets.length,
+      'filename': filename,
+      'path': filePath,
+    });
+  }
+
+  Future<void> shareExportedFile() async {
+    if (_lastExportedFilePath != null) {
+      try {
+        final file = XFile(_lastExportedFilePath!);
+        await Share.shareXFiles([file], subject: 'RFID Asset Data Export');
+      } catch (e) {
+        _errorMessage = 'Error sharing file: $e';
+        notifyListeners();
+      }
+    } else {
+      _errorMessage = 'No exported file available to share';
+      notifyListeners();
+    }
+  }
+
+  // =================== Utility Methods ===================
   dynamic getAssetValueByColumnKey(Asset asset, String columnKey) {
-    // ดึงข้อมูลเฉพาะฟิลด์ที่มีในตาราง MySQL
     switch (columnKey) {
       case 'id':
         return asset.id;
@@ -529,8 +645,6 @@ class ExportBloc extends ChangeNotifier {
         return asset.expiryDate;
       case 'value':
         return asset.value;
-
-      // กรณีไม่พบคอลัมน์ที่ระบุ
       default:
         return '';
     }

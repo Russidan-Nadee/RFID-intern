@@ -16,7 +16,11 @@ class AssetBloc extends ChangeNotifier {
   String _errorMessage = '';
   String _searchQuery = '';
   String? _selectedStatus;
-  bool _isTableView = false; // เพิ่มการติดตามโหมดการแสดงผล
+  bool _isTableView = false; // เพิ่มการติดตามโหมดการแสดงผลง
+
+  // =================== Multi-Select State ===================
+  bool _isMultiSelectMode = false;
+  Set<String> _selectedAssetIds = {};
 
   AssetBloc(this._getAssetsUseCase);
 
@@ -29,6 +33,11 @@ class AssetBloc extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   String? get selectedStatus => _selectedStatus;
   bool get isTableView => _isTableView; // getter สำหรับโหมดการแสดงผล
+
+  // =================== Multi-Select Getters ===================
+  bool get isMultiSelectMode => _isMultiSelectMode;
+  Set<String> get selectedAssetIds => _selectedAssetIds;
+  int get selectedCount => _selectedAssetIds.length;
 
   Future<void> loadAssets() async {
     _status = AssetStatus.loading;
@@ -60,6 +69,49 @@ class AssetBloc extends ChangeNotifier {
     notifyListeners();
   }
 
+  // =================== Multi-Select Methods ===================
+  void toggleMultiSelectMode() {
+    _isMultiSelectMode = !_isMultiSelectMode;
+
+    if (!_isMultiSelectMode) {
+      _selectedAssetIds.clear();
+    }
+
+    notifyListeners();
+  }
+
+  void toggleAssetSelection(String assetId) {
+    if (_selectedAssetIds.contains(assetId)) {
+      _selectedAssetIds.remove(assetId);
+    } else {
+      _selectedAssetIds.add(assetId);
+    }
+    notifyListeners();
+  }
+
+  void selectAllAssets() {
+    _selectedAssetIds.clear();
+    for (var asset in _filteredAssets) {
+      _selectedAssetIds.add(asset.id);
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedAssetIds.clear();
+    notifyListeners();
+  }
+
+  bool isAssetSelected(String assetId) {
+    return _selectedAssetIds.contains(assetId);
+  }
+
+  void exitMultiSelectMode() {
+    _isMultiSelectMode = false;
+    _selectedAssetIds.clear();
+    notifyListeners();
+  }
+
   void setSearchQuery(String query) {
     _searchQuery = query;
     _applyFilters();
@@ -80,6 +132,10 @@ class AssetBloc extends ChangeNotifier {
   // เพิ่มเมธอดสำหรับการสลับโหมดการแสดงผล
   void toggleViewMode() {
     _isTableView = !_isTableView;
+    _selectedStatus = null;
+    _searchQuery = '';
+
+    _applyFilters();
     notifyListeners();
   }
 
@@ -131,6 +187,69 @@ class AssetBloc extends ChangeNotifier {
         SnackBar(content: Text('เกิดข้อผิดพลาดในการนำทางไปยังการส่งออก: $e')),
       );
       print('DEBUG - Error in navigateToExport: $e');
+    }
+  }
+
+  // =================== Multi-Export Navigation ===================
+  void navigateToMultiExport(BuildContext context) {
+    if (_selectedAssetIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('กรุณาเลือกรายการก่อนทำการ Export'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final selectedAssets =
+          _filteredAssets
+              .where((asset) => _selectedAssetIds.contains(asset.id))
+              .toList();
+
+      if (selectedAssets.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ไม่พบรายการที่เลือก กรุณาลองใหม่อีกครั้ง'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      Navigator.pushNamed(
+        context,
+        '/export',
+        arguments: {
+          'assets': selectedAssets,
+          'isMultiExport': true,
+          'selectedCount': selectedAssets.length,
+          'fromMultiSelect': true,
+          'sourceScreen': 'searchAssets',
+        },
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'ส่งรายการ ${selectedAssets.length} รายการไปหน้า Export แล้ว',
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาดในการไปหน้า Export: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      print('DEBUG - Error in navigateToMultiExport: $e');
     }
   }
 

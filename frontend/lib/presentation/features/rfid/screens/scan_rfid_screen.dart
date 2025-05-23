@@ -9,7 +9,7 @@ import '../blocs/rfid_scan_bloc.dart';
 import '../widgets/asset_info_card.dart';
 import '../widgets/asset_not_found_card.dart';
 import '../widgets/unknown_epc_card.dart';
-import '../../assets/screens/asset_creation_preview_screen.dart';
+import 'asset_creation_preview_screen.dart';
 
 class ScanRfidScreen extends StatefulWidget {
   final GenerateMockAssetUseCase generateAssetUseCase;
@@ -92,7 +92,6 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
             case RfidScanStatus.error:
               return _buildErrorView(bloc);
             case RfidScanStatus.initial:
-            default:
               return _buildInitialView(bloc, context);
           }
         },

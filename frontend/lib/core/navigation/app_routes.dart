@@ -8,8 +8,8 @@ import 'package:rfid_project/presentation/features/export/screens/export_confirm
 import 'package:rfid_project/presentation/features/export/screens/export_screen.dart'
     show ExportScreen;
 import 'package:rfid_project/presentation/features/settings/screens/role_management_screen.dart';
-import '../../presentation/features/assets/screens/asset_detail_screen.dart';
-import '../../presentation/features/assets/screens/search_assets_screen.dart';
+import '../../presentation/features/search/screens/asset_detail_screen.dart';
+import '../../presentation/features/search/screens/search_assets_screen.dart';
 import '../../presentation/features/dashboard/screens/dashboard_screen.dart';
 import '../../presentation/features/rfid/screens/scan_rfid_screen.dart';
 import '../../presentation/features/settings/screens/settings_screen.dart';

@@ -3,7 +3,7 @@ import 'package:get_it/get_it.dart';
 import '../../../domain/usecases/assets/get_assets_usecase.dart';
 import '../../../domain/usecases/rfid/scan_rfid_usecase.dart';
 import '../../../domain/repositories/asset_repository.dart';
-import '../../../presentation/features/assets/blocs/asset_bloc.dart';
+import '../../../presentation/features/search/blocs/asset_bloc.dart';
 import '../../../presentation/features/dashboard/blocs/dashboard_bloc.dart';
 import '../../../presentation/features/export/blocs/export_bloc.dart';
 import '../../../presentation/features/main/blocs/navigation_bloc.dart';

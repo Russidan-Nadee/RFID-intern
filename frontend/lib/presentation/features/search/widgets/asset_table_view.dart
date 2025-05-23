@@ -7,11 +7,25 @@ class AssetTableView extends StatelessWidget {
   final GlobalKey statusColumnKey;
   final AssetBloc bloc;
 
+  // =================== Multi-Select Parameters ===================
+  final bool isMultiSelectMode;
+  final Set<String> selectedAssetIds;
+  final Function(String assetId, bool isSelected)? onAssetSelectionChanged;
+  final VoidCallback? onSelectAll;
+  final VoidCallback? onClearSelection;
+
   const AssetTableView({
     Key? key,
     required this.assets,
     required this.statusColumnKey,
     required this.bloc,
+
+    // =================== Multi-Select Parameters ===================
+    this.isMultiSelectMode = false,
+    this.selectedAssetIds = const {},
+    this.onAssetSelectionChanged,
+    this.onSelectAll,
+    this.onClearSelection,
   }) : super(key: key);
 
   @override
@@ -31,21 +45,13 @@ class AssetTableView extends StatelessWidget {
               ),
             ),
             child: Table(
-              columnWidths: const {
-                0: FlexColumnWidth(1.2), // ID
-                1: FlexColumnWidth(1), // Category
-                2: FlexColumnWidth(1.2), // Status
-              },
+              columnWidths: _getColumnWidths(),
               children: [
                 TableRow(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  children: [
-                    _buildHeaderCell(context, 'ID'),
-                    _buildHeaderCell(context, 'Category'),
-                    _buildStatusHeaderCell(context),
-                  ],
+                  children: _buildHeaderCells(context),
                 ),
               ],
             ),
@@ -57,6 +63,97 @@ class AssetTableView extends StatelessWidget {
             (index) => _buildTableRow(context, assets[index], index),
           ),
         ],
+      ),
+    );
+  }
+
+  // =================== Column Width Configuration ===================
+  Map<int, TableColumnWidth> _getColumnWidths() {
+    if (isMultiSelectMode) {
+      return const {
+        0: FixedColumnWidth(50), // Checkbox
+        1: FlexColumnWidth(1.2), // ID
+        2: FlexColumnWidth(1), // Category
+        3: FlexColumnWidth(1.2), // Status
+      };
+    } else {
+      return const {
+        0: FlexColumnWidth(1.2), // ID
+        1: FlexColumnWidth(1), // Category
+        2: FlexColumnWidth(1.2), // Status
+      };
+    }
+  }
+
+  // =================== Header Cells Builder ===================
+  List<Widget> _buildHeaderCells(BuildContext context) {
+    List<Widget> cells = [];
+
+    // เพิ่ม Select All Checkbox เมื่ออยู่ใน Multi-Select Mode
+    if (isMultiSelectMode) {
+      cells.add(_buildSelectAllHeaderCell(context));
+    }
+
+    // เพิ่ม Header Cells ปกติ
+    cells.addAll([
+      _buildHeaderCell(context, 'ID'),
+      _buildHeaderCell(context, 'Category'),
+      _buildStatusHeaderCell(context),
+    ]);
+
+    return cells;
+  }
+
+  // =================== Select All Header Cell ===================
+  Widget _buildSelectAllHeaderCell(BuildContext context) {
+    final bool isAllSelected =
+        assets.isNotEmpty &&
+        assets.every((asset) => selectedAssetIds.contains(asset.id));
+    final bool isPartiallySelected =
+        selectedAssetIds.isNotEmpty && !isAllSelected;
+
+    return TableCell(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+        child: Center(
+          child: GestureDetector(
+            onTap: () {
+              if (isAllSelected) {
+                onClearSelection?.call();
+              } else {
+                onSelectAll?.call();
+              }
+            },
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color:
+                    isAllSelected
+                        ? Colors.deepPurpleAccent
+                        : Colors.transparent,
+                border: Border.all(
+                  color:
+                      isAllSelected || isPartiallySelected
+                          ? Colors.deepPurpleAccent
+                          : Colors.grey,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child:
+                  isAllSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 16)
+                      : isPartiallySelected
+                      ? Icon(
+                        Icons.remove,
+                        color: Theme.of(context).primaryColor,
+                        size: 16,
+                      )
+                      : null,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -214,21 +311,35 @@ class AssetTableView extends StatelessWidget {
     });
   }
 
-  // สร้างแถวสำหรับตาราง
+  // =================== Table Row Builder ===================
   Widget _buildTableRow(BuildContext context, Asset asset, int index) {
-    // ใช้สีพื้นหลังเดียวกันสำหรับทุกแถว
-    Color bgColor = Colors.white;
-    Color borderColor = Colors.grey.shade200;
+    final bool isSelected = selectedAssetIds.contains(asset.id);
+
+    // ใช้สีพื้นหลังที่แตกต่างสำหรับรายการที่เลือก
+    Color bgColor =
+        isSelected && isMultiSelectMode
+            ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+            : Colors.white;
+    Color borderColor =
+        isSelected && isMultiSelectMode
+            ? Theme.of(context).primaryColor
+            : Colors.grey.shade200;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        border: Border.all(
+          color: borderColor,
+          width: isSelected && isMultiSelectMode ? 2 : 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(25),
+            color:
+                isSelected && isMultiSelectMode
+                    ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                    : Colors.grey.withAlpha(25),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 2),
@@ -238,34 +349,77 @@ class AssetTableView extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              '/assetDetail',
-              arguments: {'tagId': asset.tagId},
-            );
-          },
+          onTap: () => _handleRowTap(context, asset),
           borderRadius: BorderRadius.circular(12),
           child: Table(
-            columnWidths: const {
-              0: FlexColumnWidth(1.2), // ID
-              1: FlexColumnWidth(1), // Category
-              2: FlexColumnWidth(1.2), // Status
-            },
+            columnWidths: _getColumnWidths(),
             defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
-              TableRow(
-                children: [
-                  _buildDataCell(asset.id),
-                  _buildDataCell(asset.category),
-                  _buildStatusCell(
-                    context,
-                    asset.status,
-                    asset.status == 'Checked',
-                  ),
-                ],
-              ),
+              TableRow(children: _buildDataCells(context, asset, isSelected)),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =================== Data Cells Builder ===================
+  List<Widget> _buildDataCells(
+    BuildContext context,
+    Asset asset,
+    bool isSelected,
+  ) {
+    List<Widget> cells = [];
+
+    // เพิ่ม Checkbox Cell เมื่ออยู่ใน Multi-Select Mode
+    if (isMultiSelectMode) {
+      cells.add(_buildCheckboxCell(asset, isSelected));
+    }
+
+    // เพิ่ม Data Cells ปกติ
+    cells.addAll([
+      _buildDataCell(asset.id),
+      _buildDataCell(asset.category),
+      _buildStatusCell(context, asset.status, asset.status == 'Checked'),
+    ]);
+
+    return cells;
+  }
+
+  // =================== Checkbox Cell ===================
+  Widget _buildCheckboxCell(Asset asset, bool isSelected) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: GestureDetector(
+            onTap: () {
+              onAssetSelectionChanged?.call(asset.id, !isSelected);
+            },
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color:
+                    isSelected
+                        ? Colors
+                            .blue // แก้ตรงนี้
+                        : Colors.transparent,
+                border: Border.all(
+                  color:
+                      isSelected
+                          ? Colors
+                              .blue // แก้ตรงนี้
+                          : Colors.grey,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child:
+                  isSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 16)
+                      : null,
+            ),
           ),
         ),
       ),
@@ -286,9 +440,8 @@ class AssetTableView extends StatelessWidget {
     );
   }
 
-  // สร้างเซลล์สถานะ (ปรับปรุงใหม่)
+  // สร้างเซลล์สถานะ (เหมือนเดิม)
   Widget _buildStatusCell(BuildContext context, String status, bool isChecked) {
-    // แปลงสถานะให้เป็น Available หรือ Checked
     String displayStatus = status;
     IconData statusIcon;
 
@@ -306,7 +459,7 @@ class AssetTableView extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade200, // ใช้สีเดียวกันสำหรับทุกสถานะ
+              color: Colors.grey.shade200,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -331,5 +484,21 @@ class AssetTableView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // =================== Event Handlers ===================
+  void _handleRowTap(BuildContext context, Asset asset) {
+    if (isMultiSelectMode) {
+      // ในโหมด multi-select ให้ toggle selection
+      final isSelected = selectedAssetIds.contains(asset.id);
+      onAssetSelectionChanged?.call(asset.id, !isSelected);
+    } else {
+      // ในโหมด normal ให้ไปหน้ารายละเอียด
+      Navigator.pushNamed(
+        context,
+        '/assetDetail',
+        arguments: {'tagId': asset.tagId},
+      );
+    }
   }
 }

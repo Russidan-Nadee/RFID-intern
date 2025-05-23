@@ -12,6 +12,10 @@ class SearchBoxWidget extends StatelessWidget {
   final bool isLoading;
   final Color? primaryColor;
 
+  // =================== Multi-Select Parameters ===================
+  final bool isMultiSelectMode;
+  final int selectedCount;
+
   const SearchBoxWidget({
     Key? key,
     required this.controller,
@@ -24,6 +28,10 @@ class SearchBoxWidget extends StatelessWidget {
     this.resultCount = 0,
     this.isLoading = false,
     this.primaryColor,
+
+    // =================== Multi-Select Parameters ===================
+    this.isMultiSelectMode = false,
+    this.selectedCount = 0,
   }) : super(key: key);
 
   @override
@@ -106,7 +114,7 @@ class SearchBoxWidget extends StatelessWidget {
                       ),
                   const SizedBox(width: 8),
                   Text(
-                    isLoading ? 'กำลังค้นหา...' : 'พบ $resultCount รายการ',
+                    isLoading ? 'กำลังค้นหา...' : _buildResultText(),
                     style: TextStyle(
                       color: highlightColor,
                       fontWeight: FontWeight.w500,
@@ -118,5 +126,16 @@ class SearchBoxWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // =================== Helper Methods ===================
+  String _buildResultText() {
+    String baseText = 'พบ $resultCount รายการ';
+
+    if (isMultiSelectMode && selectedCount > 0) {
+      baseText += ' เลือก $selectedCount รายการ';
+    }
+
+    return baseText;
   }
 }

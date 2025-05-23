@@ -22,12 +22,6 @@ class GenerateMockAssetUseCase {
       // ตรวจสอบความถูกต้องของ EPC
       await validator.validateEpc(epc);
 
-      // สร้างวันที่ปัจจุบัน
-      final now = DateTime.now();
-      final lastScanTime =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-
-      // ดึงข้อมูลสินทรัพย์เพื่อสร้าง ID ลำดับถัดไป
       final assets = await repository.getAssets();
 
       // หาค่า ID สูงสุดที่มีอยู่
