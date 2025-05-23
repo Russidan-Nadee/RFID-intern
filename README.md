@@ -1,6 +1,6 @@
 # RFID Asset Management System
 ## Project Overview
-RFID Asset Management System เป็นระบบจัดการสินทรัพย์ด้วยเทคโนโลยี RFID ที่พัฒนาด้วย Flutter สำหรับ Frontend และ Node.js Express สำหรับ Backend พร้อมฐานข้อมูล MySQL
+RFID Asset Management System is an asset management system using RFID technology, developed with Flutter for the frontend and Node.js Express for the backend, along with a MySQL database.
 ## System Architecture
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
