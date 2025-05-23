@@ -133,4 +133,37 @@ class AuthRepositoryImpl implements AuthRepository {
       throw DatabaseException('เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน: $e');
     }
   }
+
+  // New Role Management Methods Implementation
+  @override
+  Future<bool> updateUserRole(String userId, String newRole) async {
+    try {
+      final success = await _apiService.updateUserRole(userId, newRole);
+      return success;
+    } catch (e) {
+      ErrorHandler.logError('Error updating user role: $e');
+      if (e is AppException) rethrow;
+      throw DatabaseException('เกิดข้อผิดพลาดในการอัปเดตบทบาทผู้ใช้: $e');
+    }
+  }
+
+  @override
+  Future<bool> canUpdateUserRole(
+    String currentUserRole,
+    String targetUserRole,
+    String newRole,
+  ) async {
+    try {
+      final canUpdate = await _apiService.canUpdateUserRole(
+        currentUserRole,
+        targetUserRole,
+        newRole,
+      );
+      return canUpdate;
+    } catch (e) {
+      ErrorHandler.logError('Error checking role update permission: $e');
+      // Return false for permission check failures instead of throwing
+      return false;
+    }
+  }
 }

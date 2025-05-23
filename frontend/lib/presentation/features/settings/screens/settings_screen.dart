@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rfid_project/domain/entities/user_role.dart';
-import '../../../../core/constants/route_constants.dart';
+import 'package:rfid_project/presentation/features/settings/screens/role_management_screen.dart';
 import '../../../../core/services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: const Text(
-          'My Profile',
+          'Settings',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -39,7 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (context, authService, child) {
           final username = authService.currentUser?.username ?? 'Guest';
           final role = authService.currentUser?.role.displayName ?? 'Unknown';
-          final email = '${username.toLowerCase()}@company.com';
+          final email = '${username.toLowerCase()}@thaipatker.com';
 
           return ListView(
             children: [
@@ -84,22 +84,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                     ),
-                    // ปุ่ม Edit Profile
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, RouteConstants.profile);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Edit Profile',
-                        style: TextStyle(fontSize: 14, color: Colors.white),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -107,58 +91,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Divider(height: 1),
 
               // รายการเมนูตั้งค่า
-              _buildMenuItem(
-                icon: Icons.favorite_border,
-                title: 'Favourites',
-                onTap: () {},
-              ),
-              _buildMenuItem(
-                icon: Icons.download_outlined,
-                title: 'Downloads',
-                onTap: () {},
+              Consumer<AuthService>(
+                builder: (context, authService, child) {
+                  // แสดงเฉพาะ Manager และ Admin
+                  if (!authService.canManageUsers) {
+                    return const SizedBox.shrink(); // ซ่อน menu item
+                  }
+
+                  return _buildMenuItem(
+                    icon: Icons.admin_panel_settings,
+                    title: 'User Management',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RoleManagementScreen(),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
               _buildMenuItem(
                 icon: Icons.language,
                 title: 'Language',
                 onTap: () {},
               ),
-              _buildMenuItem(
-                icon: Icons.location_on_outlined,
-                title: 'Location',
-                onTap: () {},
-              ),
-              _buildMenuItem(
-                icon: Icons.subscriptions_outlined,
-                title: 'Subscription',
-                onTap: () {},
-              ),
-              _buildMenuItem(
-                icon: Icons.cached,
-                title: 'Clear cache',
-                onTap: () {},
-              ),
+
               _buildMenuItem(
                 icon: Icons.history,
-                title: 'Clear history',
+                title: 'Activity history',
                 onTap: () {},
               ),
 
               // ปุ่ม Logout
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                child: _buildMenuItem(
-                  icon: Icons.logout,
-                  title: 'Log out',
-                  iconColor: Colors.red,
-                  titleColor: Colors.red,
-                  onTap: () async {
-                    await authService.logout();
-                    Navigator.pushReplacementNamed(context, '/login');
-                  },
-                ),
+              _buildMenuItem(
+                icon: Icons.logout,
+                title: 'Log out',
+                iconColor: Colors.red,
+                titleColor: Colors.red,
+                onTap: () async {
+                  await authService.logout();
+                  Navigator.pushReplacementNamed(context, '/login');
+                },
               ),
             ],
           );

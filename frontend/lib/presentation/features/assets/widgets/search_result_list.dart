@@ -67,15 +67,7 @@ class SearchResultList extends StatelessWidget {
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                // Add Export button for each asset
-                IconButton(
-                  icon: const Icon(Icons.file_download, color: Colors.green),
-                  onPressed: () => onExportAsset(asset),
-                  tooltip: 'Export this asset',
-                ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
+              children: [const Icon(Icons.chevron_right, color: Colors.grey)],
             ),
             onTap: () => onAssetSelected(asset),
           ),

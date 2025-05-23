@@ -7,6 +7,7 @@ import 'package:rfid_project/presentation/features/export/screens/export_confirm
     show ExportConfirmationScreen;
 import 'package:rfid_project/presentation/features/export/screens/export_screen.dart'
     show ExportScreen;
+import 'package:rfid_project/presentation/features/settings/screens/role_management_screen.dart';
 import '../../presentation/features/assets/screens/asset_detail_screen.dart';
 import '../../presentation/features/assets/screens/search_assets_screen.dart';
 import '../../presentation/features/dashboard/screens/dashboard_screen.dart';
@@ -28,6 +29,7 @@ class AppRoutes {
   static const String exportConfirmation = '/exportConfirmation';
   static const String profile = '/profile';
   static const String login = '/login';
+  static const String roleManagement = '/roleManagement';
 
   // ฟังก์ชั่นสำหรับสร้าง Route ที่ไม่มีอนิเมชั่น
   static Route<dynamic> _createRouteWithoutAnimation(
@@ -94,6 +96,12 @@ class AppRoutes {
         );
       case login:
         return _createRouteWithoutAnimation(const LoginScreen(), routeSettings);
+
+      case roleManagement:
+        return _createRouteWithoutAnimation(
+          const RoleManagementScreen(),
+          routeSettings,
+        );
 
       default:
         return _createRouteWithoutAnimation(

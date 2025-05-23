@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/entities/user_role.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../exceptions/app_exceptions.dart';
 
 class AuthService extends ChangeNotifier {
   final AuthRepository _authRepository;
@@ -188,6 +189,89 @@ class AuthService extends ChangeNotifier {
   bool canNavigateToExport() => canExportData;
   bool canNavigateToSettings() => canAccessSettings;
   bool canNavigateToUserManagement() => canManageUsers;
+
+  Future<List<User>> getAllUsers() async {
+    if (!canManageUsers) {
+      throw UnauthorisedException('No permission to view users');
+    }
+
+    return await _authRepository.getAllUsers();
+  }
+
+  // Role Management Methods
+  Future<bool> updateUserRole(String userId, UserRole newRole) async {
+    if (!canManageUsers) {
+      throw UnauthorisedException('No permission to update user roles');
+    }
+
+    _setLoading(true);
+    try {
+      final success = await _authRepository.updateUserRole(
+        userId,
+        newRole.name,
+      );
+      if (success) {
+        // Reload users to reflect changes
+        notifyListeners();
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = 'Failed to update user role: ${e.toString()}';
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> canUpdateUserRole(
+    UserRole targetUserRole,
+    UserRole newRole,
+  ) async {
+    if (!canManageUsers) return false;
+
+    try {
+      return await _authRepository.canUpdateUserRole(
+        _currentUser!.role.name,
+        targetUserRole.name,
+        newRole.name,
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+
+  List<UserRole> getAvailableRolesForUser(UserRole targetUserRole) {
+    if (!canManageUsers) return [];
+
+    if (isAdmin) {
+      // Admin can change any role to any role
+      return [
+        UserRole.admin,
+        UserRole.manager,
+        UserRole.staff,
+        UserRole.viewer,
+      ];
+    } else if (isManager) {
+      // Manager can only manage Staff and Viewer roles
+      if (targetUserRole == UserRole.staff ||
+          targetUserRole == UserRole.viewer) {
+        return [UserRole.staff, UserRole.viewer];
+      }
+    }
+
+    return [];
+  }
+
+  bool canChangeRoleFromTo(UserRole currentRole, UserRole newRole) {
+    if (!canManageUsers) return false;
+
+    final currentLevel = _roleHierarchy[currentRole.name] ?? 0;
+    final newLevel = _roleHierarchy[newRole.name] ?? 0;
+    final userLevel = _roleHierarchy[_currentUser!.role.name] ?? 0;
+
+    // Can only change roles within your permission level
+    return userLevel > currentLevel && userLevel > newLevel;
+  }
 
   // Session management
   Future<void> _saveUserSession() async {

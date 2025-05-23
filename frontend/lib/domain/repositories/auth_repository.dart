@@ -9,6 +9,12 @@ abstract class AuthRepository {
   Future<User?> createUser(String username, String password, String role);
   Future<bool> updateUser(User user);
   Future<bool> deleteUser(String userId);
+  Future<bool> updateUserRole(String userId, String newRole);
+  Future<bool> canUpdateUserRole(
+    String currentUserRole,
+    String targetUserRole,
+    String newRole,
+  );
   Future<bool> changePassword(
     String userId,
     String oldPassword,

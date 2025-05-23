@@ -424,13 +424,15 @@ exports.changePassword = async (req, res, next) => {
 // Update user role (Admin only)
 exports.updateUserRole = async (req, res, next) => {
    try {
-      // Only Admin can change roles
-      if (req.user.role !== 'admin') {
-         throw new UnauthorisedException('เฉพาะ Admin เท่านั้นที่สามารถเปลี่ยนบทบาทผู้ใช้ได้');
-      }
-
       const { userId } = req.params;
       const { role } = req.body;
+      const userRole = req.user.role;
+      const roleHierarchy = { 'viewer': 0, 'staff': 1, 'manager': 2, 'admin': 3 };
+
+      // Manager+ can change roles
+      if ((roleHierarchy[userRole] || 0) < roleHierarchy['manager']) {
+         throw new UnauthorisedException('ต้องเป็น Manager ขึ้นไปจึงจะเปลี่ยนบทบาทผู้ใช้ได้');
+      }
 
       if (!role) {
          throw new ValidationError('กรุณาระบุบทบาทใหม่');
@@ -444,6 +446,35 @@ exports.updateUserRole = async (req, res, next) => {
       // Can't change own role
       if (req.user.userId === parseInt(userId)) {
          throw new ValidationError('ไม่สามารถเปลี่ยนบทบาทตัวเองได้');
+      }
+
+      // Get target user's current role
+      const getUserQuery = 'SELECT role FROM rfid_assets_details.users WHERE id = ? LIMIT 1';
+      const targetUsers = await execute(getUserQuery, [userId]);
+
+      if (targetUsers.length === 0) {
+         throw new NotFoundError('ไม่พบผู้ใช้ที่ต้องการอัปเดต');
+      }
+
+      const targetCurrentRole = targetUsers[0].role;
+
+      // Permission checks based on user role
+      if (userRole === 'manager') {
+         // Manager can only change staff/viewer roles
+         if (!['staff', 'viewer'].includes(targetCurrentRole)) {
+            throw new UnauthorisedException('Manager สามารถเปลี่ยนบทบาทของ Staff และ Viewer เท่านั้น');
+         }
+         // Manager can only assign staff/viewer roles  
+         if (!['staff', 'viewer'].includes(role)) {
+            throw new UnauthorisedException('Manager สามารถกำหนดบทบาทเป็น Staff หรือ Viewer เท่านั้น');
+         }
+      } else if (userRole === 'admin') {
+         // Admin can change any role except other admins (optional safety)
+         // Remove this check if admin should be able to change other admin roles
+         if (targetCurrentRole === 'admin' && role !== 'admin') {
+            // Optional: prevent demoting other admins
+            // Remove these lines if not needed
+         }
       }
 
       const updateQuery = 'UPDATE rfid_assets_details.users SET role = ?, updatedAt = NOW() WHERE id = ?';
@@ -462,7 +493,6 @@ exports.updateUserRole = async (req, res, next) => {
       next(error);
    }
 };
-
 // Update user status (Admin only)
 exports.updateUserStatus = async (req, res, next) => {
    try {

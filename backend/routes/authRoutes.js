@@ -29,7 +29,7 @@ router.get('/system/settings', verifyToken, requireSystemManagementPermission(),
 router.put('/system/settings', verifyToken, requireSystemManagementPermission(), authController.updateSystemSettings);
 
 // Advanced user operations - Admin only
-router.put('/users/:userId/role', verifyToken, requireRole('admin'), authController.updateUserRole);
+router.put('/users/:userId/role', verifyToken, authController.updateUserRole);
 router.put('/users/:userId/status', verifyToken, requireRole('admin'), authController.updateUserStatus);
 
 module.exports = router;

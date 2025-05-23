@@ -7,6 +7,59 @@ import '../../../core/services/error_handler.dart';
 class ApiService {
   final String baseUrl = AppConfig.apiBaseUrl;
 
+  Future<bool> updateUserRole(String userId, String newRole) async {
+    final url = '$baseUrl/auth/users/$userId/role';
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: _getAuthHeaders(),
+        body: json.encode({'role': newRole}),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Failed to update user role';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
+      }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw FetchDataException('Error updating user role: $e', url);
+    }
+  }
+
+  Future<bool> canUpdateUserRole(
+    String currentUserRole,
+    String targetUserRole,
+    String newRole,
+  ) async {
+    final url = '$baseUrl/auth/users/can-update-role';
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: _getAuthHeaders(),
+        body: json.encode({
+          'currentUserRole': currentUserRole,
+          'targetUserRole': targetUserRole,
+          'newRole': newRole,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return jsonData['canUpdate'] ?? false;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      ErrorHandler.logError('Error checking role update permission: $e');
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>?> login(String username, String password) async {
     final url = '$baseUrl/auth/login';
     try {
@@ -251,32 +304,6 @@ class ApiService {
     } catch (e) {
       if (e is AppException) rethrow;
       throw FetchDataException('Error getting asset by tagId: $e', url);
-    }
-  }
-
-  // อัพเดตสถานะสินทรัพย์
-  Future<bool> updateAssetStatus(String uid, String status) async {
-    final url = '$baseUrl/assets/status/$uid';
-    try {
-      final response = await http.put(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'status': status}),
-      );
-
-      if (response.statusCode == 200) {
-        return true;
-      } else {
-        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
-        final responseBody = json.decode(response.body);
-        final message = responseBody['message'] ?? 'Unknown error';
-        throw ErrorHandler.handleApiError(response.statusCode, message, url);
-      }
-    } on http.ClientException {
-      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw FetchDataException('Error updating status: $e', url);
     }
   }
 
@@ -581,7 +608,7 @@ class ApiService {
 
       final response = await http.post(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: _getAuthHeaders(),
         body: json.encode(assetData),
       );
 
@@ -627,7 +654,7 @@ class ApiService {
 
       final response = await http.put(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: _getAuthHeaders(),
         body: json.encode(requestBody),
       );
 
