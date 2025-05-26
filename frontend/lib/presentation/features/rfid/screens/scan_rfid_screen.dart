@@ -1,15 +1,14 @@
+// เพิ่ม import สำหรับ navigation
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rfid_project/domain/entities/asset.dart';
+import 'package:rfid_project/domain/entities/epc_scan_result.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
-import '../../../common_widgets/buttons/primary_button.dart';
-import '../../../common_widgets/layouts/app_bottom_navigation.dart';
-import '../../../common_widgets/layouts/screen_container.dart';
+import 'package:rfid_project/presentation/common_widgets/layouts/app_bottom_navigation.dart';
+import 'package:rfid_project/presentation/common_widgets/layouts/screen_container.dart';
+import 'package:rfid_project/presentation/features/rfid/screens/asset_creation_preview_screen.dart';
 import '../blocs/rfid_scan_bloc.dart';
-import '../widgets/asset_info_card.dart';
-import '../widgets/asset_not_found_card.dart';
-import '../widgets/unknown_epc_card.dart';
-import 'asset_creation_preview_screen.dart';
 
 class ScanRfidScreen extends StatefulWidget {
   final GenerateMockAssetUseCase generateAssetUseCase;
@@ -26,38 +25,18 @@ class ScanRfidScreen extends StatefulWidget {
 }
 
 class _ScanRfidScreenState extends State<ScanRfidScreen> {
-  int _selectedIndex = 2; // Index for the Scan tab
+  int _selectedIndex = 2; // RFID Scan tab
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
+
+    setState(() {
+      _selectedIndex = index;
+    });
+
     Navigator.pushReplacementNamed(
       context,
       ['/', '/searchAssets', '/scanRfid', '/reports', '/export'][index],
-    );
-  }
-
-  void _showAssetPreview(BuildContext context, String epc) async {
-    // สร้างข้อมูลตัวอย่างจาก EPC แต่ยังไม่บันทึกลงฐานข้อมูล
-    final previewAsset = await widget.generateAssetUseCase.generatePreview(epc);
-
-    if (!mounted) return;
-
-    // นำทางไปยังหน้าตัวอย่างข้อมูล
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => AssetCreationPreviewScreen(
-              asset: previewAsset,
-              assetRepository: widget.assetRepository,
-              onCreatePressed: () {
-                print(
-                  'Create Asset button pressed - no action implemented yet',
-                );
-                Navigator.pop(context);
-              },
-            ),
-      ),
     );
   }
 
@@ -74,8 +53,29 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
           ),
         ),
         backgroundColor: Colors.white,
-        elevation: 0, // ไม่มีเงาที่ AppBar
+        elevation: 0,
         automaticallyImplyLeading: false,
+        actions: [
+          Consumer<RfidScanBloc>(
+            builder: (context, bloc, child) {
+              return IconButton(
+                onPressed:
+                    bloc.status == RfidScanStatus.scanning ||
+                            bloc.status == RfidScanStatus.bulkUpdating
+                        ? null
+                        : () => _performRefreshScan(context, bloc),
+                icon: Icon(
+                  Icons.refresh,
+                  color:
+                      bloc.status == RfidScanStatus.scanning ||
+                              bloc.status == RfidScanStatus.bulkUpdating
+                          ? Colors.grey
+                          : Colors.deepPurple,
+                ),
+              );
+            },
+          ),
+        ],
       ),
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: _selectedIndex,
@@ -83,62 +83,79 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
       ),
       child: Consumer<RfidScanBloc>(
         builder: (context, bloc, child) {
-          // แสดงผลตามสถานะการสแกน
           switch (bloc.status) {
+            case RfidScanStatus.initial:
+              return _buildInitialView(bloc, context);
             case RfidScanStatus.scanning:
               return _buildScanningView();
             case RfidScanStatus.scanned:
               return _buildScannedResultView(bloc, context);
+            case RfidScanStatus.bulkUpdating:
+              return _buildBulkUpdatingView();
+            case RfidScanStatus.bulkUpdateComplete:
+              return _buildBulkUpdateCompleteView(bloc);
             case RfidScanStatus.error:
               return _buildErrorView(bloc);
-            case RfidScanStatus.initial:
-              return _buildInitialView(bloc, context);
           }
         },
       ),
     );
   }
 
+  // ... ส่วนที่เหลือของโค้ดเหมือนเดิม
+
+  // =================== View Builders ===================
+  // (คงเดิม - ไม่ต้องเปลี่ยน)
+
   Widget _buildInitialView(RfidScanBloc bloc, BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // ไอคอนและข้อความ
           Container(
-            width: 80,
-            height: 80,
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
               color: Colors.deepPurple.shade50,
-              borderRadius: BorderRadius.circular(20),
-              // ไม่มีเงา
+              borderRadius: BorderRadius.circular(60),
             ),
-            child: Icon(
-              Icons.wifi_tethering,
-              size: 40,
-              color: Colors.deepPurple.shade400,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'กดปุ่ม SCAN เพื่อเริ่มสแกน RFID',
-            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+            child: Icon(Icons.nfc, size: 60, color: Colors.deepPurple.shade400),
           ),
           const SizedBox(height: 32),
-
-          // ปุ่ม Scan
-          PrimaryButton(
-            text: 'SCAN',
-            icon: Icons.wifi_tethering,
-            color: Colors.deepPurple.shade50,
+          Text(
+            'RFID Scanner',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple.shade700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'กดปุ่ม SCAN เพื่อเริ่มสแกน RFID',
+            style: TextStyle(color: Colors.grey[600], fontSize: 16),
+          ),
+          const SizedBox(height: 48),
+          ElevatedButton(
             onPressed: () => bloc.performScan(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple.shade400,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'SCAN',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // หน้าจอขณะกำลังสแกน - แสดง Loading
   Widget _buildScanningView() {
     return Center(
       child: Column(
@@ -171,173 +188,571 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  /* Path: lib/presentation/features/rfid/screens/scan_rfid_screen.dart */
-
-  // แก้ไขในส่วนที่แสดงผลลัพธ์การสแกน โดยลบ Container ที่ซ้อนกัน
   Widget _buildScannedResultView(RfidScanBloc bloc, BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // หัวข้อผลการสแกน
-          Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.shade50,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.wifi_tethering,
-                  color: Colors.deepPurple.shade600,
-                  size: 22,
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.deepPurple, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'ผลการสแกน RFID (${bloc.scanResults.length})',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  'ผลการสแกน RFID',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple.shade700,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // แสดงจำนวนผลลัพธ์
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurple.shade600,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${bloc.scanResults.length}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child:
+              bloc.hasScanResults
+                  ? ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: bloc.scanResults.length,
+                    separatorBuilder:
+                        (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final result = bloc.scanResults[index];
+                      return _buildResultCard(result, context);
+                    },
+                  )
+                  : const Center(
+                    child: Text(
+                      'ไม่พบผลลัพธ์การสแกน',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                   ),
+        ),
+        if (bloc.hasAvailableAssets)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              onPressed: () => _showBulkCheckScreen(context, bloc),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple.shade400,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
+              ),
+              child: const Text(
+                'Bulk Check',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
+      ],
+    );
+  }
 
-          // ตรงนี้จะแสดงผลการสแกนแต่ละรายการ
-          if (bloc.scanResults.isEmpty)
-            const AssetNotFoundCard()
-          else
-            ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: bloc.scanResults.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final result = bloc.scanResults[index];
-
-                if (result.epc == null || result.epc!.isEmpty) {
-                  // กรณีไม่มี EPC - ใช้ Widget โดยตรงไม่ห่อด้วย Container
-                  return const AssetNotFoundCard();
-                } else if (result.asset != null) {
-                  // กรณีมี EPC และพบข้อมูลในฐานข้อมูล - ใช้ Widget โดยตรงไม่ห่อด้วย Container
-                  return AssetInfoCard(
-                    asset: result.asset!,
-                    onViewDetails:
-                        () => Navigator.pushNamed(
-                          context,
-                          '/assetDetail',
-                          arguments: {'tagId': result.asset!.tagId},
-                        ),
-                  );
-                } else {
-                  // กรณีมี EPC แต่ไม่พบข้อมูลในฐานข้อมูล - ใช้ Widget โดยตรงไม่ห่อด้วย Container
-                  return UnknownEpcCard(
-                    epc: result.epc!,
-                    generatedAsset: null,
-                    onTap: () => _showAssetPreview(context, result.epc!),
-                  );
-                }
-              },
+  Widget _buildBulkUpdatingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 64,
+            height: 64,
+            child: CircularProgressIndicator(
+              color: Colors.deepPurple.shade400,
+              strokeWidth: 6,
             ),
-
-          const SizedBox(height: 24),
-
-          // ปุ่มสแกนอีกครั้ง
-          Center(
-            child: PrimaryButton(
-              text: 'สแกนอีกครั้ง',
-              icon: Icons.refresh,
-              color: Colors.deepPurple.shade50,
-              onPressed: () => bloc.resetScan(),
+          ),
+          const SizedBox(height: 28),
+          Text(
+            'กำลัง Check Items...',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple.shade700,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'กรุณารอสักครู่',
+            style: TextStyle(color: Colors.grey[600], fontSize: 15),
           ),
         ],
       ),
     );
   }
 
-  // หน้าจอแสดงข้อผิดพลาด
-  Widget _buildErrorView(RfidScanBloc bloc) {
+  Widget _buildBulkUpdateCompleteView(RfidScanBloc bloc) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(35),
-                // ไม่มีเงา
-              ),
-              child: Icon(
-                Icons.error_outline,
-                size: 40,
-                color: Colors.red[700],
-              ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.shade50,
+              borderRadius: BorderRadius.circular(40),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'เกิดข้อผิดพลาด',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.red[700],
-              ),
+            child: Icon(
+              Icons.check_circle,
+              size: 50,
+              color: Colors.deepPurple.shade600,
             ),
-            const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Check Items สำเร็จ!',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple.shade700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (bloc.bulkUpdateResult != null)
             Container(
               padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.symmetric(horizontal: 32),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: Colors.deepPurple.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
-                // ไม่มีเงา
+                border: Border.all(color: Colors.deepPurple.shade200),
               ),
               child: Text(
-                bloc.errorMessage,
+                bloc.bulkUpdateResult!.summaryMessage,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: Colors.red.shade800),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.deepPurple.shade800,
+                ),
               ),
             ),
-            const SizedBox(height: 32),
-            PrimaryButton(
-              text: 'ลองอีกครั้ง',
-              icon: Icons.refresh,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorView(RfidScanBloc bloc) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+          const SizedBox(height: 24),
+          Text(
+            'เกิดข้อผิดพลาด',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
               color: Colors.red.shade700,
-              onPressed: () => bloc.resetScan(),
             ),
-          ],
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              bloc.errorMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () => bloc.performScan(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade400,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('ลองอีกครั้ง'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =================== Card Builders ===================
+
+  Widget _buildResultCard(EpcScanResult result, BuildContext context) {
+    if (result.asset != null) {
+      return _buildAssetInfoCard(result.asset!, context);
+    } else {
+      return _buildUnknownEpcCard(result.epc!, context);
+    }
+  }
+
+  Widget _buildAssetInfoCard(Asset asset, BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _navigateToAssetDetail(asset),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.inventory_2,
+                  color: Colors.deepPurple.shade400,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      asset.itemName ?? 'ไม่ระบุชื่อ',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Status: ${asset.status}',
+                      style: TextStyle(
+                        color: _getStatusColor(asset.status),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Colors.grey[400]),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildUnknownEpcCard(String epc, BuildContext context) {
+    return Card(
+      elevation: 2,
+      color: Colors.red.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _showAssetPreview(context, epc),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.help_outline,
+                  color: Colors.red.shade400,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Unknown Item',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Status: Unknown',
+                      style: TextStyle(
+                        color: Colors.red.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'EPC: ${epc.length > 20 ? '${epc.substring(0, 20)}...' : epc}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Colors.grey[400]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =================== Navigation Methods ===================
+
+  void _navigateToAssetDetail(Asset asset) async {
+    final result = await Navigator.pushNamed(
+      context,
+      '/assetDetail',
+      arguments: {'tagId': asset.tagId},
+    );
+
+    if (result != null && result is Map && result['updated'] == true) {
+      context.read<RfidScanBloc>().updateCardStatus(
+        result['tagId'],
+        result['newStatus'],
+      );
+    }
+  }
+
+  void _showAssetPreview(BuildContext context, String epc) async {
+    try {
+      final previewAsset = await widget.generateAssetUseCase.generatePreview(
+        epc,
+      );
+
+      if (!mounted) return;
+
+      final result = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => AssetCreationPreviewScreen(
+                asset: previewAsset,
+                assetRepository: widget.assetRepository,
+              ),
+        ),
+      );
+
+      if (result == true) {
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        try {
+          final newAsset = await widget.assetRepository.findAssetByEpc(epc);
+          if (newAsset != null && mounted) {
+            context.read<RfidScanBloc>().updateUnknownEpcToAsset(epc, newAsset);
+          }
+        } catch (e) {
+          print('Error fetching new asset: $e');
+        }
+      }
+    } catch (e) {
+      print('Error in asset preview: $e');
+    }
+  }
+
+  // =================== Bulk Check Methods ===================
+
+  void _showBulkCheckScreen(BuildContext context, RfidScanBloc bloc) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => _BulkCheckScreen(
+            availableAssets: bloc.availableAssets,
+            onConfirm:
+                (selectedTagIds) =>
+                    _confirmBulkCheck(context, bloc, selectedTagIds),
+          ),
+    );
+  }
+
+  void _confirmBulkCheck(
+    BuildContext context,
+    RfidScanBloc bloc,
+    List<String> selectedTagIds,
+  ) {
+    if (selectedTagIds.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('ยืนยันการ Check Items'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('จะเปลี่ยนสถานะ ${selectedTagIds.length} รายการ:'),
+                const SizedBox(height: 8),
+                ...selectedTagIds.take(3).map((tagId) {
+                  final asset = bloc.availableAssets.firstWhere(
+                    (a) => a.tagId == tagId,
+                  );
+                  return Text('• ${asset.itemName}');
+                }),
+                if (selectedTagIds.length > 3)
+                  Text('และอีก ${selectedTagIds.length - 3} รายการ'),
+                const SizedBox(height: 8),
+                const Text('จาก Available → Checked'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('ยกเลิก'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  bloc.bulkUpdateSelectedAssets(selectedTagIds);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple.shade400,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('ยืนยัน'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // =================== Helper Methods ===================
+
+  void _performRefreshScan(BuildContext context, RfidScanBloc bloc) {
+    bloc.performScan(context);
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'available':
+        return Colors.deepPurple;
+      case 'checked':
+        return Colors.blue;
+      case 'maintenance':
+        return Colors.orange;
+      case 'disposed':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+}
+
+// =================== Bulk Check Screen ===================
+// (คงเดิม - ไม่ต้องเปลี่ยน)
+
+class _BulkCheckScreen extends StatefulWidget {
+  final List<Asset> availableAssets;
+  final Function(List<String>) onConfirm;
+
+  const _BulkCheckScreen({
+    required this.availableAssets,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_BulkCheckScreen> createState() => _BulkCheckScreenState();
+}
+
+class _BulkCheckScreenState extends State<_BulkCheckScreen> {
+  final Set<String> _selectedTagIds = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: Row(
+              children: [
+                const Text(
+                  'เลือก Available Items',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: widget.availableAssets.length,
+              itemBuilder: (context, index) {
+                final asset = widget.availableAssets[index];
+                final isSelected = _selectedTagIds.contains(asset.tagId);
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: CheckboxListTile(
+                    value: isSelected,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedTagIds.add(asset.tagId);
+                        } else {
+                          _selectedTagIds.remove(asset.tagId);
+                        }
+                      });
+                    },
+                    title: Text(asset.itemName ?? 'ไม่ระบุชื่อ'),
+                    subtitle: Text('Tag ID: ${asset.tagId}'),
+                    secondary: Icon(
+                      Icons.inventory_2,
+                      color: Colors.deepPurple.shade400,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('ยกเลิก'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed:
+                        _selectedTagIds.isNotEmpty
+                            ? () => widget.onConfirm(_selectedTagIds.toList())
+                            : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple.shade400,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text('Check Items (${_selectedTagIds.length})'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

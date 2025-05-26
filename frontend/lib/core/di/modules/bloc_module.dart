@@ -1,5 +1,6 @@
 // lib/core/di/modules/bloc_module.dart
 import 'package:get_it/get_it.dart';
+import 'package:rfid_project/domain/usecases/assets/bulk_update_assets_usecase.dart';
 import '../../../domain/usecases/assets/get_assets_usecase.dart';
 import '../../../domain/usecases/rfid/scan_rfid_usecase.dart';
 import '../../../domain/repositories/asset_repository.dart';
@@ -36,7 +37,10 @@ class BlocModule {
 
     // ลงทะเบียน RfidScanBloc
     _getIt.registerFactory<RfidScanBloc>(
-      () => RfidScanBloc(_getIt<ScanRfidUseCase>()),
+      () => RfidScanBloc(
+        _getIt<ScanRfidUseCase>(),
+        _getIt<BulkUpdateAssetsUseCase>(),
+      ),
     );
 
     _getIt.registerFactory<ReportsBloc>(

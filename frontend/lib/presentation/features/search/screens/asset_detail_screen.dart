@@ -350,6 +350,13 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
             backgroundColor: Colors.green,
           ),
         );
+
+        // ส่ง result กลับไปหน้า RFID Scanner
+        Navigator.pop(context, {
+          'updated': true,
+          'tagId': tagId,
+          'newStatus': 'Checked',
+        });
       } else {
         // อัปเดตล้มเหลว
         ScaffoldMessenger.of(context).showSnackBar(
