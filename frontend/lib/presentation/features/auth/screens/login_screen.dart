@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (success) {
         // Navigate to main app
-        Navigator.pushReplacementNamed(context, '/');
+        Navigator.pushReplacementNamed(context, '/scanRfid');
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(

@@ -227,26 +227,26 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
                     ),
                   ),
         ),
-        if (bloc.hasAvailableAssets)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed: () => _showBulkCheckScreen(context, bloc),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple.shade400,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Bulk Check',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
+        // if (bloc.hasAvailableAssets)
+        //   Container(
+        //     width: double.infinity,
+        //     padding: const EdgeInsets.all(16),
+        //     child: ElevatedButton(
+        //       onPressed: () => _showBulkCheckScreen(context, bloc),
+        //       style: ElevatedButton.styleFrom(
+        //         backgroundColor: Colors.deepPurple.shade400,
+        //         foregroundColor: Colors.white,
+        //         padding: const EdgeInsets.symmetric(vertical: 16),
+        //         shape: RoundedRectangleBorder(
+        //           borderRadius: BorderRadius.circular(12),
+        //         ),
+        //       ),
+        //       child: const Text(
+        //         'Bulk Check',
+        //         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        //       ),
+        //     ),
+        //   ),
       ],
     );
   }
@@ -515,14 +515,18 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     }
   }
 
+  // Path: lib/presentation/features/rfid/screens/scan_rfid_screen.dart
+
   void _showAssetPreview(BuildContext context, String epc) async {
     try {
+      // สร้าง preview asset จาก mock data
       final previewAsset = await widget.generateAssetUseCase.generatePreview(
         epc,
       );
 
       if (!mounted) return;
 
+      // เปิดหน้า Asset Creation Preview และรอผลลัพธ์
       final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
@@ -534,23 +538,79 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
         ),
       );
 
+      // ถ้า create สำเร็จ (result == true)
       if (result == true) {
+        // รอสักครู่ให้ API บันทึกข้อมูลเสร็จสิ้น
         await Future.delayed(const Duration(milliseconds: 500));
 
         try {
+          // ดึงข้อมูล Asset ใหม่ที่เพิ่งสร้างจาก API
           final newAsset = await widget.assetRepository.findAssetByEpc(epc);
+
+          // ถ้าพบ Asset ใหม่และ widget ยังคง mounted
           if (newAsset != null && mounted) {
+            // อัปเดต UI โดยเปลี่ยน Unknown EPC Card เป็น Asset Card
             context.read<RfidScanBloc>().updateUnknownEpcToAsset(epc, newAsset);
+
+            // แสดงข้อความสำเร็จ
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('สร้าง ${newAsset.itemName} สำเร็จ'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          } else if (mounted) {
+            // กรณีที่ไม่พบ Asset ใหม่หลังจาก create
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'สร้างสำเร็จแต่ไม่สามารถอัปเดตหน้าจอได้ กรุณา refresh',
+                ),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
           }
         } catch (e) {
+          // Error ในการดึงข้อมูล Asset ใหม่
           print('Error fetching new asset: $e');
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'สร้างสำเร็จแต่เกิดข้อผิดพลาดในการอัปเดตหน้าจอ: ${e.toString()}',
+                ),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 3),
+                action: SnackBarAction(
+                  label: 'Refresh',
+                  onPressed:
+                      () => context.read<RfidScanBloc>().performScan(context),
+                ),
+              ),
+            );
+          }
         }
       }
+      // ถ้า result == false หรือ null หมายความว่า user กดยกเลิกหรือ create ไม่สำเร็จ
+      // ไม่ต้องทำอะไร Unknown Card จะยังคงเป็นสีแดงอยู่
     } catch (e) {
+      // Error ในการสร้าง preview asset
       print('Error in asset preview: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการเตรียมข้อมูล: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
-
   // =================== Bulk Check Methods ===================
 
   void _showBulkCheckScreen(BuildContext context, RfidScanBloc bloc) {
@@ -645,6 +705,8 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
 // =================== Bulk Check Screen ===================
 // (คงเดิม - ไม่ต้องเปลี่ยน)
 
+// Path: lib/presentation/features/rfid/screens/scan_rfid_screen.dart
+
 class _BulkCheckScreen extends StatefulWidget {
   final List<Asset> availableAssets;
   final Function(List<String>) onConfirm;
@@ -662,6 +724,13 @@ class _BulkCheckScreenState extends State<_BulkCheckScreen> {
   final Set<String> _selectedTagIds = {};
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-select ทุก Available Items ตอนเริ่มต้น
+    _selectedTagIds.addAll(widget.availableAssets.map((asset) => asset.tagId));
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
@@ -671,25 +740,129 @@ class _BulkCheckScreenState extends State<_BulkCheckScreen> {
       ),
       child: Column(
         children: [
+          // Header Section
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
-            child: Row(
+            child: Column(
               children: [
-                const Text(
-                  'เลือก Available Items',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                // Title และ Close button
+                Row(
+                  children: [
+                    const Text(
+                      'เลือก Available Items',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+
+                const SizedBox(height: 12),
+
+                // Control Buttons และ Counter
+                Row(
+                  children: [
+                    // Select All Button
+                    OutlinedButton.icon(
+                      onPressed: _isAllSelected ? null : _selectAll,
+                      icon: Icon(
+                        Icons.check_box,
+                        size: 18,
+                        color: _isAllSelected ? Colors.grey : Colors.deepPurple,
+                      ),
+                      label: Text(
+                        'Select All',
+                        style: TextStyle(
+                          color:
+                              _isAllSelected ? Colors.grey : Colors.deepPurple,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color:
+                              _isAllSelected
+                                  ? Colors.grey.shade300
+                                  : Colors.deepPurple,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Unselect All Button
+                    OutlinedButton.icon(
+                      onPressed: _isNoneSelected ? null : _unselectAll,
+                      icon: Icon(
+                        Icons.check_box_outline_blank,
+                        size: 18,
+                        color:
+                            _isNoneSelected ? Colors.grey : Colors.red.shade600,
+                      ),
+                      label: Text(
+                        'Unselect All',
+                        style: TextStyle(
+                          color:
+                              _isNoneSelected
+                                  ? Colors.grey
+                                  : Colors.red.shade600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color:
+                              _isNoneSelected
+                                  ? Colors.grey.shade300
+                                  : Colors.red.shade600,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // Counter
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.deepPurple.shade200),
+                      ),
+                      child: Text(
+                        '${_selectedTagIds.length}/${widget.availableAssets.length} Selected',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.deepPurple.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+
+          // Items List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -700,6 +873,17 @@ class _BulkCheckScreenState extends State<_BulkCheckScreen> {
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
+                  elevation: isSelected ? 2 : 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color:
+                          isSelected
+                              ? Colors.deepPurple.shade200
+                              : Colors.grey.shade200,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
                   child: CheckboxListTile(
                     value: isSelected,
                     onChanged: (bool? value) {
@@ -711,17 +895,27 @@ class _BulkCheckScreenState extends State<_BulkCheckScreen> {
                         }
                       });
                     },
-                    title: Text(asset.itemName ?? 'ไม่ระบุชื่อ'),
+                    title: Text(
+                      asset.itemName ?? 'ไม่ระบุชื่อ',
+                      style: TextStyle(
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
                     subtitle: Text('Tag ID: ${asset.tagId}'),
                     secondary: Icon(
                       Icons.inventory_2,
                       color: Colors.deepPurple.shade400,
                     ),
+                    activeColor: Colors.deepPurple,
+                    checkColor: Colors.white,
                   ),
                 );
               },
             ),
           ),
+
+          // Footer Buttons
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -729,13 +923,20 @@ class _BulkCheckScreenState extends State<_BulkCheckScreen> {
             ),
             child: Row(
               children: [
+                // Cancel Button
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                     child: const Text('ยกเลิก'),
                   ),
                 ),
+
                 const SizedBox(width: 16),
+
+                // Confirm Button
                 Expanded(
                   child: ElevatedButton(
                     onPressed:
@@ -745,8 +946,13 @@ class _BulkCheckScreenState extends State<_BulkCheckScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurple.shade400,
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: Text('Check Items (${_selectedTagIds.length})'),
+                    child: Text(
+                      _selectedTagIds.isNotEmpty
+                          ? 'Check Items (${_selectedTagIds.length})'
+                          : 'Check Items',
+                    ),
                   ),
                 ),
               ],
@@ -755,5 +961,34 @@ class _BulkCheckScreenState extends State<_BulkCheckScreen> {
         ],
       ),
     );
+  }
+
+  // =================== Helper Methods ===================
+
+  /// เลือกทุก Available Items
+  void _selectAll() {
+    setState(() {
+      _selectedTagIds.clear();
+      _selectedTagIds.addAll(
+        widget.availableAssets.map((asset) => asset.tagId),
+      );
+    });
+  }
+
+  /// ยกเลิกการเลือกทั้งหมด
+  void _unselectAll() {
+    setState(() {
+      _selectedTagIds.clear();
+    });
+  }
+
+  /// ตรวจสอบว่าเลือกครบทุกตัวหรือไม่
+  bool get _isAllSelected {
+    return _selectedTagIds.length == widget.availableAssets.length;
+  }
+
+  /// ตรวจสอบว่าไม่ได้เลือกเลยหรือไม่
+  bool get _isNoneSelected {
+    return _selectedTagIds.isEmpty;
   }
 }

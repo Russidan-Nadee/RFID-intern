@@ -93,10 +93,6 @@ class MyApp extends StatelessWidget {
         create: (_) => DependencyInjection.get<ReportsBloc>(),
       ),
 
-      ChangeNotifierProvider<NavigationBloc>(
-        create: (_) => DependencyInjection.get<NavigationBloc>(),
-      ),
-
       ChangeNotifierProvider<AuthService>(
         create: (_) => DependencyInjection.get<AuthService>(),
       ),
