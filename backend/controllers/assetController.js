@@ -1,4 +1,4 @@
-const { execute, logQuery } = require('../config/db');
+const { pool, execute, testConnection, logQuery } = require('../config/db');
 const {
    NotFoundError,
    ValidationError,
@@ -583,6 +583,122 @@ exports.exportAssets = async (req, res, next) => {
          });
       }
    } catch (error) {
+      next(error);
+   }
+};
+
+// *** เพิ่ม method ใหม่ - Bulk update assets status to checked - Staff+ เท่านั้น ***
+exports.bulkUpdateAssetStatusToChecked = async (req, res, next) => {
+   try {
+      // ตรวจสอบสิทธิ์การอัปเดตสถานะ
+      if (req.user && req.user.role === 'viewer') {
+         throw new UnauthorisedException('ไม่มีสิทธิ์อัปเดตสถานะสินทรัพย์ ต้องเป็น Staff ขึ้นไป');
+      }
+
+      const { tagIds, lastScannedBy } = req.body;
+
+      // Debug logging
+      console.log('---- BULK UPDATE DEBUG ----');
+      console.log(`Request body: ${JSON.stringify(req.body)}`);
+      console.log(`TagIds: ${tagIds}`);
+      console.log(`LastScannedBy: ${lastScannedBy}`);
+
+      // Validation
+      if (!Array.isArray(tagIds) || tagIds.length === 0) {
+         throw new ValidationError('กรุณาระบุ tagIds ที่ต้องการอัปเดต');
+      }
+
+      if (tagIds.length > 30) {
+         throw new ValidationError('สามารถอัปเดตได้สูงสุด 30 รายการต่อครั้ง');
+      }
+
+      // ตรวจสอบว่า tagIds ทั้งหมดเป็น string และไม่ว่าง
+      const validTagIds = tagIds.filter(tagId =>
+         typeof tagId === 'string' && tagId.trim().length > 0
+      );
+
+      if (validTagIds.length === 0) {
+         throw new ValidationError('ไม่พบ tagIds ที่ถูกต้อง');
+      }
+
+      // ใช้ manual commit transaction
+      const connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      try {
+         const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+         const scannerName = (typeof lastScannedBy === 'string' && lastScannedBy.trim() !== '')
+            ? lastScannedBy.trim()
+            : 'System';
+
+         console.log(`Processing ${validTagIds.length} valid tagIds`);
+         console.log(`Scanner name: ${scannerName}`);
+
+         // สร้าง placeholders สำหรับ IN clause
+         const placeholders = validTagIds.map(() => '?').join(',');
+
+         const updateQuery = `
+            UPDATE rfid_assets_details.assets 
+            SET status = 'Checked', lastScanTime = ?, lastScannedBy = ?, updatedAt = ?
+            WHERE tagId IN (${placeholders}) AND status = 'Available'
+         `;
+
+         const params = [currentTime, scannerName, currentTime, ...validTagIds];
+
+         console.log(`Executing query: ${updateQuery}`);
+         console.log(`With params: ${JSON.stringify(params)}`);
+
+         logQuery(updateQuery, params);
+         const [result] = await connection.execute(updateQuery, params);
+
+         console.log(`Update result: affected rows = ${result.affectedRows}`);
+
+         // บันทึก audit log
+         const auditQuery = `
+            INSERT INTO rfid_assets_details.audit_logs (action, details, performed_by, performed_at)
+            VALUES (?, ?, ?, ?)
+         `;
+
+         const auditDetails = `Bulk updated ${result.affectedRows} assets from ${validTagIds.length} requested`;
+         const auditParams = ['BULK_UPDATE', auditDetails, scannerName, currentTime];
+
+         try {
+            await connection.execute(auditQuery, auditParams);
+            console.log('Audit log saved successfully');
+         } catch (auditError) {
+            console.log('Audit log failed (continuing):', auditError.message);
+            // ไม่ rollback transaction เพราะ audit log ไม่สำคัญกว่า main operation
+         }
+
+         await connection.commit();
+         console.log('Transaction committed successfully');
+
+         res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: `อัปเดตสำเร็จ ${result.affectedRows} จาก ${validTagIds.length} รายการ`,
+            data: {
+               successCount: result.affectedRows,
+               totalRequested: validTagIds.length,
+               validTagIds: validTagIds,
+               lastScanTime: currentTime,
+               lastScannedBy: scannerName,
+               timestamp: new Date().toISOString()
+            }
+         });
+
+      } catch (error) {
+         await connection.rollback();
+         console.error('Transaction rolled back due to error:', error);
+         throw error;
+      } finally {
+         connection.release();
+      }
+
+   } catch (error) {
+      console.error('---- BULK UPDATE ERROR ----');
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('---------------------------');
       next(error);
    }
 };

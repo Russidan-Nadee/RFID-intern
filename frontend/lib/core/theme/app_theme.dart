@@ -30,10 +30,6 @@ class AppTheme {
           ),
         ),
       ),
-      cardTheme: CardTheme(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
-      ),
     );
   }
 
@@ -65,11 +61,6 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-      ),
-      cardTheme: CardTheme(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
-        color: Colors.grey.shade800,
       ),
     );
   }

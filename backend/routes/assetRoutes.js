@@ -24,6 +24,10 @@ router.get('/id/:id', assetController.getAssetById);
 // สร้างสินทรัพย์ใหม่ - Manager+ เท่านั้น
 router.post('/', verifyToken, requireAssetCreatePermission(), assetController.createAsset);
 
+// *** เพิ่ม bulk update route - Staff+ เท่านั้น ***
+console.log('bulkUpdateAssetStatusToChecked exists:', typeof assetController.bulkUpdateAssetStatusToChecked === 'function');
+router.put('/bulk/status/checked', verifyToken, requireAssetUpdatePermission(), assetController.bulkUpdateAssetStatusToChecked);;
+
 // อัปเดตสถานะสินทรัพย์ - Staff+ เท่านั้น
 console.log('Function exists:', typeof assetController.updateAssetStatusToChecked === 'function');
 if (typeof assetController.updateAssetStatusToChecked === 'function') {
@@ -44,5 +48,7 @@ router.delete('/all', verifyToken, requireAssetDeletionPermission(), assetContro
 
 // ดึงข้อมูลตาม tagId/GtagId - ทุกคนเข้าถึงได้ (ต้องวางไว้ท้ายสุด)
 router.get('/:tagId', assetController.getAssetBytagId);
+
+
 
 module.exports = router;

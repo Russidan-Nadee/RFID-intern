@@ -24,4 +24,8 @@ abstract class AssetRepository {
     String tagId, {
     String? lastScannedBy,
   });
+  Future<bool> bulkUpdateAssetStatusToChecked(
+    List<String> tagIds, {
+    String? lastScannedBy,
+  });
 }

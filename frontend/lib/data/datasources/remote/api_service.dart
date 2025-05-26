@@ -680,4 +680,69 @@ class ApiService {
       throw DatabaseException('Error updating status: $e');
     }
   }
+
+  // เพิ่ม method ใหม่ในคลาส ApiService (เพิ่มหลัง updateAssetStatusToChecked method)
+
+  Future<Map<String, dynamic>?> bulkUpdateAssetStatusToChecked(
+    List<String> tagIds, {
+    String? lastScannedBy,
+  }) async {
+    final url = '$baseUrl/assets/bulk/status/checked';
+    try {
+      // Validation
+      if (tagIds.isEmpty) {
+        throw ValidationException('กรุณาเลือกรายการที่ต้องการอัปเดต');
+      }
+
+      if (tagIds.length > 30) {
+        throw ValidationException('สามารถอัปเดตได้สูงสุด 30 รายการต่อครั้ง');
+      }
+
+      // สร้าง request body
+      final Map<String, dynamic> requestBody = {
+        'tagIds': tagIds,
+        'lastScannedBy':
+            (lastScannedBy != null && lastScannedBy.isNotEmpty)
+                ? lastScannedBy
+                : 'User',
+      };
+
+      // บันทึก log สำหรับตรวจสอบ
+      ErrorHandler.logError(
+        'Bulk update request: ${tagIds.length} items, scanner: ${requestBody['lastScannedBy']}',
+      );
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: _getAuthHeaders(),
+        body: json.encode(requestBody),
+      );
+
+      ErrorHandler.logError('Bulk update response: ${response.statusCode}');
+      ErrorHandler.logError('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        ErrorHandler.logError('Bulk update successful: ${jsonData['data']}');
+        return jsonData;
+      } else {
+        // บันทึก log แสดงข้อผิดพลาดอย่างละเอียด
+        ErrorHandler.logError(
+          'Error bulk updating status: ${response.statusCode}',
+        );
+        ErrorHandler.logError('Error response body: ${response.body}');
+
+        // ใช้ ErrorHandler ในการสร้าง exception ที่เหมาะสม
+        final responseBody = json.decode(response.body);
+        final message = responseBody['message'] ?? 'Unknown error';
+        throw ErrorHandler.handleApiError(response.statusCode, message, url);
+      }
+    } on http.ClientException {
+      throw FetchDataException('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์', url);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      ErrorHandler.logError('Error in bulkUpdateAssetStatusToChecked: $e');
+      throw DatabaseException('Error bulk updating status: $e');
+    }
+  }
 }

@@ -329,4 +329,84 @@ class AssetRepositoryImpl implements AssetRepository {
       throw DatabaseException('เกิดข้อผิดพลาดในการอัปเดตสถานะสินทรัพย์: $e');
     }
   }
+
+  @override
+  Future<bool> bulkUpdateAssetStatusToChecked(
+    List<String> tagIds, {
+    String? lastScannedBy,
+  }) async {
+    try {
+      ErrorHandler.logError(
+        'AssetRepositoryImpl - bulkUpdateAssetStatusToChecked with ${tagIds.length} tagIds, scanner: $lastScannedBy',
+      );
+
+      // Validation
+      if (tagIds.isEmpty) {
+        throw ValidationException('กรุณาเลือกรายการที่ต้องการอัปเดต');
+      }
+
+      if (tagIds.length > 30) {
+        throw ValidationException('สามารถอัปเดตได้สูงสุด 30 รายการต่อครั้ง');
+      }
+
+      // กรองเฉพาะ tagId ที่ถูกต้อง
+      final validTagIds =
+          tagIds
+              .where((tagId) => tagId.trim().isNotEmpty)
+              .map((tagId) => tagId.trim())
+              .toSet()
+              .toList();
+
+      if (validTagIds.isEmpty) {
+        throw ValidationException('ไม่พบรายการที่ถูกต้องสำหรับการอัปเดต');
+      }
+
+      ErrorHandler.logError(
+        'Processing ${validTagIds.length} valid tagIds from ${tagIds.length} total',
+      );
+
+      // เรียก API Service
+      final response = await _apiService.bulkUpdateAssetStatusToChecked(
+        validTagIds,
+        lastScannedBy: lastScannedBy,
+      );
+
+      if (response != null && response['success'] == true) {
+        final data = response['data'];
+        final successCount = data['successCount'] ?? 0;
+        final totalRequested = data['totalRequested'] ?? validTagIds.length;
+
+        ErrorHandler.logError(
+          'Bulk update completed: $successCount/$totalRequested successful',
+        );
+
+        // ถือว่าสำเร็จถ้ามีการอัปเดตอย่างน้อย 1 รายการ
+        return successCount > 0;
+      } else {
+        ErrorHandler.logError('Bulk update failed: Invalid response format');
+        return false;
+      }
+    } catch (e) {
+      ErrorHandler.logError('Error in bulk update asset status: $e');
+
+      // แยกประเภทข้อผิดพลาดเพื่อให้การจัดการเฉพาะทาง
+      if (e is ValidationException) {
+        // กรณีข้อมูลไม่ถูกต้อง
+        rethrow;
+      } else if (e is UnauthorisedException) {
+        // กรณีไม่มีสิทธิ์
+        throw UnauthorisedException(
+          'ไม่มีสิทธิ์ในการอัปเดตสถานะสินทรัพย์แบบ bulk',
+        );
+      } else if (e is AppException) {
+        // ส่งต่อ custom exceptions อื่นๆ
+        rethrow;
+      }
+
+      // แปลงข้อผิดพลาดทั่วไปเป็น DatabaseException
+      throw DatabaseException(
+        'เกิดข้อผิดพลาดในการอัปเดตสถานะสินทรัพย์หลายรายการ: $e',
+      );
+    }
+  }
 }

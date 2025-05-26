@@ -10,8 +10,8 @@ import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.
 import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
 import 'package:rfid_project/domain/usecases/export/prepare_export_columns_usecase.dart';
 import 'package:rfid_project/domain/usecases/rfid/scan_rfid_usecase.dart';
+import 'package:rfid_project/domain/usecases/assets/bulk_update_assets_usecase.dart';
 
-// คลาสโมดูลบริการ - ใช้ลงทะเบียนการทำงานระดับสูง (UseCase) ในแอป
 class ServiceModule {
   // สร้างตัวแปรเพื่อเข้าถึงตัวจัดการการเชื่อมโยง (GetIt)
   final GetIt _getIt = GetIt.instance;
@@ -36,16 +36,23 @@ class ServiceModule {
         _getIt<FindAssetByEpcUseCase>(),
       ),
     );
+
     _getIt.registerLazySingleton(
       () => AssetValidator(_getIt<AssetRepository>()),
     );
+
     _getIt.registerLazySingleton(
       () => GenerateMockAssetUseCase(_getIt<AssetRepository>()),
     );
+
     _getIt.registerLazySingleton(
       () => CreateAssetUseCase(_getIt<AssetRepository>()),
     );
-    // เพิ่มบรรทัดเหล่านี้ใน register() method
+
+    _getIt.registerLazySingleton(
+      () => BulkUpdateAssetsUseCase(_getIt<AssetRepository>()),
+    );
+
     _getIt.registerLazySingleton(() => AuthService(_getIt<AuthRepository>()));
   }
 }

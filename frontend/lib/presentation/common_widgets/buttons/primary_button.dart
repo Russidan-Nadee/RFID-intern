@@ -54,14 +54,13 @@ class PrimaryButton extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 12),
-                  Text('Loading...'),
                 ],
               )
               : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[Icon(icon), const SizedBox(width: 8)],
-                  Text(text),
+                  Flexible(child: Text(text, overflow: TextOverflow.ellipsis)),
                 ],
               ),
     );
