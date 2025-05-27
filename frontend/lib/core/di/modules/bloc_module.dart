@@ -7,7 +7,7 @@ import '../../../presentation/features/search/blocs/asset_bloc.dart';
 import '../../../presentation/features/dashboard/blocs/dashboard_bloc.dart';
 import '../../../presentation/features/export/blocs/export_bloc.dart';
 import '../../../presentation/features/main/blocs/navigation_bloc.dart';
-import '../../../presentation/features/rfid/blocs/rfid_scan_bloc.dart';
+import '../../../presentation/features/rfid/bloc/rfid_scan_bloc.dart';
 import '../../../presentation/features/reports/blocs/reports_bloc.dart';
 
 class BlocModule {

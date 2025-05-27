@@ -1,7 +1,9 @@
-// lib/main.dart
+// Path: frontend/lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // เพิ่ม import นี้
 import 'package:rfid_project/domain/service/auth_service.dart';
+import 'package:rfid_project/presentation/features/rfid/bloc/rfid_scan_bloc.dart';
 import 'core/navigation/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'core/di/dependency_injection.dart';
@@ -9,7 +11,6 @@ import 'presentation/features/search/blocs/asset_bloc.dart';
 import 'presentation/features/dashboard/blocs/dashboard_bloc.dart';
 import 'presentation/features/export/blocs/export_bloc.dart';
 import 'presentation/features/main/blocs/navigation_bloc.dart';
-import 'presentation/features/rfid/blocs/rfid_scan_bloc.dart';
 import 'presentation/features/settings/blocs/settings_bloc.dart';
 import 'presentation/features/reports/blocs/reports_bloc.dart';
 import 'package:provider/single_child_widget.dart';
@@ -79,8 +80,8 @@ class MyApp extends StatelessWidget {
         create: (_) => DependencyInjection.get<ExportBloc>(),
       ),
 
-      // RfidScanBloc - จัดการการสแกน RFID
-      ChangeNotifierProvider<RfidScanBloc>(
+      // RfidScanBloc - จัดการการสแกน RFID (เปลี่ยนเป็น BlocProvider)
+      BlocProvider<RfidScanBloc>(
         create: (_) => DependencyInjection.get<RfidScanBloc>(),
       ),
 

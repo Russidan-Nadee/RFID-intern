@@ -1,11 +1,14 @@
+// Path: frontend/lib/presentation/features/rfid/screens/scan_rfid_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
 import 'package:rfid_project/presentation/common_widgets/layouts/app_bottom_navigation.dart';
 import 'package:rfid_project/presentation/common_widgets/layouts/screen_container.dart';
-import '../blocs/rfid_scan_bloc.dart';
-import 'package:rfid_project/presentation/features/rfid/widgets/rfid_scan_result_cards.dart';
+import 'package:rfid_project/core/navigation/rfid_navigation_service.dart';
+import 'package:rfid_project/presentation/features/rfid/bloc/rfid_scan_bloc.dart';
+import 'package:rfid_project/presentation/features/rfid/bloc/rfid_scan_state.dart';
+import '../widgets/rfid_scan_result_cards.dart';
 
 class ScanRfidScreen extends StatefulWidget {
   final GenerateMockAssetUseCase generateAssetUseCase;
@@ -51,17 +54,18 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
-          Consumer<RfidScanBloc>(
-            builder: (context, bloc, child) {
+          BlocBuilder<RfidScanBloc, RfidScanState>(
+            builder: (context, state) {
               return IconButton(
                 onPressed:
-                    bloc.status == RfidScanStatus.scanning
+                    state is RfidScanScanning
                         ? null
-                        : () => _performRefreshScan(bloc),
+                        : () =>
+                            context.read<RfidScanBloc>().refreshScanResults(),
                 icon: Icon(
                   Icons.refresh,
                   color:
-                      bloc.status == RfidScanStatus.scanning
+                      state is RfidScanScanning
                           ? Colors.grey
                           : Colors.deepPurple,
                 ),
@@ -74,24 +78,38 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-      child: Consumer<RfidScanBloc>(
-        builder: (context, bloc, child) {
-          switch (bloc.status) {
-            case RfidScanStatus.initial:
-              return _buildInitialView(bloc);
-            case RfidScanStatus.scanning:
-              return _buildScanningView();
-            case RfidScanStatus.scanned:
-              return _buildScannedResultView(bloc);
-            case RfidScanStatus.error:
-              return _buildErrorView(bloc);
+      child: BlocListener<RfidScanBloc, RfidScanState>(
+        listener: (context, state) {
+          // Handle navigation events
+          if (state is NavigateToAssetDetail) {
+            _handleAssetDetailNavigation(state.asset);
+          } else if (state is NavigateToAssetCreation) {
+            _handleAssetCreationNavigation(state.epc);
+          } else if (state is ShowErrorMessage) {
+            RfidNavigationService.showError(context, state.errorMessage);
+          } else if (state is ShowSuccessMessage) {
+            RfidNavigationService.showSuccess(context, state.message);
           }
         },
+        child: BlocBuilder<RfidScanBloc, RfidScanState>(
+          builder: (context, state) {
+            if (state is RfidScanInitial) {
+              return _buildInitialView();
+            } else if (state is RfidScanScanning) {
+              return _buildScanningView();
+            } else if (state is RfidScanScanned) {
+              return _buildScannedResultView(state);
+            } else if (state is RfidScanError) {
+              return _buildErrorView(state);
+            }
+            return _buildInitialView(); // Fallback
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildInitialView(RfidScanBloc bloc) {
+  Widget _buildInitialView() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -121,7 +139,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
           ),
           const SizedBox(height: 48),
           ElevatedButton(
-            onPressed: bloc.performScan,
+            onPressed: () => context.read<RfidScanBloc>().performScan(),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.deepPurple.shade400,
               foregroundColor: Colors.white,
@@ -172,7 +190,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  Widget _buildScannedResultView(RfidScanBloc bloc) {
+  Widget _buildScannedResultView(RfidScanScanned state) {
     return Column(
       children: [
         Container(
@@ -182,7 +200,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
               Icon(Icons.check_circle, color: Colors.deepPurple, size: 24),
               const SizedBox(width: 12),
               Text(
-                'ผลการสแกน RFID (${bloc.scanResults.length})',
+                'ผลการสแกน RFID (${state.scanResults.length})',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -193,14 +211,14 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
         ),
         Expanded(
           child:
-              bloc.hasScanResults
+              state.hasScanResults
                   ? ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: bloc.scanResults.length,
+                    itemCount: state.scanResults.length,
                     separatorBuilder:
                         (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final result = bloc.scanResults[index];
+                      final result = state.scanResults[index];
                       return RfidScanResultCards(
                         result: result,
                         generateAssetUseCase: widget.generateAssetUseCase,
@@ -219,7 +237,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  Widget _buildErrorView(RfidScanBloc bloc) {
+  Widget _buildErrorView(RfidScanError state) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -238,14 +256,14 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              bloc.errorMessage,
+              state.errorMessage,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16),
             ),
           ),
           const SizedBox(height: 32),
           ElevatedButton(
-            onPressed: bloc.performScan,
+            onPressed: () => context.read<RfidScanBloc>().performScan(),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade400,
               foregroundColor: Colors.white,
@@ -257,7 +275,69 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  void _performRefreshScan(RfidScanBloc bloc) {
-    bloc.performScan();
+  // Handle navigation to asset detail
+  Future<void> _handleAssetDetailNavigation(asset) async {
+    final result = await RfidNavigationService.navigateToAssetDetail(
+      context,
+      asset,
+    );
+
+    if (!mounted) return;
+
+    if (result != null && result['updated'] == true) {
+      context.read<RfidScanBloc>().updateCardStatus(
+        result['tagId'],
+        result['newStatus'],
+      );
+    }
+  }
+
+  // Handle navigation to asset creation
+  Future<void> _handleAssetCreationNavigation(String epc) async {
+    final result = await RfidNavigationService.navigateToAssetCreation(
+      context,
+      epc,
+      widget.generateAssetUseCase,
+      widget.assetRepository,
+    );
+
+    if (!mounted) return;
+
+    if (result == true) {
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      try {
+        final newAsset = await widget.assetRepository.findAssetByEpc(epc);
+
+        if (newAsset != null && mounted) {
+          context.read<RfidScanBloc>().updateUnknownEpcToAsset(epc, newAsset);
+
+          RfidNavigationService.showSuccess(
+            context,
+            'สร้าง ${newAsset.itemName} สำเร็จ',
+          );
+        } else if (mounted) {
+          RfidNavigationService.showSnackBarWithAction(
+            context,
+            'สร้างสำเร็จแต่ไม่สามารถอัปเดตหน้าจอได้ กรุณา refresh',
+            'Refresh',
+            () => context.read<RfidScanBloc>().refreshScanResults(),
+            backgroundColor: Colors.orange,
+          );
+        }
+      } catch (e) {
+        debugPrint('Error fetching new asset: $e');
+
+        if (mounted) {
+          RfidNavigationService.showSnackBarWithAction(
+            context,
+            'สร้างสำเร็จแต่เกิดข้อผิดพลาดในการอัปเดตหน้าจอ: ${e.toString()}',
+            'Refresh',
+            () => context.read<RfidScanBloc>().refreshScanResults(),
+            backgroundColor: Colors.orange,
+          );
+        }
+      }
+    }
   }
 }

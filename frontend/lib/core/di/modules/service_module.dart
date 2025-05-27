@@ -1,3 +1,4 @@
+// Path: frontend/lib/core/di/modules/service_module.dart
 import 'package:get_it/get_it.dart';
 import 'package:rfid_project/domain/service/auth_service.dart';
 import 'package:rfid_project/domain/validation/asset_validator.dart';
@@ -11,6 +12,7 @@ import 'package:rfid_project/domain/usecases/assets/get_assets_usecase.dart';
 import 'package:rfid_project/domain/usecases/export/prepare_export_columns_usecase.dart';
 import 'package:rfid_project/domain/usecases/rfid/scan_rfid_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/bulk_update_assets_usecase.dart';
+import 'package:rfid_project/core/navigation/rfid_navigation_service.dart';
 
 class ServiceModule {
   // สร้างตัวแปรเพื่อเข้าถึงตัวจัดการการเชื่อมโยง (GetIt)
@@ -54,5 +56,8 @@ class ServiceModule {
     );
 
     _getIt.registerLazySingleton(() => AuthService(_getIt<AuthRepository>()));
+
+    // Register RFID Navigation Service
+    _getIt.registerLazySingleton(() => RfidNavigationService());
   }
 }

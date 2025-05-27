@@ -1,11 +1,12 @@
+// Path: frontend/lib/presentation/features/rfid/widgets/rfid_scan_result_cards.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rfid_project/domain/entities/asset.dart';
 import 'package:rfid_project/domain/entities/epc_scan_result.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
-import 'package:rfid_project/presentation/features/rfid/blocs/rfid_scan_bloc.dart';
-import 'package:rfid_project/presentation/features/rfid/screens/asset_creation_preview_screen.dart';
+import 'package:rfid_project/core/navigation/rfid_navigation_service.dart';
+import 'package:rfid_project/presentation/features/rfid/bloc/rfid_scan_bloc.dart';
 
 class RfidScanResultCards extends StatelessWidget {
   final EpcScanResult result;
@@ -37,37 +38,37 @@ class RfidScanResultCards extends StatelessWidget {
   }
 
   void _navigateToAssetDetail(BuildContext context, Asset asset) async {
-    final result = await Navigator.pushNamed(
-      context,
-      '/assetDetail',
-      arguments: {'tagId': asset.tagId},
-    );
-
-    if (!context.mounted) return; // เพิ่มเช็ค mounted
-
-    if (result != null && result is Map && result['updated'] == true) {
-      context.read<RfidScanBloc>().updateCardStatus(
-        result['tagId'],
-        result['newStatus'],
+    try {
+      final result = await RfidNavigationService.navigateToAssetDetail(
+        context,
+        asset,
       );
+
+      if (!context.mounted) return;
+
+      if (result != null && result['updated'] == true) {
+        context.read<RfidScanBloc>().updateCardStatus(
+          result['tagId'],
+          result['newStatus'],
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        RfidNavigationService.showError(
+          context,
+          'เกิดข้อผิดพลาดในการนำทาง: ${e.toString()}',
+        );
+      }
     }
   }
 
   void _showAssetPreview(BuildContext context, String epc) async {
     try {
-      final previewAsset = await generateAssetUseCase.generatePreview(epc);
-
-      if (!context.mounted) return;
-
-      final result = await Navigator.push<bool>(
+      final result = await RfidNavigationService.navigateToAssetCreation(
         context,
-        MaterialPageRoute(
-          builder:
-              (context) => AssetCreationPreviewScreen(
-                asset: previewAsset,
-                assetRepository: assetRepository,
-              ),
-        ),
+        epc,
+        generateAssetUseCase,
+        assetRepository,
       );
 
       if (!context.mounted) return;
@@ -81,41 +82,29 @@ class RfidScanResultCards extends StatelessWidget {
           if (newAsset != null && context.mounted) {
             context.read<RfidScanBloc>().updateUnknownEpcToAsset(epc, newAsset);
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('สร้าง ${newAsset.itemName} สำเร็จ'),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 2),
-              ),
+            RfidNavigationService.showSuccess(
+              context,
+              'สร้าง ${newAsset.itemName} สำเร็จ',
             );
           } else if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'สร้างสำเร็จแต่ไม่สามารถอัปเดตหน้าจอได้ กรุณา refresh',
-                ),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 3),
-              ),
+            RfidNavigationService.showSnackBarWithAction(
+              context,
+              'สร้างสำเร็จแต่ไม่สามารถอัปเดตหน้าจอได้ กรุณา refresh',
+              'Refresh',
+              () => context.read<RfidScanBloc>().refreshScanResults(),
+              backgroundColor: Colors.orange,
             );
           }
         } catch (e) {
           debugPrint('Error fetching new asset: $e');
 
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'สร้างสำเร็จแต่เกิดข้อผิดพลาดในการอัปเดตหน้าจอ: ${e.toString()}',
-                ),
-                backgroundColor: Colors.orange,
-                duration: const Duration(seconds: 3),
-                action: SnackBarAction(
-                  label: 'Refresh',
-                  onPressed:
-                      () => context.read<RfidScanBloc>().performScan(context),
-                ),
-              ),
+            RfidNavigationService.showSnackBarWithAction(
+              context,
+              'สร้างสำเร็จแต่เกิดข้อผิดพลาดในการอัปเดตหน้าจอ: ${e.toString()}',
+              'Refresh',
+              () => context.read<RfidScanBloc>().refreshScanResults(),
+              backgroundColor: Colors.orange,
             );
           }
         }
@@ -124,12 +113,9 @@ class RfidScanResultCards extends StatelessWidget {
       debugPrint('Error in asset preview: $e');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการเตรียมข้อมูล: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
+        RfidNavigationService.showError(
+          context,
+          'เกิดข้อผิดพลาดในการเตรียมข้อมูล: ${e.toString()}',
         );
       }
     }
