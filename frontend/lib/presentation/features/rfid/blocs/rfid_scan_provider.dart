@@ -17,7 +17,7 @@ enum RfidScanStatus {
   error, // เกิดข้อผิดพลาด
 }
 
-class RfidScanBloc extends ChangeNotifier {
+class RfidScanProvider extends ChangeNotifier {
   final ScanRfidUseCase _scanRfidUseCase;
   final BulkUpdateAssetsUseCase _bulkUpdateAssetsUseCase;
 
@@ -28,7 +28,7 @@ class RfidScanBloc extends ChangeNotifier {
   BulkUpdateResult? _bulkUpdateResult;
 
   // =================== Constructor ===================
-  RfidScanBloc(this._scanRfidUseCase, this._bulkUpdateAssetsUseCase);
+  RfidScanProvider(this._scanRfidUseCase, this._bulkUpdateAssetsUseCase);
 
   // =================== Basic Getters ===================
   RfidScanStatus get status => _status;
@@ -321,7 +321,7 @@ class RfidScanBloc extends ChangeNotifier {
 
   /// แสดงข้อมูล debug สำหรับการพัฒนา
   void printDebugInfo() {
-    print('=== RfidScanBloc Debug Info ===');
+    print('=== RfidScanProvider Debug Info ===');
     print('Status: $_status');
     print('Scan Results Count: ${_scanResults.length}');
     print('Asset Count by Status: $assetCountByStatus');

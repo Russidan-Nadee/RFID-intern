@@ -8,7 +8,7 @@ import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.
 import 'package:rfid_project/presentation/common_widgets/layouts/app_bottom_navigation.dart';
 import 'package:rfid_project/presentation/common_widgets/layouts/screen_container.dart';
 import 'package:rfid_project/presentation/features/rfid/screens/asset_creation_preview_screen.dart';
-import '../blocs/rfid_scan_bloc.dart';
+import '../blocs/rfid_scan_provider.dart';
 
 class ScanRfidScreen extends StatefulWidget {
   final GenerateMockAssetUseCase generateAssetUseCase;
@@ -56,7 +56,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
-          Consumer<RfidScanBloc>(
+          Consumer<RfidScanProvider>(
             builder: (context, bloc, child) {
               return IconButton(
                 onPressed:
@@ -81,7 +81,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-      child: Consumer<RfidScanBloc>(
+      child: Consumer<RfidScanProvider>(
         builder: (context, bloc, child) {
           switch (bloc.status) {
             case RfidScanStatus.initial:
@@ -107,7 +107,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
   // =================== View Builders ===================
   // (คงเดิม - ไม่ต้องเปลี่ยน)
 
-  Widget _buildInitialView(RfidScanBloc bloc, BuildContext context) {
+  Widget _buildInitialView(RfidScanProvider bloc, BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -188,7 +188,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  Widget _buildScannedResultView(RfidScanBloc bloc, BuildContext context) {
+  Widget _buildScannedResultView(RfidScanProvider bloc, BuildContext context) {
     return Column(
       children: [
         Container(
@@ -283,7 +283,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  Widget _buildBulkUpdateCompleteView(RfidScanBloc bloc) {
+  Widget _buildBulkUpdateCompleteView(RfidScanProvider bloc) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -334,7 +334,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
   }
 
-  Widget _buildErrorView(RfidScanBloc bloc) {
+  Widget _buildErrorView(RfidScanProvider bloc) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -508,7 +508,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     );
 
     if (result != null && result is Map && result['updated'] == true) {
-      context.read<RfidScanBloc>().updateCardStatus(
+      context.read<RfidScanProvider>().updateCardStatus(
         result['tagId'],
         result['newStatus'],
       );
@@ -550,7 +550,10 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
           // ถ้าพบ Asset ใหม่และ widget ยังคง mounted
           if (newAsset != null && mounted) {
             // อัปเดต UI โดยเปลี่ยน Unknown EPC Card เป็น Asset Card
-            context.read<RfidScanBloc>().updateUnknownEpcToAsset(epc, newAsset);
+            context.read<RfidScanProvider>().updateUnknownEpcToAsset(
+              epc,
+              newAsset,
+            );
 
             // แสดงข้อความสำเร็จ
             ScaffoldMessenger.of(context).showSnackBar(
@@ -587,7 +590,8 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
                 action: SnackBarAction(
                   label: 'Refresh',
                   onPressed:
-                      () => context.read<RfidScanBloc>().performScan(context),
+                      () =>
+                          context.read<RfidScanProvider>().performScan(context),
                 ),
               ),
             );
@@ -613,7 +617,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
   }
   // =================== Bulk Check Methods ===================
 
-  void _showBulkCheckScreen(BuildContext context, RfidScanBloc bloc) {
+  void _showBulkCheckScreen(BuildContext context, RfidScanProvider bloc) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -630,7 +634,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
 
   void _confirmBulkCheck(
     BuildContext context,
-    RfidScanBloc bloc,
+    RfidScanProvider bloc,
     List<String> selectedTagIds,
   ) {
     if (selectedTagIds.isEmpty) return;
@@ -682,7 +686,7 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
 
   // =================== Helper Methods ===================
 
-  void _performRefreshScan(BuildContext context, RfidScanBloc bloc) {
+  void _performRefreshScan(BuildContext context, RfidScanProvider bloc) {
     bloc.performScan(context);
   }
 
