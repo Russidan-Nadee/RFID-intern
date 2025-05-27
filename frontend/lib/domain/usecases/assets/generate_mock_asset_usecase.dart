@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:intl/intl.dart';
 import '../../../core/exceptions/app_exceptions.dart';
 import '../../../core/services/error_handler.dart';
-import '../../../core/validation/asset_validator.dart';
+import '../../validation/asset_validator.dart';
 import '../../../data/models/asset_model.dart';
 import '../../../domain/entities/asset.dart';
 import '../../../domain/repositories/asset_repository.dart';

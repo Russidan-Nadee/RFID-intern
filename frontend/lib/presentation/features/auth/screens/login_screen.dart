@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../common_widgets/inputs/text_input.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
-import '../../../../core/services/auth_service.dart';
+import '../../../../domain/service/auth_service.dart';
 import '../../../../core/services/error_handler.dart';
 
 class LoginScreen extends StatefulWidget {

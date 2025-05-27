@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/services/auth_service.dart';
+import '../../../../domain/service/auth_service.dart';
 import '../../../../domain/repositories/asset_repository.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../common_widgets/buttons/primary_button.dart';

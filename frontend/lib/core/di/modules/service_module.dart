@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
-import 'package:rfid_project/core/services/auth_service.dart';
-import 'package:rfid_project/core/validation/asset_validator.dart';
+import 'package:rfid_project/domain/service/auth_service.dart';
+import 'package:rfid_project/domain/validation/asset_validator.dart';
 import 'package:rfid_project/data/datasources/random_epc_datasource.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
 import 'package:rfid_project/domain/repositories/auth_repository.dart';

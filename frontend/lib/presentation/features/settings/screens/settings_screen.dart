@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rfid_project/domain/entities/user_role.dart';
 import 'package:rfid_project/presentation/features/settings/screens/role_management_screen.dart';
-import '../../../../core/services/auth_service.dart';
+import '../../../../domain/service/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);

@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import '../../domain/entities/user.dart';
-import '../../domain/entities/user_role.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../exceptions/app_exceptions.dart';
+import '../entities/user.dart';
+import '../entities/user_role.dart';
+import '../repositories/auth_repository.dart';
+import '../../core/exceptions/app_exceptions.dart';
 
 class AuthService extends ChangeNotifier {
   final AuthRepository _authRepository;

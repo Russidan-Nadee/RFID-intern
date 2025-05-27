@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rfid_project/core/services/auth_service.dart';
+import 'package:rfid_project/domain/service/auth_service.dart';
 import 'package:rfid_project/domain/entities/asset.dart';
 import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../../domain/repositories/asset_repository.dart';
