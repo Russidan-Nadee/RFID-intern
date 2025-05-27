@@ -425,8 +425,6 @@ class _AssetCreationPreviewScreenState
 
   // ส่วนแสดงสถานะ
   Widget _buildStatusCard(BuildContext context) {
-    final Color statusColor = _getStatusColor(widget.asset.status);
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -469,7 +467,6 @@ class _AssetCreationPreviewScreenState
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: statusColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -583,24 +580,6 @@ class _AssetCreationPreviewScreenState
         return Icons.build;
       default:
         return Icons.devices_other;
-    }
-  }
-
-  // ฟังก์ชันสำหรับกำหนดสีตามสถานะ
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'in stock':
-        return Colors.green;
-      case 'shipped':
-        return Colors.blue;
-      case 'in transit':
-        return Colors.orange;
-      case 'returned':
-        return Colors.purple;
-      case 'damaged':
-        return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 }

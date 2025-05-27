@@ -9,7 +9,7 @@ import 'presentation/features/search/blocs/asset_bloc.dart';
 import 'presentation/features/dashboard/blocs/dashboard_bloc.dart';
 import 'presentation/features/export/blocs/export_bloc.dart';
 import 'presentation/features/main/blocs/navigation_bloc.dart';
-import 'presentation/features/rfid/blocs/rfid_scan_provider.dart';
+import 'presentation/features/rfid/blocs/rfid_scan_bloc.dart';
 import 'presentation/features/settings/blocs/settings_bloc.dart';
 import 'presentation/features/reports/blocs/reports_bloc.dart';
 import 'package:provider/single_child_widget.dart';
@@ -80,8 +80,8 @@ class MyApp extends StatelessWidget {
       ),
 
       // RfidScanBloc - จัดการการสแกน RFID
-      ChangeNotifierProvider<RfidScanProvider>(
-        create: (_) => DependencyInjection.get<RfidScanProvider>(),
+      ChangeNotifierProvider<RfidScanBloc>(
+        create: (_) => DependencyInjection.get<RfidScanBloc>(),
       ),
 
       // SettingsBloc - จัดการการตั้งค่าแอปพลิเคชัน

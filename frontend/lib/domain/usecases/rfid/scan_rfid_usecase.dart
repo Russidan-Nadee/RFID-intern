@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import '../../../data/datasources/random_epc_datasource.dart';
 import '../../entities/epc_scan_result.dart';
 import '../assets/find_asset_by_epc_usecase.dart';
@@ -10,7 +9,7 @@ class ScanRfidUseCase {
 
   ScanRfidUseCase(this._epcDatasource, this._findAssetByEpcUseCase);
 
-  Future<List<EpcScanResult>> execute(BuildContext context) async {
+  Future<List<EpcScanResult>> execute() async {
     try {
       // อ่าน EPCs จากแหล่งข้อมูล
       final epcs = await _epcDatasource.getEpcs();
