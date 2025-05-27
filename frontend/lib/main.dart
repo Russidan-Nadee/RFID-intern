@@ -1,7 +1,6 @@
-// Path: frontend/lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // เพิ่ม import นี้
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rfid_project/domain/service/auth_service.dart';
 import 'package:rfid_project/presentation/features/rfid/bloc/rfid_scan_bloc.dart';
 import 'core/navigation/app_routes.dart';
@@ -70,8 +69,8 @@ class MyApp extends StatelessWidget {
         create: (_) => DependencyInjection.get<DashboardBloc>(),
       ),
 
-      // AssetBloc - จัดการข้อมูลสินทรัพย์
-      ChangeNotifierProvider<AssetBloc>(
+      // AssetBloc - จัดการข้อมูลสินทรัพย์ (เปลี่ยนเป็น BlocProvider)
+      BlocProvider<AssetBloc>(
         create: (_) => DependencyInjection.get<AssetBloc>(),
       ),
 

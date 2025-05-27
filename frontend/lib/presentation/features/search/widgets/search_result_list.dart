@@ -1,3 +1,4 @@
+// Path: frontend/lib/presentation/features/search/widgets/search_result_list.dart
 import 'package:flutter/material.dart';
 import '../../../../domain/entities/asset.dart';
 

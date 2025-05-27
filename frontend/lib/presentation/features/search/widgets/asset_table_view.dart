@@ -1,4 +1,6 @@
+// Path: frontend/lib/presentation/features/search/widgets/asset_table_view.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../domain/entities/asset.dart';
 import '../blocs/asset_bloc.dart';
 
@@ -494,11 +496,7 @@ class AssetTableView extends StatelessWidget {
       onAssetSelectionChanged?.call(asset.id, !isSelected);
     } else {
       // ในโหมด normal ให้ไปหน้ารายละเอียด
-      Navigator.pushNamed(
-        context,
-        '/assetDetail',
-        arguments: {'tagId': asset.tagId},
-      );
+      context.read<AssetBloc>().navigateToAssetDetail(asset);
     }
   }
 }

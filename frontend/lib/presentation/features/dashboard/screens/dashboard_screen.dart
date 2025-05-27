@@ -1,4 +1,4 @@
-// lib/presentation/features/dashboard/screens/home_screen.dart
+// Path: frontend/lib/presentation/features/dashboard/screens/dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/navigation/navigation_service.dart';
@@ -8,6 +8,7 @@ import '../../../common_widgets/layouts/screen_container.dart';
 import '../../../common_widgets/status/loading_error_widget.dart';
 import '../widgets/asset_notification_item.dart';
 import '../blocs/dashboard_bloc.dart';
+import '../../main/blocs/navigation_bloc.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -17,8 +18,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -28,7 +27,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
+    final navigationBloc = Provider.of<NavigationBloc>(context, listen: false);
+    if (index == navigationBloc.currentIndex) return;
     NavigationService.navigateToTabByIndex(context, index);
   }
 
@@ -63,9 +63,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: AppBottomNavigation(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+      bottomNavigationBar: Consumer<NavigationBloc>(
+        builder: (context, navigationBloc, child) {
+          return AppBottomNavigation(
+            currentIndex: navigationBloc.currentIndex,
+            onTap: _onItemTapped,
+          );
+        },
       ),
       child: Consumer<DashboardBloc>(
         builder: (context, bloc, _) {

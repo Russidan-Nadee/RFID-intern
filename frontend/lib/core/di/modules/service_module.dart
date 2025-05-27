@@ -13,6 +13,7 @@ import 'package:rfid_project/domain/usecases/export/prepare_export_columns_useca
 import 'package:rfid_project/domain/usecases/rfid/scan_rfid_usecase.dart';
 import 'package:rfid_project/domain/usecases/assets/bulk_update_assets_usecase.dart';
 import 'package:rfid_project/core/navigation/rfid_navigation_service.dart';
+import 'package:rfid_project/core/navigation/search_navigation_service.dart';
 
 class ServiceModule {
   // สร้างตัวแปรเพื่อเข้าถึงตัวจัดการการเชื่อมโยง (GetIt)
@@ -59,5 +60,8 @@ class ServiceModule {
 
     // Register RFID Navigation Service
     _getIt.registerLazySingleton(() => RfidNavigationService());
+
+    // Register Search Navigation Service
+    _getIt.registerLazySingleton(() => SearchNavigationService());
   }
 }
