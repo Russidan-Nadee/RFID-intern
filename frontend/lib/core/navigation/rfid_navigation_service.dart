@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/asset.dart';
 import '../../domain/repositories/asset_repository.dart';
-import '../../domain/usecases/assets/generate_mock_asset_usecase.dart';
 import '../../presentation/features/rfid/screens/asset_creation_preview_screen.dart';
 
 class RfidNavigationService {
@@ -19,24 +18,21 @@ class RfidNavigationService {
         as Map<String, dynamic>?;
   }
 
-  // Navigate to asset creation preview screen
+  // Navigate to asset creation form screen
   static Future<bool?> navigateToAssetCreation(
     BuildContext context,
     String epc,
-    GenerateMockAssetUseCase generateAssetUseCase,
     AssetRepository assetRepository,
   ) async {
     try {
-      final previewAsset = await generateAssetUseCase.generatePreview(epc);
-
       if (!context.mounted) return null;
 
       return await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder:
-              (context) => AssetCreationPreviewScreen(
-                asset: previewAsset,
+              (context) => AssetCreationFormScreen(
+                epc: epc,
                 assetRepository: assetRepository,
               ),
         ),

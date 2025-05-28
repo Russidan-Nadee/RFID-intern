@@ -4,19 +4,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rfid_project/domain/entities/asset.dart';
 import 'package:rfid_project/domain/entities/epc_scan_result.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
-import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
 import 'package:rfid_project/core/navigation/rfid_navigation_service.dart';
 import 'package:rfid_project/presentation/features/rfid/bloc/rfid_scan_bloc.dart';
 
 class RfidScanResultCards extends StatelessWidget {
   final EpcScanResult result;
-  final GenerateMockAssetUseCase generateAssetUseCase;
   final AssetRepository assetRepository;
 
   const RfidScanResultCards({
     Key? key,
     required this.result,
-    required this.generateAssetUseCase,
     required this.assetRepository,
   }) : super(key: key);
 
@@ -30,8 +27,7 @@ class RfidScanResultCards extends StatelessWidget {
     } else {
       return _UnknownEpcCard(
         epc: result.epc!,
-        onTap: () => _showAssetPreview(context, result.epc!),
-        generateAssetUseCase: generateAssetUseCase,
+        onTap: () => _showAssetCreationForm(context, result.epc!),
         assetRepository: assetRepository,
       );
     }
@@ -62,12 +58,11 @@ class RfidScanResultCards extends StatelessWidget {
     }
   }
 
-  void _showAssetPreview(BuildContext context, String epc) async {
+  void _showAssetCreationForm(BuildContext context, String epc) async {
     try {
       final result = await RfidNavigationService.navigateToAssetCreation(
         context,
         epc,
-        generateAssetUseCase,
         assetRepository,
       );
 
@@ -110,7 +105,7 @@ class RfidScanResultCards extends StatelessWidget {
         }
       }
     } catch (e) {
-      debugPrint('Error in asset preview: $e');
+      debugPrint('Error in asset creation form: $e');
 
       if (context.mounted) {
         RfidNavigationService.showError(
@@ -204,14 +199,12 @@ class _AssetInfoCard extends StatelessWidget {
 class _UnknownEpcCard extends StatelessWidget {
   final String epc;
   final VoidCallback onTap;
-  final GenerateMockAssetUseCase generateAssetUseCase;
   final AssetRepository assetRepository;
 
   const _UnknownEpcCard({
     Key? key,
     required this.epc,
     required this.onTap,
-    required this.generateAssetUseCase,
     required this.assetRepository,
   }) : super(key: key);
 

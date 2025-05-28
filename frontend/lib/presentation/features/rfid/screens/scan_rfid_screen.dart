@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rfid_project/domain/repositories/asset_repository.dart';
-import 'package:rfid_project/domain/usecases/assets/generate_mock_asset_usecase.dart';
 import 'package:rfid_project/presentation/common_widgets/layouts/app_bottom_navigation.dart';
 import 'package:rfid_project/presentation/common_widgets/layouts/screen_container.dart';
 import 'package:rfid_project/core/navigation/rfid_navigation_service.dart';
@@ -11,14 +10,10 @@ import 'package:rfid_project/presentation/features/rfid/bloc/rfid_scan_state.dar
 import '../widgets/rfid_scan_result_cards.dart';
 
 class ScanRfidScreen extends StatefulWidget {
-  final GenerateMockAssetUseCase generateAssetUseCase;
   final AssetRepository assetRepository;
 
-  const ScanRfidScreen({
-    Key? key,
-    required this.generateAssetUseCase,
-    required this.assetRepository,
-  }) : super(key: key);
+  const ScanRfidScreen({Key? key, required this.assetRepository})
+    : super(key: key);
 
   @override
   State<ScanRfidScreen> createState() => _ScanRfidScreenState();
@@ -221,7 +216,6 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
                       final result = state.scanResults[index];
                       return RfidScanResultCards(
                         result: result,
-                        generateAssetUseCase: widget.generateAssetUseCase,
                         assetRepository: widget.assetRepository,
                       );
                     },
@@ -297,7 +291,6 @@ class _ScanRfidScreenState extends State<ScanRfidScreen> {
     final result = await RfidNavigationService.navigateToAssetCreation(
       context,
       epc,
-      widget.generateAssetUseCase,
       widget.assetRepository,
     );
 
